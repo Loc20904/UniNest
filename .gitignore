@@ -1,0 +1,39 @@
+# --- 1. BUILD & RUNTIME (Rác sinh ra khi chạy code) ---
+[Bb]in/
+[Oo]bj/
+.config/
+.dotnet/
+**/TestResults/
+
+# --- 2. IDE & EDITOR (Cấu hình riêng của máy bạn) ---
+.vs/
+.vscode/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# --- 3. BẢO MẬT & CONFIG (QUAN TRỌNG NHẤT) ---
+# Chặn tất cả file appsettings chứa Key thật
+**/appsettings.json
+**/appsettings.Development.json
+**/appsettings.Production.json
+**/secrets.json
+
+# Giữ lại file mẫu (nếu bạn tạo file này để đồng đội xem)
+!**/appsettings.Example.json
+!**/appsettings.Template.json
+
+# --- 4. WEB & FRONTEND ---
+# Nếu sau này cài Tailwind qua npm
+node_modules/
+package-lock.json
+npm-debug.log
+
+# File sinh ra khi publish Blazor
+wwwroot/_framework/
+wwwroot/css/app.css.map
+
+# --- 5. OS (File rác của Windows/Mac) ---
+.DS_Store
+Thumbs.db
