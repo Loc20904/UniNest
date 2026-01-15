@@ -1,0 +1,12 @@
+[
+  {
+    "ContainingType": "MapController",
+    "Method": "GetLocations",
+    "RelativePath": "api/Map/locations",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  }
+]

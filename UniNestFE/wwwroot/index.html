@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RoomFinder Da Nang</title>
+    <base href="/" />
+
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#06b5ef",
+                        "background-light": "#fafaf9",
+                        "background-dark": "#121416",
+                        "surface-dark": "#1c2126",
+                        "accent-green": "#7CD933",
+                    },
+                    fontFamily: { "display": ["Manrope", "sans-serif"] },
+                    borderRadius: { "lg": "1rem", "xl": "1.5rem" },
+                },
+            },
+        }
+    </script>
+
+    <style>
+        body {
+            font-family: 'Manrope', sans-serif;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #121416;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #27353a;
+            border-radius: 10px;
+        }
+
+        .map-bg {
+            background-image: radial-gradient(#27353a 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+    </style>
+</head>
+
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-white overflow-hidden h-screen">
+    <div id="app">Loading...</div>
+    <script src="_framework/blazor.webassembly.js"></script>
+
+    <script src="mapInterop.js"></script>
+
+    <style>
+        .map-price-label {
+            background-color: #00B69B; /* Màu Primary của bạn */
+            padding: 4px 8px;
+            border-radius: 8px;
+            font-size: 11px !important;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+    </style>
+</body>
+</html>

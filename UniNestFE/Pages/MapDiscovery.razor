@@ -1,0 +1,151 @@
+﻿@page "/"
+@using System.Net.Http.Json
+
+@inject HttpClient Http
+@attribute [AllowAnonymous]
+@inject IConfiguration Configuration
+@inject IJSRuntime JSRuntime
+
+<div class="flex h-full w-full overflow-hidden">
+    @* --- SIDEBAR DANH SÁCH PHÒNG --- *@
+    <aside class="w-[380px] flex flex-col border-r border-slate-200 dark:border-[#27353a] bg-background-light dark:bg-background-dark z-40 overflow-y-auto custom-scrollbar shrink-0">
+        <div class="p-6 flex flex-col gap-6">
+            <div>
+                <h1 class="text-2xl font-extrabold tracking-tight">Find Your Base</h1>
+                <p class="text-slate-500 dark:text-[#9bb3bb] text-sm">Campus-centric living in Da Nang</p>
+            </div>
+
+            @* Hiển thị trạng thái Loading *@
+            @if (IsLoading)
+            {
+                <div class="flex justify-center py-4">
+                    <span class="text-slate-400 text-sm">Loading listings...</span>
+                </div>
+            }
+            else
+            {
+                <div class="pt-4 border-t border-slate-200 dark:border-[#27353a]">
+                    <p class="text-xs font-bold text-slate-400 dark:text-[#6c878f] mb-4">SHOWING @Rooms.Count ROOMS</p>
+                    <div class="flex flex-col gap-3">
+                        @foreach (var room in Rooms)
+                        {
+                            <div @onclick="() => PanToRoom(room)" class="flex gap-3 p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-[#1c2126] transition-all cursor-pointer group">
+                                @* Hiển thị ảnh từ API *@
+                                <div class="size-16 rounded-lg bg-cover bg-center shrink-0 border border-slate-200 dark:border-[#27353a] bg-gray-600"
+                                     style="background-image: url('@(string.IsNullOrEmpty(room.Image) ? "/images/default-room.jpg" : room.Image)');">
+                                </div>
+                                <div class="flex flex-col justify-center overflow-hidden">
+                                    <h4 class="text-sm font-bold truncate group-hover:text-primary transition-colors">@room.Title</h4>
+                                    @* Hiển thị địa chỉ *@
+                                    <p class="text-xs text-slate-500 dark:text-[#9bb3bb] truncate">@room.Address</p>
+                                    @* Format giá tiền *@
+                                    <p class="text-sm font-extrabold text-primary mt-1">@FormatPrice(room.Price)</p>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </aside>
+
+    @* --- BẢN ĐỒ --- *@
+    <section class="flex-1 relative bg-[#1c2126] w-full h-full">
+        <div id="google-map" class="w-full h-full"></div>
+
+        <div class="absolute inset-0 flex items-center justify-center bg-slate-100 pointer-events-none" style="@(IsMapLoaded ? "display:none" : "")">
+            <span class="text-slate-500">Loading Map...</span>
+        </div>
+    </section>
+</div>
+
+@code {
+    private bool IsMapLoaded = false;
+    private bool IsLoading = true;
+    private List<RoomDto> Rooms = new();
+
+    // 2. Định nghĩa DTO khớp hoàn toàn với JSON trả về từ Back-end
+    public class RoomDto
+    {
+        public int Id { get; set; }
+        public string Title { get; set; }
+        public decimal Price { get; set; }
+        public double Lat { get; set; }
+        public double Lng { get; set; }
+        public string Address { get; set; }
+        public string Image { get; set; }
+    }
+
+    // 3. Gọi API khi trang bắt đầu load
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            // Gọi endpoint API bạn vừa viết
+            // Lưu ý: Đảm bảo BaseAddress trong Program.cs đã trỏ đúng vào port của API
+            Rooms = await Http.GetFromJsonAsync<List<RoomDto>>("api/map/locations");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Lỗi gọi API: {ex.Message}");
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                var apiKey = Configuration["GoogleMaps:ApiKey"];
+
+                // Load thư viện Maps
+                await JSRuntime.InvokeVoidAsync("uniNestMap.loadGoogleMapsScript", apiKey);
+
+                // Khởi tạo Map (Center mặc định Đà Nẵng)
+                await JSRuntime.InvokeVoidAsync("uniNestMap.initMap", "google-map", 16.0544, 108.2022, 13);
+
+                // Chờ một chút để đảm bảo data đã load xong (nếu mạng chậm)
+                // Trong thực tế có thể dùng StateHasChanged để trigger lại
+                if (Rooms != null && Rooms.Any())
+                {
+                    foreach (var room in Rooms)
+                    {
+                        // Gọi hàm JS addMarker với dữ liệu thật
+                        await JSRuntime.InvokeVoidAsync("uniNestMap.addMarker",
+                            room.Lat,
+                            room.Lng,
+                            room.Title,
+                            FormatPrice(room.Price),
+                            room.Address);
+                    }
+                }
+
+                IsMapLoaded = true;
+                StateHasChanged();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Lỗi tải Map JS: " + ex.Message);
+            }
+        }
+    }
+
+    private async Task PanToRoom(RoomDto room)
+    {
+        await JSRuntime.InvokeVoidAsync("uniNestMap.map.panTo", new { lat = room.Lat, lng = room.Lng });
+        await JSRuntime.InvokeVoidAsync("uniNestMap.map.setZoom", 16);
+    }
+
+    // Hàm format tiền tệ (Ví dụ: 2500000 -> 2.5M hoặc 2,500,000 đ)
+    private string FormatPrice(decimal price)
+    {
+        if (price >= 1000000)
+            return $"{(price / 1000000):0.##}M"; // 2.5M
+        return $"{price:N0} đ";
+    }
+}

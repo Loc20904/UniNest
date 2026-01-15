@@ -1,0 +1,45 @@
+﻿<CascadingAuthenticationState>
+    <Router AppAssembly="@typeof(App).Assembly">
+        <Found Context="routeData">
+            <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)">
+                
+                <NotAuthorized>
+                    @if (context.User.Identity?.IsAuthenticated != true)
+                    {
+                        <LayoutView Layout="@typeof(MainLayout)">
+                             <div class="flex flex-col items-center justify-center h-full text-center p-6">
+                                <h3 class="text-xl font-bold text-red-500">Access Denied</h3>
+                                <p class="text-slate-500 mb-4">You must be logged in to view this page.</p>
+                                <a href="login" class="bg-primary text-white px-4 py-2 rounded-lg font-bold">Go to Login</a>
+                            </div>
+                        </LayoutView>
+                    }
+                    else
+                    {
+                        <p role="alert">You are not authorized to access this resource.</p>
+                    }
+                </NotAuthorized>
+
+                <Authorizing>
+                    <div class="flex items-center justify-center h-screen">
+                        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                        <span class="ml-3 font-medium text-slate-500">Verifying identity...</span>
+                    </div>
+                </Authorizing>
+
+            </AuthorizeRouteView>
+            <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+        </Found>
+
+        <NotFound>
+            <PageTitle>Not found</PageTitle>
+            <LayoutView Layout="@typeof(MainLayout)">
+                <div class="flex flex-col items-center justify-center h-full text-center p-10">
+                    <h1 class="text-4xl font-extrabold text-slate-300">404</h1>
+                    <p class="text-slate-500">Sorry, we can't find that room.</p>
+                    <a href="/" class="text-primary font-bold mt-4 hover:underline">Back to Map</a>
+                </div>
+            </LayoutView>
+        </NotFound>
+    </Router>
+</CascadingAuthenticationState>
