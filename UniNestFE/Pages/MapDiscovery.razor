@@ -1,97 +1,315 @@
 ﻿@page "/"
 @using System.Net.Http.Json
-
 @inject HttpClient Http
-@attribute [AllowAnonymous]
-@inject IConfiguration Configuration
 @inject IJSRuntime JSRuntime
+@implements IDisposable
+@inject IConfiguration Configuration
 
-<div class="flex h-full w-full overflow-hidden">
-    @* --- SIDEBAR DANH SÁCH PHÒNG --- *@
-    <aside class="w-[380px] flex flex-col border-r border-slate-200 dark:border-[#27353a] bg-background-light dark:bg-background-dark z-40 overflow-y-auto custom-scrollbar shrink-0">
-        <div class="p-6 flex flex-col gap-6">
-            <div>
-                <h1 class="text-2xl font-extrabold tracking-tight">Find Your Base</h1>
-                <p class="text-slate-500 dark:text-[#9bb3bb] text-sm">Campus-centric living in Da Nang</p>
-            </div>
+@* --- 1. STYLE TÙY CHỈNH --- *@
+<style>
+    /* Thanh cuộn đẹp */
+    .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #121416; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #27353a; border-radius: 10px; }
 
-            @* Hiển thị trạng thái Loading *@
-            @if (IsLoading)
-            {
-                <div class="flex justify-center py-4">
-                    <span class="text-slate-400 text-sm">Loading listings...</span>
+    /* Nền chấm bi cho Map khi đang load */
+    .map-bg {
+        background-image: radial-gradient(#27353a 1px, transparent 1px);
+        background-size: 20px 20px;
+    }
+
+    /* Màu chủ đạo */
+    .text-primary { color: #06b5ef; }
+    .bg-primary { background-color: #06b5ef; }
+    .border-primary { border-color: #06b5ef; }
+    .text-accent-green { color: #7CD933; }
+    .bg-accent-green { background-color: #7CD933; }
+
+    /* Ẩn nút định vị mặc định xấu xí của GoongJS */
+    .mapboxgl-ctrl-geolocate { display: none !important; }
+
+    /* Hiệu ứng nhấp nháy cho Marker Trường Đại Học */
+    .university-marker {
+        animation: pulse-blue 2s infinite;
+    }
+    @@keyframes pulse-blue {
+        0% { box-shadow: 0 0 0 0 rgba(6, 181, 239, 0.7); }
+        70% { box-shadow: 0 0 0 15px rgba(6, 181, 239, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(6, 181, 239, 0); }
+    }
+</style>
+
+@* --- 2. LAYOUT CHÍNH (Full màn hình) --- *@
+<div class="h-[100dvh] w-full flex flex-col bg-[#fafaf9] dark:bg-[#121416] text-slate-900 dark:text-white overflow-hidden font-sans">
+
+    <main class="flex flex-1 overflow-hidden relative w-full h-full">
+        
+        @* --- A. SIDEBAR --- *@
+        <aside class="w-[380px] flex flex-col border-r border-slate-200 dark:border-[#27353a] bg-[#fafaf9] dark:bg-[#121416] z-40 overflow-y-auto custom-scrollbar shrink-0">
+            <div class="p-6 flex flex-col gap-6">
+                @* Header Sidebar *@
+                <div>
+                    <h1 class="text-2xl font-extrabold tracking-tight">Find Your Base</h1>
+                    <p class="text-slate-500 dark:text-[#9bb3bb] text-sm">Campus-centric living in Da Nang</p>
                 </div>
-            }
-            else
+                
+                @* Search Bar *@
+<div class="relative z-50"> <label class="flex flex-col w-full">
+        <div class="flex w-full items-stretch rounded-xl h-12 bg-slate-100 dark:bg-[#27353a] border border-transparent focus-within:border-primary/50 transition-all relative">
+            <div class="text-slate-400 flex items-center justify-center pl-4">
+                <span class="material-icons-round">search</span>
+            </div>
+            
+            @* --- SỬA ĐỔI: Thêm @bind và @oninput --- *@
+            <input @bind="SearchQuery" 
+                   @oninput="OnSearchInput"
+                   class="w-full border-none bg-transparent focus:ring-0 outline-none text-sm font-medium px-3 dark:text-white" 
+                   placeholder="Tìm địa điểm, trường học..."/>
+
+            @* Nút Xóa Search *@
+            @if (!string.IsNullOrEmpty(SearchQuery))
             {
+                <button @onclick="ClearSearch" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-red-500">
+                    <span class="material-icons-round text-sm">close</span>
+                </button>
+            }
+        </div>
+    </label>
+
+    @* --- BỔ SUNG: Danh sách Gợi ý (Dropdown) --- *@
+    @if (Suggestions.Any())
+    {
+        <ul class="absolute top-14 left-0 w-full bg-white dark:bg-[#1c2126] rounded-xl shadow-2xl border border-slate-200 dark:border-[#27353a] overflow-hidden max-h-80 overflow-y-auto custom-scrollbar animate-fade-in-up">
+            @foreach (var item in Suggestions)
+            {
+                <li @onclick="() => SelectPlace(item)" 
+                    class="px-4 py-3 hover:bg-slate-50 dark:hover:bg-[#27353a] cursor-pointer border-b border-slate-100 dark:border-[#27353a] last:border-none flex items-start gap-3 transition-colors">
+                    
+                    <div class="mt-1 text-slate-400">
+                        <span class="material-icons-round text-sm">location_on</span>
+                    </div>
+                    <div>
+                        <div class="text-sm font-bold text-slate-700 dark:text-slate-200">
+                            @item.structured_formatting.main_text
+                        </div>
+                        <div class="text-xs text-slate-500 truncate">
+                            @item.structured_formatting.secondary_text
+                        </div>
+                    </div>
+                </li>
+            }
+        </ul>
+    }
+</div>
+
+                @* List Rooms *@
                 <div class="pt-4 border-t border-slate-200 dark:border-[#27353a]">
-                    <p class="text-xs font-bold text-slate-400 dark:text-[#6c878f] mb-4">SHOWING @Rooms.Count ROOMS</p>
-                    <div class="flex flex-col gap-3">
-                        @foreach (var room in Rooms)
-                        {
-                            <div @onclick="() => PanToRoom(room)" class="flex gap-3 p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-[#1c2126] transition-all cursor-pointer group">
-                                @* Hiển thị ảnh từ API *@
-                                <div class="size-16 rounded-lg bg-cover bg-center shrink-0 border border-slate-200 dark:border-[#27353a] bg-gray-600"
-                                     style="background-image: url('@(string.IsNullOrEmpty(room.Image) ? "/images/default-room.jpg" : room.Image)');">
+                    <p class="text-xs font-bold text-slate-400 mb-4">SHOWING @Rooms.Count ROOMS</p>
+                    @if (IsLoading)
+                    {
+                         <div class="flex justify-center py-4"><span class="text-slate-400 text-sm">Loading listings...</span></div>
+                    }
+                    else
+                    {
+                        <div class="flex flex-col gap-3">
+                            @foreach (var room in Rooms)
+                            {
+                                <div @onclick="() => PanToRoom(room)" class="flex gap-3 p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-[#1c2126] transition-all cursor-pointer group @(SelectedRoom?.Id == room.Id ? "bg-slate-100 dark:bg-[#1c2126]" : "")">
+                                    <div class="size-16 rounded-lg bg-cover bg-center shrink-0 border border-slate-200 dark:border-[#27353a] bg-gray-600"
+                                         style="background-image: url('@(string.IsNullOrEmpty(room.Image) ? "https://via.placeholder.com/150" : room.Image)');">
+                                    </div>
+                                    <div class="flex flex-col justify-center overflow-hidden">
+                                        <h4 class="text-sm font-bold truncate group-hover:text-primary">@room.Title</h4>
+                                        <p class="text-xs text-slate-500 truncate">@room.Address</p>
+                                        <p class="text-sm font-extrabold text-primary mt-1">@FormatPrice(room.Price)</p>
+                                    </div>
                                 </div>
-                                <div class="flex flex-col justify-center overflow-hidden">
-                                    <h4 class="text-sm font-bold truncate group-hover:text-primary transition-colors">@room.Title</h4>
-                                    @* Hiển thị địa chỉ *@
-                                    <p class="text-xs text-slate-500 dark:text-[#9bb3bb] truncate">@room.Address</p>
-                                    @* Format giá tiền *@
-                                    <p class="text-sm font-extrabold text-primary mt-1">@FormatPrice(room.Price)</p>
-                                </div>
-                            </div>
-                        }
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </aside>
+
+        @* --- B. MAP AREA --- *@
+        <section class="flex-1 relative bg-[#1c2126] overflow-hidden map-bg min-w-0">
+            @* Container chứa Map *@
+            <div id="google-map" class="absolute inset-0 w-full h-full z-0"></div>
+
+            @* Loading Overlay *@
+            @if (!IsMapLoaded)
+            {
+                <div class="absolute inset-0 flex items-center justify-center bg-[#1c2126] z-50">
+                    <div class="flex flex-col items-center gap-2">
+                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                        <span class="text-slate-400 text-sm">Loading Map...</span>
                     </div>
                 </div>
             }
-        </div>
-    </aside>
 
-    @* --- BẢN ĐỒ --- *@
-    <section class="flex-1 relative bg-[#1c2126] w-full h-full">
-        <div id="google-map" class="w-full h-full"></div>
+            @* --- CONTROLS (Góc dưới bên phải) --- *@
+            <div class="absolute bottom-8 right-8 flex flex-col gap-2 z-10">
+                
+                @* Nút Vị trí của tôi *@
+<div class="absolute bottom-12 right-0 flex flex-col gap-3 z-10">
+    <button @onclick="LocateUser"
+            class="size-12 rounded-xl bg-primary text-[#121416] flex items-center justify-center shadow-xl hover:bg-primary/90 active:scale-95 transition-all"
+            title="Vị trí của tôi">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-6">
+            <path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3c-.46-4.17-3.77-7.48-7.94-7.94V1h-2v2.06C6.83 3.52 3.52 6.83 3.06 11H1v2h2.06c.46 4.17 3.77 7.48 7.94 7.94V23h2v-2.06c4.17-.46 7.48-3.77 7.94-7.94H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-7z"/>
+        </svg>
+    </button>
+</div>
+                @* Nút Zoom (Visual Only - Mapbox tự có nút nếu bật NavigationControl) *@
+                @* <button class="size-12 rounded-xl bg-[#121416] border border-[#27353a] text-white flex items-center justify-center shadow-xl hover:bg-[#1c2126] transition-colors cursor-default">
+                    <span class="material-icons-round">add</span>
+                </button>
+                <button class="size-12 rounded-xl bg-[#121416] border border-[#27353a] text-white flex items-center justify-center shadow-xl hover:bg-[#1c2126] transition-colors cursor-default">
+                    <span class="material-icons-round">remove</span>
+                </button> *@
+            </div>
 
-        <div class="absolute inset-0 flex items-center justify-center bg-slate-100 pointer-events-none" style="@(IsMapLoaded ? "display:none" : "")">
-            <span class="text-slate-500">Loading Map...</span>
-        </div>
-    </section>
+            @* --- AI LEGEND (Góc trên bên phải) --- *@
+            @* <div class="absolute top-8 right-8 p-3 rounded-xl bg-[#121416]/80 backdrop-blur-md border border-[#27353a] flex items-center gap-4 z-10 pointer-events-none">
+                <div class="flex items-center gap-2">
+                    <div class="size-2 rounded-full bg-primary animate-pulse"></div>
+                    <span class="text-[10px] font-bold uppercase tracking-widest text-[#9bb3bb]">Live Matching</span>
+                </div>
+                <div class="h-4 w-px bg-[#27353a]"></div>
+                <div class="flex items-center gap-1">
+                    <span class="material-icons-round text-[14px] text-accent-green">school</span>
+                    <span class="text-[10px] font-bold uppercase tracking-widest text-[#9bb3bb]">Universities</span>
+                </div>
+            </div> *@
+
+            @* --- POPUP CARD --- *@
+            @if (SelectedRoom != null)
+            {
+                <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 animate-fade-in-up">
+                    <div class="w-72 bg-[#121416] border border-[#27353a] rounded-xl overflow-hidden shadow-2xl relative">
+                        <button @onclick="ClosePopup" class="absolute top-2 right-2 z-20 w-6 h-6 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70">
+                            <span class="material-icons-round text-sm">close</span>
+                        </button>
+                        
+                        <div class="relative h-32 w-full bg-cover bg-center bg-gray-700" 
+                             style="background-image: url('@(string.IsNullOrEmpty(SelectedRoom.Image) ? "https://via.placeholder.com/300" : SelectedRoom.Image)');">
+                             <div class="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[#121416] to-transparent"></div>
+                        </div>
+
+                        <div class="p-4">
+                            <h3 class="text-sm font-bold text-white truncate">@SelectedRoom.Title</h3>
+                            <div class="flex items-center gap-1 mt-1 text-xs text-slate-400">
+                                <span class="material-icons-round text-[14px]">location_on</span>
+                                <span class="truncate">@SelectedRoom.Address</span>
+                            </div>
+                            <div class="flex justify-between items-center mt-3">
+                                <p class="text-primary font-extrabold text-lg">@FormatPrice(SelectedRoom.Price)</p>
+                                <button class="text-xs bg-white/10 hover:bg-white/20 px-3 py-1 rounded text-white font-bold transition-colors">Details</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </section>
+    </main>
 </div>
 
 @code {
+    // --- KHAI BÁO BIẾN ---
     private bool IsMapLoaded = false;
     private bool IsLoading = true;
+    private bool _areMarkersDrawn = false;
+    
     private List<RoomDto> Rooms = new();
+    private RoomDto? SelectedRoom;
+    private DotNetObjectReference<MapDiscovery>? objRef;
 
-    // 2. Định nghĩa DTO khớp hoàn toàn với JSON trả về từ Back-end
-    public class RoomDto
-    {
-        public int Id { get; set; }
-        public string Title { get; set; }
-        public decimal Price { get; set; }
-        public double Lat { get; set; }
-        public double Lng { get; set; }
-        public string Address { get; set; }
-        public string Image { get; set; }
+    // Danh sách trường Đại học (Cố định)
+private List<UniversityDto> Universities = new()
+{
+    // --- ĐẠI HỌC ĐÀ NẴNG (UD) ---
+    new UniversityDto { Name = "ĐH Bách Khoa (DUT)", Lat = 16.0738, Lng = 108.1499 },
+    new UniversityDto { Name = "ĐH Kinh Tế (DUE)", Lat = 16.0469, Lng = 108.2430 },
+    new UniversityDto { Name = "ĐH Sư Phạm (UED)", Lat = 16.0604, Lng = 108.1585 },
+    new UniversityDto { Name = "ĐH Ngoại Ngữ (UFLS)", Lat = 16.0594, Lng = 108.2135 },
+    new UniversityDto { Name = "ĐH Sư phạm Kỹ thuật (UTE)", Lat = 16.0780, Lng = 108.2130 },
+    new UniversityDto { Name = "ĐH CNTT & TT Việt - Hàn (VKU)", Lat = 15.9751, Lng = 108.2532 },
+    new UniversityDto { Name = "Viện Nghiên cứu & Đào tạo Việt - Anh (VNUK)", Lat = 16.0762, Lng = 108.2205 },
+    new UniversityDto { Name = "Khoa Y Dược - ĐHĐN (SMP)", Lat = 16.0245, Lng = 108.2120 }, // Khu đô thị ĐHQG (Hòa Quý) hoặc 99 Hùng Vương
+
+    // --- ĐẠI HỌC CÔNG LẬP KHÁC ---
+    new UniversityDto { Name = "ĐH Thể dục Thể thao Đà Nẵng", Lat = 16.0583, Lng = 108.1834 },
+    new UniversityDto { Name = "ĐH Kỹ thuật Y Dược Đà Nẵng", Lat = 16.0688, Lng = 108.2202 },
+    new UniversityDto { Name = "Học viện Chính trị khu vực III", Lat = 16.0645, Lng = 108.2325 }, // 232 Nguyễn Công Trứ
+
+    // --- ĐẠI HỌC TƯ THỤC & QUỐC TẾ ---
+    new UniversityDto { Name = "ĐH Duy Tân (Trụ sở chính)", Lat = 16.0604, Lng = 108.2222 }, // 254 Nguyễn Văn Linh / K7 Quang Trung
+    new UniversityDto { Name = "ĐH Duy Tân (Cơ sở Hòa Khánh)", Lat = 16.0638, Lng = 108.1534 }, // Gần ĐH Sư Phạm
+    new UniversityDto { Name = "ĐH Kiến Trúc (DAU)", Lat = 16.0543, Lng = 108.2219 },
+    new UniversityDto { Name = "ĐH Đông Á (UDA)", Lat = 16.0336, Lng = 108.2155 },
+    new UniversityDto { Name = "ĐH FPT Đà Nẵng", Lat = 15.9686, Lng = 108.2607 },
+    new UniversityDto { Name = "Greenwich Việt Nam", Lat = 16.0553, Lng = 108.2366 },
+    new UniversityDto { Name = "ĐH Mỹ thuật Công nghiệp Á Châu (AUAD)", Lat = 16.0322, Lng = 108.2191 },
+    new UniversityDto { Name = "ĐH American University in Vietnam (AUV)", Lat = 15.9866, Lng = 108.2478 },
+
+    // --- KHỐI CAO ĐẲNG (CÔNG LẬP & TƯ THỤC) ---
+    new UniversityDto { Name = "CĐ Phương Đông", Lat = 16.0384, Lng = 108.2238 },
+    new UniversityDto { Name = "CĐ Thương Mại", Lat = 16.0582, Lng = 108.1847 },
+    new UniversityDto { Name = "FPT Polytechnic Đà Nẵng", Lat = 16.0518, Lng = 108.1751 },
+    new UniversityDto { Name = "CĐ Du lịch Đà Nẵng (DVTC)", Lat = 15.9892, Lng = 108.2455 },
+    new UniversityDto { Name = "CĐ Giao thông Vận tải TW V", Lat = 16.0722, Lng = 108.1408 },
+    new UniversityDto { Name = "CĐ Lương thực Thực phẩm", Lat = 16.0551, Lng = 108.2415 },
+    new UniversityDto { Name = "CĐ Kinh tế - Kế hoạch Đà Nẵng", Lat = 16.0592, Lng = 108.1633 }, // 143 Nguyễn Lương Bằng
+    new UniversityDto { Name = "CĐ Đại Việt Đà Nẵng", Lat = 16.0463, Lng = 108.2185 },
+    new UniversityDto { Name = "CĐ Lạc Việt", Lat = 16.0520, Lng = 108.1960 },
+    new UniversityDto { Name = "CĐ Văn hóa Nghệ thuật Đà Nẵng", Lat = 16.0465, Lng = 108.2388 }, // 130 Lê Quang Đạo
+    new UniversityDto { Name = "CĐ Nghề Đà Nẵng", Lat = 16.0589, Lng = 108.2403 }, // 99 Tô Hiến Thành
+    new UniversityDto { Name = "CĐ Bách Khoa Đà Nẵng", Lat = 16.0382, Lng = 108.2198 } // Lưu ý: Khác ĐH Bách Khoa (125 Phan Đăng Lưu)
+};
+
+// --- SEARCH LOGIC VARIABLES ---
+    private string SearchQuery { get; set; } = "";
+    private List<GoongPrediction> Suggestions = new();
+   private System.Timers.Timer? _debounceTimer;
+    private bool IsSearching = false;
+
+    public class GoongAutoCompleteResponse { public List<GoongPrediction> predictions { get; set; } = new(); }
+    public class GoongPrediction 
+    { 
+        public string description { get; set; } = ""; 
+        public string place_id { get; set; } = "";
+        public StructuredFormatting structured_formatting { get; set; } = new();
     }
+    public class StructuredFormatting { public string main_text { get; set; } = ""; public string secondary_text { get; set; } = ""; }
+    public class GoongDetailResponse { public GoongResult result { get; set; } = new(); }
+    public class GoongResult { public GoongGeometry geometry { get; set; } = new(); }
+    public class GoongGeometry { public GoongLocation location { get; set; } = new(); }
+    public class GoongLocation { public double lat { get; set; } public double lng { get; set; } }
 
-    // 3. Gọi API khi trang bắt đầu load
+    // --- DTO CLASSES ---
+    public class RoomDto { public int Id { get; set; } public string? Title { get; set; } public decimal Price { get; set; } public double Lat { get; set; } public double Lng { get; set; } public string? Address { get; set; } public string? Image { get; set; } }
+    public class UniversityDto { public string Name { get; set; } = ""; public double Lat { get; set; } public double Lng { get; set; } }
+
+    // --- LIFECYCLE ---
     protected override async Task OnInitializedAsync()
     {
+        _debounceTimer = new System.Timers.Timer(500);
+        _debounceTimer.AutoReset = false;
+        _debounceTimer.Elapsed += async (sender, e) => await InvokeAsync(PerformSearch);
+        objRef = DotNetObjectReference.Create(this);
         try
         {
-            // Gọi endpoint API bạn vừa viết
-            // Lưu ý: Đảm bảo BaseAddress trong Program.cs đã trỏ đúng vào port của API
-            Rooms = await Http.GetFromJsonAsync<List<RoomDto>>("api/map/locations");
+            Rooms = await Http.GetFromJsonAsync<List<RoomDto>>("api/map/locations") ?? new List<RoomDto>();
+            Console.WriteLine($"[C#] API Loaded: {Rooms.Count} rooms.");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Lỗi gọi API: {ex.Message}");
+            Console.WriteLine($"[C#] API Error: {ex.Message}");
         }
         finally
         {
             IsLoading = false;
+            StateHasChanged();
         }
     }
 
@@ -101,51 +319,161 @@
         {
             try
             {
-                var apiKey = Configuration["GoogleMaps:ApiKey"];
+                var mapKey = Configuration["GoongSettings:MapKey"];
+                var apiKey = Configuration["GoongSettings:ApiKey"];
+                await JSRuntime.InvokeVoidAsync("uniNestMap.setKeys", mapKey, apiKey);
 
-                // Load thư viện Maps
-                await JSRuntime.InvokeVoidAsync("uniNestMap.loadGoogleMapsScript", apiKey);
+                // 1. Init Map (Tọa độ ĐH Bách Khoa ĐN)
+                await JSRuntime.InvokeVoidAsync("uniNestMap.initMap", "google-map", 16.0738, 108.1499, 14);
 
-                // Khởi tạo Map (Center mặc định Đà Nẵng)
-                await JSRuntime.InvokeVoidAsync("uniNestMap.initMap", "google-map", 16.0544, 108.2022, 13);
-
-                // Chờ một chút để đảm bảo data đã load xong (nếu mạng chậm)
-                // Trong thực tế có thể dùng StateHasChanged để trigger lại
-                if (Rooms != null && Rooms.Any())
-                {
-                    foreach (var room in Rooms)
-                    {
-                        // Gọi hàm JS addMarker với dữ liệu thật
-                        await JSRuntime.InvokeVoidAsync("uniNestMap.addMarker",
-                            room.Lat,
-                            room.Lng,
-                            room.Title,
-                            FormatPrice(room.Price),
-                            room.Address);
-                    }
-                }
-
-                IsMapLoaded = true;
-                StateHasChanged();
+                // 2. Vẽ các trường Đại học (quan trọng)
+                _ = DrawUniversities();
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Lỗi tải Map JS: " + ex.Message);
+                Console.WriteLine("Map Init Error: " + ex.Message);
             }
+            finally 
+            {
+                IsMapLoaded = true;
+                StateHasChanged();
+            }
+
+            // 3. Tự động định vị sau 1.5s
+            await Task.Delay(1500);
+            await LocateUser();
+        }
+
+        // 4. Vẽ Marker phòng trọ (sau khi có API và Map)
+        if (IsMapLoaded && Rooms.Any() && !_areMarkersDrawn)
+        {
+            await DrawMarkers();
+        }
+    }
+
+    private void OnSearchInput(ChangeEventArgs e)
+    {
+        SearchQuery = e.Value?.ToString() ?? "";
+        _debounceTimer?.Stop(); // Reset timer
+        
+        if (string.IsNullOrWhiteSpace(SearchQuery))
+        {
+            Suggestions.Clear();
+            IsSearching = false;
+            return;
+        }
+        
+        IsSearching = true; // Show loading spinner
+        _debounceTimer?.Start(); // Start countdown
+    }
+    private void ClearSearch()
+    {
+        SearchQuery = "";
+        Suggestions.Clear();
+        IsSearching = false;
+    }
+
+    private async Task PerformSearch()
+    {
+        try
+        {
+            var apiKey = Configuration["GoongSettings:ApiKey"];
+            // API: Autocomplete (Có location bias ở Đà Nẵng để tìm chính xác hơn)
+            var url = $"https://rsapi.goong.io/Place/AutoComplete?api_key={apiKey}&input={SearchQuery}&location=16.0738,108.1499";
+            
+            var result = await Http.GetFromJsonAsync<GoongAutoCompleteResponse>(url);
+            Suggestions = result?.predictions ?? new();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Search Error: " + ex.Message);
+        }
+        finally
+        {
+            IsSearching = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task SelectPlace(GoongPrediction item)
+    {
+        // 1. Ẩn gợi ý
+        SearchQuery = item.structured_formatting.main_text; // Điền text vào ô
+        Suggestions.Clear();
+
+        try 
+        {
+            // 2. Gọi API Detail để lấy tọa độ
+            var apiKey = Configuration["GoongSettings:ApiKey"];
+            var url = $"https://rsapi.goong.io/Place/Detail?api_key={apiKey}&place_id={item.place_id}";
+            var detail = await Http.GetFromJsonAsync<GoongDetailResponse>(url);
+
+            if (detail?.result?.geometry?.location != null)
+            {
+                var lat = detail.result.geometry.location.lat;
+                var lng = detail.result.geometry.location.lng;
+
+                // 3. Bay tới đó
+                await JSRuntime.InvokeVoidAsync("uniNestMap.map.flyTo", new { center = new[] { lng, lat }, zoom = 16 });
+
+                // 4. Vẽ Marker Đỏ (Search Marker)
+                await JSRuntime.InvokeVoidAsync("uniNestMap.addSearchMarker", lat, lng, item.description);
+            }
+        }
+        catch(Exception ex)
+        {
+            Console.WriteLine("Select Place Error: " + ex.Message);
+        }
+    }
+    // --- HELPERS ---
+    private async Task DrawUniversities()
+    {
+        foreach (var uni in Universities)
+        {
+            // Gọi hàm addUniversityMarker bên JS
+            await JSRuntime.InvokeVoidAsync("uniNestMap.addUniversityMarker", uni.Lat, uni.Lng, uni.Name);
+        }
+    }
+
+    private async Task DrawMarkers()
+    {
+        foreach (var room in Rooms)
+        {
+            await JSRuntime.InvokeVoidAsync("uniNestMap.addMarker", objRef, room.Id, room.Lat, room.Lng, room.Title, FormatPrice(room.Price), room.Address);
+        }
+        _areMarkersDrawn = true;
+    }
+
+    private async Task LocateUser()
+    {
+        try 
+        {
+            await JSRuntime.InvokeVoidAsync("uniNestMap.locateUser");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Locate Error (ignore if localhost): " + ex.Message);
         }
     }
 
     private async Task PanToRoom(RoomDto room)
     {
-        await JSRuntime.InvokeVoidAsync("uniNestMap.map.panTo", new { lat = room.Lat, lng = room.Lng });
-        await JSRuntime.InvokeVoidAsync("uniNestMap.map.setZoom", 16);
+        SelectedRoom = room;
+        await JSRuntime.InvokeVoidAsync("uniNestMap.map.flyTo", new { center = new[] { room.Lng, room.Lat }, zoom = 15.5 });
+        await JSRuntime.InvokeVoidAsync("uniNestMap.triggerMarkerPopup", room.Id);
     }
 
-    // Hàm format tiền tệ (Ví dụ: 2500000 -> 2.5M hoặc 2,500,000 đ)
-    private string FormatPrice(decimal price)
+    [JSInvokable]
+    public void OnMarkerClick(int roomId)
     {
-        if (price >= 1000000)
-            return $"{(price / 1000000):0.##}M"; // 2.5M
-        return $"{price:N0} đ";
+        SelectedRoom = Rooms.FirstOrDefault(r => r.Id == roomId);
+        StateHasChanged();
+    }
+
+    private void ClosePopup() => SelectedRoom = null;
+    private string FormatPrice(decimal price) => price >= 1000000 ? $"{(price / 1000000):0.##}M" : $"{price:N0} đ";
+    public void Dispose() {
+        _debounceTimer?.Dispose();
+         objRef?.Dispose();
     }
 }

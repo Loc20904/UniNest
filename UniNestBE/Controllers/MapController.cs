@@ -1,8 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 [Route("api/[controller]")]
 [ApiController]
+
 public class MapController : ControllerBase
 {
     private readonly UniNestDbContext _context;
@@ -13,6 +15,7 @@ public class MapController : ControllerBase
     }
 
     [HttpGet("locations")]
+    [AllowAnonymous]
     public async Task<IActionResult> GetLocations()
     {
         // Lấy Listing kèm theo Address và Ảnh đại diện
