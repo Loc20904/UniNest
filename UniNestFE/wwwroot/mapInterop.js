@@ -6,6 +6,56 @@
     geolocateControl: null,
     searchMarker: null,
 
+    toggleTheme: function (isDark) {
+        if (isDark) {
+            document.documentElement.classList.add('dark');
+            localStorage.setItem('theme', 'dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+            localStorage.setItem('theme', 'light');
+        }
+    },
+
+    searchMarker: null,
+
+    // ------------------------------------------------
+    // CALCULATE DISTANCE (USER -> MARKER)
+    // ------------------------------------------------
+    calculateDistanceTo: function (destLat, destLng) {
+        if (!this.apiKey) return;
+
+        // Get current location
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition((position) => {
+                const userLat = position.coords.latitude;
+                const userLng = position.coords.longitude;
+
+                const origin = `${userLat},${userLng}`;
+                const destination = `${destLat},${destLng}`;
+
+                // Use Motorbike by default
+                const url = `https://rsapi.goong.io/DistanceMatrix?origins=${origin}&destinations=${destination}&vehicle=bike&api_key=${this.apiKey}`;
+
+                fetch(url)
+                    .then(res => res.json())
+                    .then(data => {
+                        const row = data.rows?.[0]?.elements?.[0];
+                        if (row?.status === "OK") {
+                            // Call back to Blazor
+                            if (this.dotNetRef) {
+                                this.dotNetRef.invokeMethodAsync('UpdateDistanceResult', row.distance.text);
+                            }
+                        } else {
+                            if (this.dotNetRef) {
+                                this.dotNetRef.invokeMethodAsync('UpdateDistanceResult', "N/A");
+                            }
+                        }
+                    })
+                    .catch(err => console.error(err));
+            });
+        }
+    },
+
     // ------------------------------------------------
     // SET KEYS
     // ------------------------------------------------
@@ -18,9 +68,11 @@
     // ------------------------------------------------
     // INIT MAP
     // ------------------------------------------------
-    initMap: function (elementId, lat, lng, zoom) {
+    initMap: function (dotNetRef, elementId, lat, lng, zoom) {
         if (!window.goongjs) { console.error("Thư viện goong-js chưa load!"); return; }
         if (!this.mapKey) { console.error("Chưa có Map Key!"); return; }
+
+        this.dotNetRef = dotNetRef; // Store reference
 
         goongjs.accessToken = this.mapKey;
 
@@ -64,11 +116,21 @@
         }
     },
 
+    clearMarkers: function () {
+        for (const id in this.markers) {
+            this.markers[id].remove();
+        }
+        this.markers = {};
+    },
+
     // ------------------------------------------------
     // ADD MARKER (ROOM)
     // ------------------------------------------------
     addMarker: function (dotNetRef, id, lat, lng, title, price, address) {
         if (!this.map) return;
+
+        // Return if marker already exists to avoid duplicates
+        if (this.markers[id]) return;
 
         const popupContent = `
             <div style="font-family: sans-serif; padding: 5px; min-width: 150px;">
@@ -77,6 +139,8 @@
                 <p style="margin: 0; font-weight: bold; color: #ea580c;">${price}</p>
             </div>
         `;
+
+        // ... rest of function ...
 
         const popup = new goongjs.Popup({ offset: 25, closeButton: false }).setHTML(popupContent);
 
@@ -178,7 +242,7 @@
     // ------------------------------------------------
     // [MỚI] ADD MARKER TRƯỜNG ĐẠI HỌC
     // ------------------------------------------------
-addUniversityMarker: function (lat, lng, name) {
+    addUniversityMarker: function (lat, lng, name) {
         if (!this.map) return;
 
         const el = document.createElement('div');

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace UniNestBE.Migrations
 {
     [DbContext(typeof(UniNestDbContext))]
-    partial class UniNestDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260123030552_ModifyUser")]
+    partial class ModifyUser
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -97,11 +100,6 @@ namespace UniNestBE.Migrations
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("GenderPreference")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
                     b.Property<bool>("IsAvailable")
                         .HasColumnType("bit");
 
@@ -127,8 +125,7 @@ namespace UniNestBE.Migrations
                         {
                             ListingId = 1,
                             AreaSquareMeters = 20.0,
-                            CreatedAt = new DateTime(2026, 1, 23, 10, 40, 16, 440, DateTimeKind.Local).AddTicks(9674),
-                            GenderPreference = "Any",
+                            CreatedAt = new DateTime(2026, 1, 23, 10, 5, 49, 825, DateTimeKind.Local).AddTicks(6262),
                             IsAvailable = true,
                             OwnerId = 1,
                             Price = 1500000m,
@@ -138,8 +135,7 @@ namespace UniNestBE.Migrations
                         {
                             ListingId = 2,
                             AreaSquareMeters = 40.0,
-                            CreatedAt = new DateTime(2026, 1, 23, 10, 40, 16, 440, DateTimeKind.Local).AddTicks(9715),
-                            GenderPreference = "Any",
+                            CreatedAt = new DateTime(2026, 1, 23, 10, 5, 49, 825, DateTimeKind.Local).AddTicks(6277),
                             IsAvailable = true,
                             OwnerId = 1,
                             Price = 3500000m,
@@ -192,9 +188,6 @@ namespace UniNestBE.Migrations
                     b.Property<bool>("Gender")
                         .HasColumnType("bit");
 
-                    b.Property<bool>("IsVerified")
-                        .HasColumnType("bit");
-
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -220,7 +213,6 @@ namespace UniNestBE.Migrations
                             Email = "admin@udn.vn",
                             FullName = "Admin Demo",
                             Gender = false,
-                            IsVerified = false,
                             PasswordHash = "123",
                             Role = "admin"
                         });

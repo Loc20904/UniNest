@@ -11,6 +11,8 @@ public class User
     [MaxLength(100)]
     public string FullName { get; set; }
 
+    public bool Gender { get; set; }
+
     [Required]
     [EmailAddress]
     public string Email { get; set; }
@@ -19,6 +21,8 @@ public class User
 
     public string? PhoneNumber { get; set; }
     public string? StudentAvatar { get; set; }
+
+    public bool IsVerified { get; set; } = false;
 
     // Navigation Properties (Quan hệ)
     public ICollection<Listing> Listings { get; set; }

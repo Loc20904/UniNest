@@ -23,6 +23,9 @@ public class Listing
 
     public bool IsAvailable { get; set; } = true;
 
+    [MaxLength(20)]
+    public string GenderPreference { get; set; } = "Any"; // Male, Female, Any
+
     public DateTime CreatedAt { get; set; } = DateTime.Now;
 
     // Quan hệ 1-1 hoặc 1-n: Một bài đăng có 1 địa chỉ

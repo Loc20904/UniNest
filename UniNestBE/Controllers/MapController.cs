@@ -31,7 +31,10 @@ public class MapController : ControllerBase
                 Lat = l.Address.Latitude,
                 Lng = l.Address.Longitude,
                 Address = l.Address.FullAddress,
-                Image = l.Images.FirstOrDefault(i => i.IsPrimary).ImageUrl ?? "default.jpg"
+                Image = l.Images.FirstOrDefault(i => i.IsPrimary).ImageUrl ?? "default.jpg",
+                Gender = l.GenderPreference,
+                IsVerified = l.Owner.IsVerified,
+                OwnerID = l.OwnerId
             })
             .ToListAsync();
 

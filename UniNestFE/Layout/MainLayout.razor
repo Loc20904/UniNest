@@ -1,5 +1,6 @@
 ﻿@inherits LayoutComponentBase
 @using Microsoft.AspNetCore.Components.Authorization
+@inject IJSRuntime JSRuntime
 
 <div class="h-screen flex flex-col bg-background-light dark:bg-background-dark text-slate-900 dark:text-white font-display">
 
@@ -28,6 +29,18 @@
 
             <div class="h-6 w-px bg-slate-200 dark:bg-[#27353a] mx-2"></div>
 
+            @* Theme Toggle *@
+            <button @onclick="ToggleTheme" class="p-2 rounded-full bg-slate-100 dark:bg-[#27353a] text-slate-500 dark:text-emerald-400 hover:scale-110 transition-transform">
+                @if (IsDarkMode)
+                {
+                    <span class="material-icons-round text-xl">light_mode</span>
+                }
+                else
+                {
+                    <span class="material-icons-round text-xl">dark_mode</span>
+                }
+            </button>
+
             <AuthorizeView>
                 <Authorized>
                     <button class="flex items-center justify-center rounded-xl h-10 px-5 bg-primary text-background-dark text-sm font-bold transition-transform active:scale-95 hover:brightness-110">
@@ -54,4 +67,29 @@
 
 @code {
     [Inject] NavigationManager NavigationManager { get; set; }
+
+    private bool IsDarkMode = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Check current theme from localStorage if possible, or just default
+            // Here we assume light, but we could check JS
+            var theme = await JSRuntime.InvokeAsync<string>("eval", "localStorage.getItem('theme')");
+            if (theme == "dark")
+            {
+                IsDarkMode = true;
+                StateHasChanged();
+                // Ensure class is set
+                 await JSRuntime.InvokeVoidAsync("uniNestMap.toggleTheme", true);
+            }
+        }
+    }
+
+    private async Task ToggleTheme()
+    {
+        IsDarkMode = !IsDarkMode;
+        await JSRuntime.InvokeVoidAsync("uniNestMap.toggleTheme", IsDarkMode);
+    }
 }

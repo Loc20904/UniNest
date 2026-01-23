@@ -48,13 +48,21 @@
         <aside class="w-[380px] flex flex-col border-r border-slate-200 dark:border-[#27353a] bg-[#fafaf9] dark:bg-[#121416] z-40 overflow-y-auto custom-scrollbar shrink-0">
             <div class="p-6 flex flex-col gap-6">
                 @* Header Sidebar *@
-                <div>
-                    <h1 class="text-2xl font-extrabold tracking-tight">Find Your Base</h1>
-                    <p class="text-slate-500 dark:text-[#9bb3bb] text-sm">Campus-centric living in Da Nang</p>
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h1 class="text-2xl font-extrabold tracking-tight">Find Your Base</h1>
+                        <p class="text-slate-500 dark:text-[#9bb3bb] text-sm">Campus-centric living in Da Nang</p>
+                    </div>
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h1 class="text-2xl font-extrabold tracking-tight">Find Your Base</h1>
+                        <p class="text-slate-500 dark:text-[#9bb3bb] text-sm">Campus-centric living in Da Nang</p>
+                    </div>
+                </div>
                 </div>
                 
                 @* Search Bar *@
-<div class="relative z-50"> <label class="flex flex-col w-full">
+    <div class="relative z-50"> <label class="flex flex-col w-full">
         <div class="flex w-full items-stretch rounded-xl h-12 bg-slate-100 dark:bg-[#27353a] border border-transparent focus-within:border-primary/50 transition-all relative">
             <div class="text-slate-400 flex items-center justify-center pl-4">
                 <span class="material-icons-round">search</span>
@@ -64,7 +72,7 @@
             <input @bind="SearchQuery" 
                    @oninput="OnSearchInput"
                    class="w-full border-none bg-transparent focus:ring-0 outline-none text-sm font-medium px-3 dark:text-white" 
-                   placeholder="Tìm địa điểm, trường học..."/>
+                   placeholder="Find locations, schools..."/>
 
             @* Nút Xóa Search *@
             @if (!string.IsNullOrEmpty(SearchQuery))
@@ -102,9 +110,171 @@
     }
 </div>
 
+                @* --- BẮT ĐẦU: BỘ LỌC (FILTER SECTION) --- *@
+@* 1. Gender Filters *@
+<div class="space-y-3">
+    @* Header: Icon + Text ngắn gọn *@
+    <div class="flex items-center gap-2 text-slate-400 dark:text-[#6c878f]">
+        <h3 class="text-xs font-bold uppercase tracking-widest">Gender</h3>
+    </div>
+
+    <div class="flex gap-2 w-full">
+        @* Option: Any *@
+        <div @onclick='() => SetGender("Any")'
+             title="Any Gender"
+             class="flex-1 h-11 items-center justify-center rounded-xl cursor-pointer transition-all border flex gap-2
+                    @(SelectedGender == "Any" 
+                        ? "bg-primary border-primary text-[#121416] shadow-lg shadow-primary/30" 
+                        : "bg-white dark:bg-[#27353a] border-slate-200 dark:border-[#3a4e55] hover:border-primary/50 text-slate-500 dark:text-slate-300")">
+            <i class="fa-solid fa-user-group text-lg"></i>
+            <span class="text-xs font-bold">Any</span>
+        </div>
+        
+        @* Option: Male *@
+        <div @onclick='() => SetGender("Male")'
+             title="Male Only"
+             class="flex-1 h-11 items-center justify-center rounded-xl cursor-pointer transition-all border flex gap-2
+                    @(SelectedGender == "Male" 
+                        ? "bg-primary border-primary text-[#121416] shadow-lg shadow-primary/30" 
+                        : "bg-white dark:bg-[#27353a] border-slate-200 dark:border-[#3a4e55] hover:border-primary/50 text-slate-500 dark:text-slate-300")">
+            <i class="fa-solid fa-mars text-lg"></i>
+            <span class="text-xs font-bold">Male</span>
+        </div>
+        
+        @* Option: Female *@
+        <div @onclick='() => SetGender("Female")'
+             title="Female Only"
+             class="flex-1 h-11 items-center justify-center rounded-xl cursor-pointer transition-all border flex gap-2
+                    @(SelectedGender == "Female" 
+                        ? "bg-primary border-primary text-[#121416] shadow-lg shadow-primary/30" 
+                        : "bg-white dark:bg-[#27353a] border-slate-200 dark:border-[#3a4e55] hover:border-primary/50 text-slate-500 dark:text-slate-300")">
+            <i class="fa-solid fa-venus text-lg"></i>
+            <span class="text-xs font-bold">Female</span>
+        </div>
+    </div>
+</div>
+
+@* 2. Price Slider *@
+<div class="space-y-4 pt-2">
+    <div class="flex items-center justify-between">
+        @* Header: Icon + Text *@
+        <div class="flex items-center gap-2 text-slate-400 dark:text-[#6c878f]">
+            <span class="material-icons-round text-lg">payments</span>
+            <h3 class="text-xs font-bold uppercase tracking-widest">Price (VND)</h3>
+        </div>
+    </div>
+
+    @* Slider Range *@
+    <div class="pt-2 pb-0 px-1 relative h-6">
+        @* Visual Track Background (Gray) *@
+        <div class="absolute top-1/2 -translate-y-1/2 left-0 right-0 h-1 bg-slate-200 dark:bg-[#3a4e55] rounded-full z-0"></div>
+
+        @* Visual Selected Range (Active Color) *@
+        <div class="absolute top-1/2 -translate-y-1/2 h-1 bg-primary rounded-full z-0"
+             style="left: @(MinPrice / 100000)%; width: @(Math.Max(0, (MaxPrice - MinPrice) / 100000))%;">
+        </div>
+        
+        @* Slider Min *@
+        <input type="range" min="0" max="10000000" step="500000" 
+               @bind="MinPrice" @bind:event="oninput" @bind:after="FilterRooms"
+               class="range-slider z-20" />
+               
+        @* Slider Max *@
+        <input type="range" min="0" max="10000000" step="500000" 
+               @bind="MaxPrice" @bind:event="oninput" @bind:after="FilterRooms"
+               class="range-slider z-10" />
+    </div>
+
+    @* Inputs Min - Max *@
+    <div class="flex items-center gap-2">
+        <div class="relative flex-1">
+            <input type="number" min="0" max="10000000" step="500000"
+                   @bind="MinPrice" @bind:after="FilterRooms"
+                   class="w-full pl-2 pr-1 py-1.5 text-xs font-bold text-center border border-slate-200 dark:border-[#27353a] rounded-lg bg-white dark:bg-[#1c2126] focus:ring-1 focus:ring-primary focus:border-primary outline-none text-slate-700 dark:text-slate-200" />
+            <span class="absolute right-8 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 hidden">đ</span>
+        </div>
+        <span class="text-slate-400 font-bold">-</span>
+        <div class="relative flex-1">
+            <input type="number" min="0" max="10000000" step="500000"
+                   @bind="MaxPrice" @bind:after="FilterRooms"
+                   class="w-full pl-2 pr-1 py-1.5 text-xs font-bold text-center border border-slate-200 dark:border-[#27353a] rounded-lg bg-white dark:bg-[#1c2126] focus:ring-1 focus:ring-primary focus:border-primary outline-none text-slate-700 dark:text-slate-200" />
+        </div>
+    </div>
+    
+    @* CSS riêng cho Range Slider *@
+    <style>
+        .range-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 100%; /* Full height to align vertically */
+            background: transparent;
+            pointer-events: none; /* Cho phép click xuyên qua track */
+            position: absolute;
+            left: 0;
+            top: 0;
+        }
+        .range-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            pointer-events: auto; /* Bật lại click cho nút kéo */
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #ffffff;
+            border: 2px solid #06b5ef;
+            cursor: pointer;
+            margin-top: -6px; /* Canh giữa so với track (track cao 4px, thumb cao 16px -> -6px) */
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        }
+        .range-slider::-moz-range-thumb {
+             pointer-events: auto;
+             height: 16px;
+             width: 16px;
+             border: none;
+             border-radius: 50%;
+             background: #ffffff;
+             border: 2px solid #06b5ef;
+             cursor: pointer;
+             box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        }
+        .range-slider::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            background: transparent; /* Track thật ẩn đi */
+        }
+    </style>
+</div>
+
+@* 3. Verification Toggle *@
+<div @onclick="ToggleVerified" 
+     class="flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all group
+            @(IsStudentVerified 
+                ? "bg-emerald-50 dark:bg-emerald-500/10 border-emerald-500/40 shadow-sm" 
+                : "bg-white dark:bg-[#1c2126] border-slate-200 dark:border-[#27353a] hover:border-emerald-500/30")">
+    
+    <div class="flex items-center gap-3">
+        <div class="size-9 rounded-full flex items-center justify-center transition-colors 
+                    @(IsStudentVerified ? "bg-emerald-500 text-white shadow-md" : "bg-slate-100 dark:bg-[#27353a] text-slate-400")">
+            <span class="material-icons-round text-[18px]">verified_user</span>
+        </div>
+        <div class="flex flex-col">
+            <span class="text-xs font-bold uppercase tracking-wide @(IsStudentVerified ? "text-emerald-600 dark:text-emerald-400" : "text-slate-500 dark:text-slate-400")">
+                Verified Host
+            </span>
+            <span class="text-[10px] text-slate-400">Student ID Check</span>
+        </div>
+    </div>
+    
+    @* Toggle Switch UI *@
+    <div class="w-10 h-5 rounded-full relative transition-colors @(IsStudentVerified ? "bg-emerald-500" : "bg-slate-300 dark:bg-[#3a4e55]")">
+        <div class="absolute top-0.5 size-4 bg-white rounded-full transition-all shadow-sm @(IsStudentVerified ? "right-0.5" : "left-0.5")"></div>
+    </div>
+</div>
+                @* --- KẾT THÚC: BỘ LỌC --- *@
+
                 @* List Rooms *@
                 <div class="pt-4 border-t border-slate-200 dark:border-[#27353a]">
-                    <p class="text-xs font-bold text-slate-400 mb-4">SHOWING @Rooms.Count ROOMS</p>
+                    <p class="text-xs font-bold text-slate-400 mb-4">SHOWING @FilteredRooms.Count ROOMS</p>
                     @if (IsLoading)
                     {
                          <div class="flex justify-center py-4"><span class="text-slate-400 text-sm">Loading listings...</span></div>
@@ -112,7 +282,7 @@
                     else
                     {
                         <div class="flex flex-col gap-3">
-                            @foreach (var room in Rooms)
+                            @foreach (var room in FilteredRooms)
                             {
                                 <div @onclick="() => PanToRoom(room)" class="flex gap-3 p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-[#1c2126] transition-all cursor-pointer group @(SelectedRoom?.Id == room.Id ? "bg-slate-100 dark:bg-[#1c2126]" : "")">
                                     <div class="size-16 rounded-lg bg-cover bg-center shrink-0 border border-slate-200 dark:border-[#27353a] bg-gray-600"
@@ -163,7 +333,7 @@
                 @* Nút Zoom (Visual Only - Mapbox tự có nút nếu bật NavigationControl) *@
                 @* <button class="size-12 rounded-xl bg-[#121416] border border-[#27353a] text-white flex items-center justify-center shadow-xl hover:bg-[#1c2126] transition-colors cursor-default">
                     <span class="material-icons-round">add</span>
-                </button>
+                    </button>
                 <button class="size-12 rounded-xl bg-[#121416] border border-[#27353a] text-white flex items-center justify-center shadow-xl hover:bg-[#1c2126] transition-colors cursor-default">
                     <span class="material-icons-round">remove</span>
                 </button> *@
@@ -186,25 +356,46 @@
             @if (SelectedRoom != null)
             {
                 <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 animate-fade-in-up">
-                    <div class="w-72 bg-[#121416] border border-[#27353a] rounded-xl overflow-hidden shadow-2xl relative">
-                        <button @onclick="ClosePopup" class="absolute top-2 right-2 z-20 w-6 h-6 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70">
+                    <div class="w-80 bg-[#121416] border border-[#27353a] rounded-xl overflow-hidden shadow-2xl relative">
+                        <button @onclick="ClosePopup" class="absolute top-2 right-2 z-20 w-7 h-7 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80 transition-colors backdrop-blur-sm">
                             <span class="material-icons-round text-sm">close</span>
                         </button>
                         
-                        <div class="relative h-32 w-full bg-cover bg-center bg-gray-700" 
+                        <div class="relative h-40 w-full bg-cover bg-center bg-gray-700" 
                              style="background-image: url('@(string.IsNullOrEmpty(SelectedRoom.Image) ? "https://via.placeholder.com/300" : SelectedRoom.Image)');">
-                             <div class="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[#121416] to-transparent"></div>
+                             <div class="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-[#121416] via-[#121416]/80 to-transparent"></div>
+                             
+                             @if(SelectedRoom.IsVerified)
+                             {
+                                 <div class="absolute top-2 left-2 bg-emerald-500/90 backdrop-blur-md text-white text-[10px] font-bold px-2 py-1 rounded-lg flex items-center gap-1 shadow-lg">
+                                     <span class="material-icons-round text-[12px]">verified</span>
+                                     VERIFIED HOST
+                                 </div>
+                             }
                         </div>
 
-                        <div class="p-4">
-                            <h3 class="text-sm font-bold text-white truncate">@SelectedRoom.Title</h3>
-                            <div class="flex items-center gap-1 mt-1 text-xs text-slate-400">
-                                <span class="material-icons-round text-[14px]">location_on</span>
+                        <div class="p-5 -mt-2 relative z-10">
+                            <h3 class="text-base font-bold text-white truncate leading-tight">@SelectedRoom.Title</h3>
+                            
+                            <div class="flex items-center gap-2 mt-2 text-xs text-slate-400">
+                                <span class="material-icons-round text-sm shrink-0">location_on</span>
                                 <span class="truncate">@SelectedRoom.Address</span>
                             </div>
-                            <div class="flex justify-between items-center mt-3">
-                                <p class="text-primary font-extrabold text-lg">@FormatPrice(SelectedRoom.Price)</p>
-                                <button class="text-xs bg-white/10 hover:bg-white/20 px-3 py-1 rounded text-white font-bold transition-colors">Details</button>
+
+                            @* Distance (Placeholder - updated via JS) *@
+                            <div class="flex items-center gap-2 mt-1 text-xs text-emerald-400">
+                                <span class="material-icons-round text-sm shrink-0">near_me</span>
+                                <span class="font-bold">@CurrentDistance</span>
+                            </div>
+
+                            <div class="flex justify-between items-center mt-4 pt-3 border-t border-[#27353a]">
+                                <div>
+                                    <p class="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Price/Month</p>
+                                    <p class="text-primary font-extrabold text-xl">@FormatPrice(SelectedRoom.Price)</p>
+                                </div>
+                                <button class="text-xs bg-primary hover:bg-primary/90 text-[#121416] px-4 py-2 rounded-lg font-bold transition-all shadow-lg shadow-primary/20 hover:shadow-primary/40 transform hover:-translate-y-0.5">
+                                    View Details
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -216,13 +407,44 @@
 
 @code {
     // --- KHAI BÁO BIẾN ---
+
+    // Giá trị: "Any", "Male", "Female"
+    private string SelectedGender = "Any"; 
+    private bool IsStudentVerified = false;
+    private double MinPrice = 1500000;
+    private double MaxPrice = 4000000;
+
     private bool IsMapLoaded = false;
     private bool IsLoading = true;
     private bool _areMarkersDrawn = false;
     
     private List<RoomDto> Rooms = new();
+    private List<RoomDto> FilteredRooms = new(); // List hiển thị
+    private string CurrentDistance = "-- km";
     private RoomDto? SelectedRoom;
     private DotNetObjectReference<MapDiscovery>? objRef;
+
+    [JSInvokable]
+    public async Task OnMarkerClick(int id)
+    {
+        SelectedRoom = Rooms.FirstOrDefault(r => r.Id == id);
+        CurrentDistance = "Calculating...";
+        StateHasChanged();
+        
+        if (SelectedRoom != null)
+        {
+             // Call JS to calculate distance from User Location -> Room
+             // Note: User location is tracked by Mapbox GL Geolocation Control, accessed via mapInterop.js
+             await JSRuntime.InvokeVoidAsync("uniNestMap.calculateDistanceTo", SelectedRoom.Lat, SelectedRoom.Lng);
+        }
+    }
+
+    [JSInvokable]
+    public void UpdateDistanceResult(string distanceText)
+    {
+        CurrentDistance = distanceText;
+        StateHasChanged();
+    }
 
     // Danh sách trường Đại học (Cố định)
 private List<UniversityDto> Universities = new()
@@ -287,7 +509,19 @@ private List<UniversityDto> Universities = new()
     public class GoongLocation { public double lat { get; set; } public double lng { get; set; } }
 
     // --- DTO CLASSES ---
-    public class RoomDto { public int Id { get; set; } public string? Title { get; set; } public decimal Price { get; set; } public double Lat { get; set; } public double Lng { get; set; } public string? Address { get; set; } public string? Image { get; set; } }
+    public class RoomDto 
+    { 
+        public int Id { get; set; } 
+        public string? Title { get; set; } 
+        public decimal Price { get; set; } 
+        public double Lat { get; set; } 
+        public double Lng { get; set; } 
+        public string? Address { get; set; } 
+        public string? Image { get; set; } 
+        // --- BỔ SUNG PROPERTIES CHO FILTER ---
+        public string Gender { get; set; } = "Any"; // Value: Male, Female, Any
+        public bool IsVerified { get; set; } = false;
+    }
     public class UniversityDto { public string Name { get; set; } = ""; public double Lat { get; set; } public double Lng { get; set; } }
 
     // --- LIFECYCLE ---
@@ -300,6 +534,8 @@ private List<UniversityDto> Universities = new()
         try
         {
             Rooms = await Http.GetFromJsonAsync<List<RoomDto>>("api/map/locations") ?? new List<RoomDto>();
+            
+            FilterRooms(); // Khởi tạo danh sách hiển thị
             Console.WriteLine($"[C#] API Loaded: {Rooms.Count} rooms.");
         }
         catch (Exception ex)
@@ -324,7 +560,7 @@ private List<UniversityDto> Universities = new()
                 await JSRuntime.InvokeVoidAsync("uniNestMap.setKeys", mapKey, apiKey);
 
                 // 1. Init Map (Tọa độ ĐH Bách Khoa ĐN)
-                await JSRuntime.InvokeVoidAsync("uniNestMap.initMap", "google-map", 16.0738, 108.1499, 14);
+                await JSRuntime.InvokeVoidAsync("uniNestMap.initMap", objRef, "google-map", 16.0738, 108.1499, 14);
 
                 // 2. Vẽ các trường Đại học (quan trọng)
                 _ = DrawUniversities();
@@ -345,9 +581,9 @@ private List<UniversityDto> Universities = new()
         }
 
         // 4. Vẽ Marker phòng trọ (sau khi có API và Map)
-        if (IsMapLoaded && Rooms.Any() && !_areMarkersDrawn)
+        if (IsMapLoaded && FilteredRooms.Any() && !_areMarkersDrawn)
         {
-            await DrawMarkers();
+            await UpdateMapMarkers();
         }
     }
 
@@ -435,13 +671,63 @@ private List<UniversityDto> Universities = new()
         }
     }
 
+    // --- LOGIC FILTERING ---
+    private void SetGender(string gender)
+    {
+        SelectedGender = gender;
+        FilterRooms();
+    }
+    private void ToggleVerified()
+    {
+        IsStudentVerified = !IsStudentVerified;
+        FilterRooms();
+    }
+    
+    private void FilterRooms()
+    {
+        // Ensure Min <= Max
+        if (MinPrice > MaxPrice)
+        {
+            var temp = MinPrice;
+            MinPrice = MaxPrice;
+            MaxPrice = temp;
+        }
+
+        FilteredRooms = Rooms.Where(r => 
+            // 1. Filter Gender (If user selects 'Male', show 'Male' + 'Any'. If 'Any', show all)
+            (SelectedGender == "Any" || r.Gender == SelectedGender || r.Gender == "Any") &&
+            
+            // 2. Filter Verified
+            (!IsStudentVerified || r.IsVerified) &&
+            
+            // 3. Filter Price
+            (r.Price >= (decimal)MinPrice && r.Price <= (decimal)MaxPrice)
+        ).ToList();
+
+        // Trigger update map
+        _ = UpdateMapMarkers();
+        StateHasChanged();
+    }
+
+    private async Task UpdateMapMarkers()
+    {
+        if (!IsMapLoaded) return;
+        
+        // 1. Xóa marker cũ
+        await JSRuntime.InvokeVoidAsync("uniNestMap.clearMarkers");
+        
+        // 2. Vẽ marker mới từ danh sách đã lọc
+        await DrawMarkers();
+        _areMarkersDrawn = true;
+    }
+
     private async Task DrawMarkers()
     {
-        foreach (var room in Rooms)
+        // Chỉ vẽ những room trong FilteredRooms
+        foreach (var room in FilteredRooms)
         {
             await JSRuntime.InvokeVoidAsync("uniNestMap.addMarker", objRef, room.Id, room.Lat, room.Lng, room.Title, FormatPrice(room.Price), room.Address);
         }
-        _areMarkersDrawn = true;
     }
 
     private async Task LocateUser()
@@ -461,13 +747,6 @@ private List<UniversityDto> Universities = new()
         SelectedRoom = room;
         await JSRuntime.InvokeVoidAsync("uniNestMap.map.flyTo", new { center = new[] { room.Lng, room.Lat }, zoom = 15.5 });
         await JSRuntime.InvokeVoidAsync("uniNestMap.triggerMarkerPopup", room.Id);
-    }
-
-    [JSInvokable]
-    public void OnMarkerClick(int roomId)
-    {
-        SelectedRoom = Rooms.FirstOrDefault(r => r.Id == roomId);
-        StateHasChanged();
     }
 
     private void ClosePopup() => SelectedRoom = null;
