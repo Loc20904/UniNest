@@ -1,0 +1,148 @@
+@page "/login"
+@inject HttpClient Http
+@inject NavigationManager NavManager
+@inject IJSRuntime JSRuntime
+@using UniNestFE.DTOs
+@using System.Net.Http.Json
+
+<div class="w-full h-full overflow-y-auto custom-scrollbar flex items-center justify-center bg-[#fafaf9] dark:bg-[#121416] p-4 relative overflow-hidden">
+    <!-- Background Decor -->
+    <div class="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
+        <div class="absolute -top-32 -left-32 w-96 h-96 bg-primary/20 rounded-full blur-3xl opacity-50 mix-blend-screen"></div>
+        <div class="absolute bottom-10 right-10 w-80 h-80 bg-accent-green/10 rounded-full blur-3xl opacity-50 mix-blend-screen"></div>
+    </div>
+
+    <!-- Login Card -->
+    <div class="w-full max-w-md bg-white dark:bg-[#1c2126] rounded-2xl shadow-2xl border border-slate-200 dark:border-[#27353a] p-8 z-10 animate-fade-in-up">
+        
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-extrabold text-slate-900 dark:text-white mb-2 tracking-tight">Welcome Back</h1>
+            <p class="text-slate-500 dark:text-slate-400 text-sm">Sign in to access your UniNest account</p>
+        </div>
+
+        <!-- Form -->
+        <EditForm Model="@item" OnValidSubmit="HandleLogin" class="space-y-6">
+            <DataAnnotationsValidator />
+
+            <!-- Email -->
+            <div class="space-y-2">
+                <label class="text-xs font-bold uppercase text-slate-500 dark:text-slate-400 tracking-wider">Email Address</label>
+                <div class="relative group">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <span class="material-icons-round text-slate-400 group-focus-within:text-primary transition-colors">email</span>
+                    </div>
+                    <InputText @bind-Value="item.Email" class="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-[#27353a] border border-slate-200 dark:border-[#3a4e55] rounded-xl focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all text-slate-800 dark:text-white" placeholder="name@example.com" />
+                </div>
+                <ValidationMessage For="@(() => item.Email)" class="text-red-500 text-xs mt-1" />
+            </div>
+
+            <!-- Password -->
+            <div class="space-y-2">
+                <label class="text-xs font-bold uppercase text-slate-500 dark:text-slate-400 tracking-wider">Password</label>
+                <div class="relative group">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <span class="material-icons-round text-slate-400 group-focus-within:text-primary transition-colors">lock</span>
+                    </div>
+                    <InputText @bind-Value="item.Password" type="password" class="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-[#27353a] border border-slate-200 dark:border-[#3a4e55] rounded-xl focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all text-slate-800 dark:text-white" placeholder="••••••••" />
+                </div>
+                <ValidationMessage For="@(() => item.Password)" class="text-red-500 text-xs mt-1" />
+            </div>
+
+            <!-- Error Message -->
+            @if (!string.IsNullOrEmpty(ErrorMessage))
+            {
+                <div class="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 flex items-center gap-2">
+                    <span class="material-icons-round text-red-500 text-sm">error</span>
+                    <span class="text-xs text-red-600 dark:text-red-400">@ErrorMessage</span>
+                </div>
+            }
+
+            <!-- Submit Button -->
+            <button type="submit" disabled="@IsLoading" class="w-full py-3.5 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold text-sm shadow-lg shadow-primary/30 transition-all transform active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                @if (IsLoading)
+                {
+                    <div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    <span>Signing in...</span>
+                }
+                else
+                {
+                    <span>Sign In</span>
+                    <span class="material-icons-round text-sm">arrow_forward</span>
+                }
+            </button>
+        </EditForm>
+        
+        <!-- Footer -->
+        <div class="mt-8 text-center">
+            <p class="text-slate-400 text-xs">
+                Don't have an account? 
+                <a href="/register" class="text-primary font-bold hover:underline">Create one</a>
+            </p>
+        </div>
+    </div>
+</div>
+
+<style>
+    .text-primary { color: #06b5ef; }
+    .bg-primary { background-color: #06b5ef; }
+    .bg-accent-green { background-color: #7CD933; }
+    .animate-fade-in-up { animation: fadeInUp 0.5s ease-out forwards; }
+    @@keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+
+@code {
+    private LoginDto item = new();
+    private string ErrorMessage = "";
+    private bool IsLoading = false;
+
+    private async Task HandleLogin()
+    {
+        ErrorMessage = "";
+        IsLoading = true;
+        
+        try
+        {
+            var response = await Http.PostAsJsonAsync("api/Auth/login", item);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<AuthResponseDto>();
+                if (result != null)
+                {
+                    // Lưu token vào localStorage
+                    await JSRuntime.InvokeVoidAsync("localStorage.setItem", "authToken", result.Token);
+                    
+                    // (Optional) Lưu thông tin user basic
+                    await JSRuntime.InvokeVoidAsync("localStorage.setItem", "userFullName", result.FullName);
+
+                    // Điều hướng về trang chủ
+                    NavManager.NavigateTo("/", forceLoad: true); // forceLoad để kích hoạt lại AuthProvider nếu cần
+                }
+            }
+            else
+            {
+                // Parse lỗi
+                var content = await response.Content.ReadAsStringAsync();
+                ErrorMessage = "Login failed. Please check your credentials.";
+                if(content.Contains("message"))
+                {
+                   // Try to parse JSON error if possible, simplified here
+                   ErrorMessage = "Invalid email or password.";
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = "An unexpected error occurred. Please try again.";
+            Console.WriteLine(ex.Message);
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+}

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace UniNestBE.Migrations
 {
     [DbContext(typeof(UniNestDbContext))]
-    partial class UniNestDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260123083005_AddChatSystem_Fixed")]
+    partial class AddChatSystem_Fixed
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -56,8 +59,6 @@ namespace UniNestBE.Migrations
                     b.HasIndex("ListingId")
                         .IsUnique()
                         .HasFilter("[ListingId] IS NOT NULL");
-
-                    b.HasIndex("UniversityId");
 
                     b.ToTable("Addresses");
 
@@ -114,80 +115,6 @@ namespace UniNestBE.Migrations
                     b.ToTable("Conversations");
                 });
 
-            modelBuilder.Entity("Favorite", b =>
-                {
-                    b.Property<int>("FavoriteId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("FavoriteId"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("ListingId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
-                    b.HasKey("FavoriteId");
-
-                    b.HasIndex("ListingId");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("Favorites");
-                });
-
-            modelBuilder.Entity("LifestyleProfile", b =>
-                {
-                    b.Property<int>("ProfileId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ProfileId"));
-
-                    b.Property<decimal>("BudgetMax")
-                        .HasColumnType("decimal(18, 2)");
-
-                    b.Property<decimal>("BudgetMin")
-                        .HasColumnType("decimal(18, 2)");
-
-                    b.Property<int>("CleanlinessLevel")
-                        .HasColumnType("int");
-
-                    b.Property<string>("CookingHabit")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<bool>("HasPet")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("PersonalityTraits")
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
-
-                    b.Property<string>("SleepSchedule")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<bool>("Smoking")
-                        .HasColumnType("bit");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
-                    b.HasKey("ProfileId");
-
-                    b.HasIndex("UserId")
-                        .IsUnique();
-
-                    b.ToTable("LifestyleProfiles");
-                });
-
             modelBuilder.Entity("Listing", b =>
                 {
                     b.Property<int>("ListingId")
@@ -195,9 +122,6 @@ namespace UniNestBE.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ListingId"));
-
-                    b.Property<int>("AddressId")
-                        .HasColumnType("int");
 
                     b.Property<double>("AreaSquareMeters")
                         .HasColumnType("float");
@@ -237,9 +161,8 @@ namespace UniNestBE.Migrations
                         new
                         {
                             ListingId = 1,
-                            AddressId = 0,
                             AreaSquareMeters = 20.0,
-                            CreatedAt = new DateTime(2026, 1, 24, 20, 57, 48, 511, DateTimeKind.Local).AddTicks(1096),
+                            CreatedAt = new DateTime(2026, 1, 23, 15, 30, 5, 447, DateTimeKind.Local).AddTicks(9959),
                             GenderPreference = "Any",
                             IsAvailable = true,
                             OwnerId = 1,
@@ -249,9 +172,8 @@ namespace UniNestBE.Migrations
                         new
                         {
                             ListingId = 2,
-                            AddressId = 0,
                             AreaSquareMeters = 40.0,
-                            CreatedAt = new DateTime(2026, 1, 24, 20, 57, 48, 511, DateTimeKind.Local).AddTicks(1111),
+                            CreatedAt = new DateTime(2026, 1, 23, 15, 30, 5, 447, DateTimeKind.Local).AddTicks(9976),
                             GenderPreference = "Any",
                             IsAvailable = true,
                             OwnerId = 1,
@@ -283,35 +205,6 @@ namespace UniNestBE.Migrations
                     b.HasIndex("ListingId");
 
                     b.ToTable("ListingImages");
-                });
-
-            modelBuilder.Entity("MatchScore", b =>
-                {
-                    b.Property<int>("MatchId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("MatchId"));
-
-                    b.Property<float>("CompatibilityScore")
-                        .HasColumnType("real");
-
-                    b.Property<DateTime>("LastUpdated")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("UserAId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("UserBId")
-                        .HasColumnType("int");
-
-                    b.HasKey("MatchId");
-
-                    b.HasIndex("UserAId");
-
-                    b.HasIndex("UserBId");
-
-                    b.ToTable("MatchScores");
                 });
 
             modelBuilder.Entity("Message", b =>
@@ -352,105 +245,18 @@ namespace UniNestBE.Migrations
                     b.Property<DateTime>("SentAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<int?>("UserId")
+                        .HasColumnType("int");
+
                     b.HasKey("MessageID");
 
                     b.HasIndex("ConversationID");
 
                     b.HasIndex("SenderID");
 
+                    b.HasIndex("UserId");
+
                     b.ToTable("Messages");
-                });
-
-            modelBuilder.Entity("Request", b =>
-                {
-                    b.Property<int>("RequestId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("RequestId"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("ListingId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Message")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("ReceiverId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("SenderId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("RequestId");
-
-                    b.HasIndex("ListingId");
-
-                    b.HasIndex("ReceiverId");
-
-                    b.HasIndex("SenderId");
-
-                    b.ToTable("Requests");
-                });
-
-            modelBuilder.Entity("Review", b =>
-                {
-                    b.Property<int>("ReviewId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ReviewId"));
-
-                    b.Property<string>("Comment")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("Rating")
-                        .HasColumnType("int");
-
-                    b.Property<int>("ReviewerId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("TargetUserId")
-                        .HasColumnType("int");
-
-                    b.HasKey("ReviewId");
-
-                    b.HasIndex("ReviewerId");
-
-                    b.HasIndex("TargetUserId");
-
-                    b.ToTable("Reviews");
-                });
-
-            modelBuilder.Entity("University", b =>
-                {
-                    b.Property<int>("UniId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("UniId"));
-
-                    b.Property<string>("UniName")
-                        .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)");
-
-                    b.HasKey("UniId");
-
-                    b.ToTable("Universities");
                 });
 
             modelBuilder.Entity("User", b =>
@@ -483,6 +289,7 @@ namespace UniNestBE.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<string>("PasswordHash")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("PhoneNumber")
@@ -495,12 +302,7 @@ namespace UniNestBE.Migrations
                     b.Property<string>("StudentAvatar")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int?>("UniversityId")
-                        .HasColumnType("int");
-
                     b.HasKey("UserId");
-
-                    b.HasIndex("UniversityId");
 
                     b.ToTable("Users");
 
@@ -549,28 +351,21 @@ namespace UniNestBE.Migrations
                 {
                     b.HasOne("Listing", "Listing")
                         .WithOne("Address")
-                        .HasForeignKey("Address", "ListingId")
-                        .OnDelete(DeleteBehavior.Cascade);
-
-                    b.HasOne("University", "University")
-                        .WithMany("Addresses")
-                        .HasForeignKey("UniversityId");
+                        .HasForeignKey("Address", "ListingId");
 
                     b.Navigation("Listing");
-
-                    b.Navigation("University");
                 });
 
             modelBuilder.Entity("Conversation", b =>
                 {
                     b.HasOne("User", "ParticipantOne")
-                        .WithMany("ConversationsAsUser1")
+                        .WithMany()
                         .HasForeignKey("ParticipantOneID")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("User", "ParticipantTwo")
-                        .WithMany("ConversationsAsUser2")
+                        .WithMany()
                         .HasForeignKey("ParticipantTwoID")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
@@ -578,36 +373,6 @@ namespace UniNestBE.Migrations
                     b.Navigation("ParticipantOne");
 
                     b.Navigation("ParticipantTwo");
-                });
-
-            modelBuilder.Entity("Favorite", b =>
-                {
-                    b.HasOne("Listing", "Listing")
-                        .WithMany()
-                        .HasForeignKey("ListingId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("User", "User")
-                        .WithMany("Favorites")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Listing");
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("LifestyleProfile", b =>
-                {
-                    b.HasOne("User", "User")
-                        .WithOne("LifestyleProfile")
-                        .HasForeignKey("LifestyleProfile", "UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Listing", b =>
@@ -630,25 +395,6 @@ namespace UniNestBE.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("MatchScore", b =>
-                {
-                    b.HasOne("User", "UserA")
-                        .WithMany("MatchesAsUserA")
-                        .HasForeignKey("UserAId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("User", "UserB")
-                        .WithMany("MatchesAsUserB")
-                        .HasForeignKey("UserBId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("UserA");
-
-                    b.Navigation("UserB");
-                });
-
             modelBuilder.Entity("Message", b =>
                 {
                     b.HasOne("Conversation", "Conversation")
@@ -658,81 +404,30 @@ namespace UniNestBE.Migrations
                         .IsRequired();
 
                     b.HasOne("User", "Sender")
-                        .WithMany("SentMessages")
+                        .WithMany()
                         .HasForeignKey("SenderID")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.HasOne("User", null)
+                        .WithMany("SentMessages")
+                        .HasForeignKey("UserId");
 
                     b.Navigation("Conversation");
 
                     b.Navigation("Sender");
                 });
 
-            modelBuilder.Entity("Request", b =>
-                {
-                    b.HasOne("Listing", "Listing")
-                        .WithMany()
-                        .HasForeignKey("ListingId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("User", "Receiver")
-                        .WithMany("ReceivedRequests")
-                        .HasForeignKey("ReceiverId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("User", "Sender")
-                        .WithMany("SentRequests")
-                        .HasForeignKey("SenderId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Listing");
-
-                    b.Navigation("Receiver");
-
-                    b.Navigation("Sender");
-                });
-
-            modelBuilder.Entity("Review", b =>
-                {
-                    b.HasOne("User", "Reviewer")
-                        .WithMany("WrittenReviews")
-                        .HasForeignKey("ReviewerId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("User", "TargetUser")
-                        .WithMany("ReceivedReviews")
-                        .HasForeignKey("TargetUserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Reviewer");
-
-                    b.Navigation("TargetUser");
-                });
-
-            modelBuilder.Entity("User", b =>
-                {
-                    b.HasOne("University", "University")
-                        .WithMany()
-                        .HasForeignKey("UniversityId");
-
-                    b.Navigation("University");
-                });
-
             modelBuilder.Entity("UserBlock", b =>
                 {
                     b.HasOne("User", "Blocked")
-                        .WithMany("BlocksReceived")
+                        .WithMany()
                         .HasForeignKey("BlockedID")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("User", "Blocker")
-                        .WithMany("BlocksInitiated")
+                        .WithMany()
                         .HasForeignKey("BlockerID")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
@@ -754,40 +449,11 @@ namespace UniNestBE.Migrations
                     b.Navigation("Images");
                 });
 
-            modelBuilder.Entity("University", b =>
-                {
-                    b.Navigation("Addresses");
-                });
-
             modelBuilder.Entity("User", b =>
                 {
-                    b.Navigation("BlocksInitiated");
-
-                    b.Navigation("BlocksReceived");
-
-                    b.Navigation("ConversationsAsUser1");
-
-                    b.Navigation("ConversationsAsUser2");
-
-                    b.Navigation("Favorites");
-
-                    b.Navigation("LifestyleProfile");
-
                     b.Navigation("Listings");
 
-                    b.Navigation("MatchesAsUserA");
-
-                    b.Navigation("MatchesAsUserB");
-
-                    b.Navigation("ReceivedRequests");
-
-                    b.Navigation("ReceivedReviews");
-
                     b.Navigation("SentMessages");
-
-                    b.Navigation("SentRequests");
-
-                    b.Navigation("WrittenReviews");
                 });
 #pragma warning restore 612, 618
         }

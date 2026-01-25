@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace UniNestBE.Migrations
 {
     [DbContext(typeof(UniNestDbContext))]
-    partial class UniNestDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260124062920_Initallmodels")]
+    partial class Initallmodels
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -196,9 +199,6 @@ namespace UniNestBE.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ListingId"));
 
-                    b.Property<int>("AddressId")
-                        .HasColumnType("int");
-
                     b.Property<double>("AreaSquareMeters")
                         .HasColumnType("float");
 
@@ -237,9 +237,8 @@ namespace UniNestBE.Migrations
                         new
                         {
                             ListingId = 1,
-                            AddressId = 0,
                             AreaSquareMeters = 20.0,
-                            CreatedAt = new DateTime(2026, 1, 24, 20, 57, 48, 511, DateTimeKind.Local).AddTicks(1096),
+                            CreatedAt = new DateTime(2026, 1, 24, 13, 29, 20, 348, DateTimeKind.Local).AddTicks(2213),
                             GenderPreference = "Any",
                             IsAvailable = true,
                             OwnerId = 1,
@@ -249,9 +248,8 @@ namespace UniNestBE.Migrations
                         new
                         {
                             ListingId = 2,
-                            AddressId = 0,
                             AreaSquareMeters = 40.0,
-                            CreatedAt = new DateTime(2026, 1, 24, 20, 57, 48, 511, DateTimeKind.Local).AddTicks(1111),
+                            CreatedAt = new DateTime(2026, 1, 24, 13, 29, 20, 348, DateTimeKind.Local).AddTicks(2228),
                             GenderPreference = "Any",
                             IsAvailable = true,
                             OwnerId = 1,
@@ -495,12 +493,7 @@ namespace UniNestBE.Migrations
                     b.Property<string>("StudentAvatar")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int?>("UniversityId")
-                        .HasColumnType("int");
-
                     b.HasKey("UserId");
-
-                    b.HasIndex("UniversityId");
 
                     b.ToTable("Users");
 
@@ -712,15 +705,6 @@ namespace UniNestBE.Migrations
                     b.Navigation("Reviewer");
 
                     b.Navigation("TargetUser");
-                });
-
-            modelBuilder.Entity("User", b =>
-                {
-                    b.HasOne("University", "University")
-                        .WithMany()
-                        .HasForeignKey("UniversityId");
-
-                    b.Navigation("University");
                 });
 
             modelBuilder.Entity("UserBlock", b =>

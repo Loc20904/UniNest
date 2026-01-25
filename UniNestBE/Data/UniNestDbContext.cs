@@ -6,8 +6,18 @@ public class UniNestDbContext : DbContext
 
     public DbSet<User> Users { get; set; }
     public DbSet<Listing> Listings { get; set; }
-    public DbSet<Address> Addresses { get; set; }
     public DbSet<ListingImage> ListingImages { get; set; }
+    public DbSet<Address> Addresses { get; set; }
+    public DbSet<Conversation> Conversations { get; set; }
+    public DbSet<Message> Messages { get; set; }
+    public DbSet<UserBlock> UserBlocks { get; set; }
+    public DbSet<LifestyleProfile> LifestyleProfiles { get; set; }
+    public DbSet<MatchScore> MatchScores { get; set; }
+    public DbSet<Review> Reviews { get; set; }
+    public DbSet<University> Universities { get; set; }
+    public DbSet<Favorite> Favorites { get; set; }
+    public DbSet<Request> Requests { get; set; }
+
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -36,5 +46,125 @@ public class UniNestDbContext : DbContext
             // Gần Cầu Rồng
             new Address { AddressId = 2, ListingId = 2, FullAddress = "Đường Trần Hưng Đạo", Latitude = 16.061735m, Longitude = 108.232372m }
         );
+        modelBuilder.Entity<Conversation>()
+        .HasOne(c => c.ParticipantOne)
+        .WithMany() // Hoặc .WithMany(u => u.ConversationsAsPartOne) nếu bạn đã khai báo trong User
+        .HasForeignKey(c => c.ParticipantOneID)
+        .OnDelete(DeleteBehavior.Restrict); // <--- QUAN TRỌNG: Không xóa Conversation khi xóa User
+
+        modelBuilder.Entity<Conversation>()
+            .HasOne(c => c.ParticipantTwo)
+            .WithMany() // Hoặc .WithMany(u => u.ConversationsAsPartTwo)
+            .HasForeignKey(c => c.ParticipantTwoID)
+            .OnDelete(DeleteBehavior.Restrict); // <--- QUAN TRỌNG
+
+        // 2. Cấu hình cho Message (Tùy chọn, nhưng nên làm)
+        modelBuilder.Entity<Message>()
+            .HasOne(m => m.Sender)
+            .WithMany()
+            .HasForeignKey(m => m.SenderID)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // 3. Cấu hình cho UserBlock
+        modelBuilder.Entity<UserBlock>()
+            .HasOne(b => b.Blocker)
+            .WithMany()
+            .HasForeignKey(b => b.BlockerID)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<UserBlock>()
+            .HasOne(b => b.Blocked)
+            .WithMany()
+            .HasForeignKey(b => b.BlockedID)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // Một User vừa là Blocker, vừa là Blocked -> Cần tắt Cascade Delete
+        modelBuilder.Entity<UserBlock>()
+            .HasOne(ub => ub.Blocker)
+            .WithMany(u => u.BlocksInitiated)
+            .HasForeignKey(ub => ub.BlockerID)
+            .OnDelete(DeleteBehavior.Restrict); // Xóa User không tự xóa UserBlock
+
+        modelBuilder.Entity<UserBlock>()
+            .HasOne(ub => ub.Blocked)
+            .WithMany(u => u.BlocksReceived)
+            .HasForeignKey(ub => ub.BlockedID)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // --- 2. Cấu hình Request ---
+        modelBuilder.Entity<Request>()
+            .HasOne(r => r.Sender)
+            .WithMany(u => u.SentRequests)
+            .HasForeignKey(r => r.SenderId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Request>()
+            .HasOne(r => r.Receiver)
+            .WithMany(u => u.ReceivedRequests)
+            .HasForeignKey(r => r.ReceiverId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // --- 3. Cấu hình Review ---
+        modelBuilder.Entity<Review>()
+            .HasOne(rv => rv.Reviewer)
+            .WithMany(u => u.WrittenReviews)
+            .HasForeignKey(rv => rv.ReviewerId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Review>()
+            .HasOne(rv => rv.TargetUser)
+            .WithMany(u => u.ReceivedReviews)
+            .HasForeignKey(rv => rv.TargetUserId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // --- 4. Cấu hình MatchScore ---
+        modelBuilder.Entity<MatchScore>()
+            .HasOne(m => m.UserA)
+            .WithMany(u => u.MatchesAsUserA)
+            .HasForeignKey(m => m.UserAId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<MatchScore>()
+            .HasOne(m => m.UserB)
+            .WithMany(u => u.MatchesAsUserB)
+            .HasForeignKey(m => m.UserBId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // --- 5. Cấu hình Conversation ---
+        modelBuilder.Entity<Conversation>()
+            .HasOne(c => c.ParticipantOne)
+            .WithMany(u => u.ConversationsAsUser1)
+            .HasForeignKey(c => c.ParticipantOneID)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Conversation>()
+            .HasOne(c => c.ParticipantTwo)
+            .WithMany(u => u.ConversationsAsUser2)
+            .HasForeignKey(c => c.ParticipantTwoID)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // --- 6. Cấu hình Message ---
+        // Sender xóa nick -> Tin nhắn giữ lại (hoặc set NULL) để người kia vẫn đọc được lịch sử
+        modelBuilder.Entity<Message>()
+            .HasOne(m => m.Sender)
+            .WithMany(u => u.SentMessages)
+            .HasForeignKey(m => m.SenderID)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // --- 7. Cấu hình Favorite (Tùy chọn) ---
+        // Nếu User bị xóa, Favorite của họ cũng nên mất -> Có thể để Cascade
+        modelBuilder.Entity<Favorite>()
+            .HasOne(f => f.User)
+            .WithMany(u => u.Favorites)
+            .HasForeignKey(f => f.UserId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // --- 8. Cấu hình Listing & Address ---
+        // Listing xóa -> Address xóa theo (Quan hệ 1-1 hoặc 1-n chặt chẽ)
+        modelBuilder.Entity<Listing>()
+            .HasOne(l => l.Address)
+            .WithOne(a => a.Listing)
+            .HasForeignKey<Address>(a => a.ListingId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

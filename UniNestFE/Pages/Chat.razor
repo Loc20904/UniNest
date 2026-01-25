@@ -1,0 +1,762 @@
+@page "/chat"
+@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavManager
+@using UniNestFE.DTOs
+@using System.Net.Http.Headers
+@using Microsoft.AspNetCore.Authorization
+
+@attribute [Authorize]
+
+<style>
+    .scam-glow { box-shadow: 0 0 20px rgba(230, 38, 38, 0.15); }
+    .chat-container { height: 100%; width: 100%; display: flex; overflow: hidden; }
+</style>
+
+<div class="chat-container max-w-[1500px] mx-auto w-full">
+    <!-- Sidebar Navigation -->
+    <aside class="w-80 flex-shrink-0 border-r border-[#e5e7eb] dark:border-[#333] bg-white dark:bg-background-dark hidden md:flex flex-col">
+        <div class="p-6 border-b border-[#e5e7eb] dark:border-[#333]">
+            <h3 class="text-xl font-bold text-[#121716] dark:text-white">Messages</h3>
+            <p class="text-[#67837f] text-sm">@Conversations.Count conversations</p>
+        </div>
+        <div class="flex-1 overflow-y-auto p-2">
+            <!-- Safety Bot -->
+            <div class="flex items-center gap-3 p-3 rounded-xl bg-primary/10 border border-primary/20 mb-1">
+                <div class="flex items-center justify-center bg-primary rounded-full size-10 text-white">
+                    <span class="material-icons-round">shield_person</span>
+                </div>
+                <div class="flex flex-col">
+                    <span class="text-sm font-bold text-[#121716] dark:text-white">AI Safety Bot</span>
+                    <span class="text-xs text-primary font-medium">Monitoring Chat</span>
+                </div>
+            </div>
+            
+            @if (IsLoadingConversations)
+            {
+                <div class="p-4 text-center text-slate-400 text-xs">Loading conversations...</div>
+            }
+            else if (Conversations.Count == 0)
+            {
+               <div class="p-4 text-center text-slate-400 text-xs">No conversations yet.</div>
+            }
+            else
+            {
+                @foreach (var conv in Conversations)
+                {
+                    <div @onclick="() => SelectConversation(conv)" 
+                         class="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-[#2a2d32] border border-transparent mb-1 cursor-pointer transition-colors @(SelectedConversation?.ConversationId == conv.ConversationId ? "bg-slate-100 dark:bg-[#2a2d32]" : "")">
+                        <div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 relative" 
+                             style='background-image: url("@(string.IsNullOrEmpty(conv.PartnerAvatar) ? $"https://ui-avatars.com/api/?name={conv.PartnerName}&background=random" : conv.PartnerAvatar)");'>
+                             @if(conv.IsOnline) {
+                                <span class="absolute bottom-0 right-0 block size-2.5 bg-green-500 rounded-full ring-2 ring-white dark:ring-[#1c2126]"></span>
+                             }
+                        </div>
+                        <div class="flex flex-col flex-1 min-w-0">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm font-bold text-[#121716] dark:text-white truncate">@conv.PartnerName</span>
+                                @if (conv.LastMessageAt.HasValue)
+                                {
+                                    <span class="text-[10px] text-[#67837f]">@conv.LastMessageAt.Value.ToString("HH:mm")</span>
+                                }
+                            </div>
+                            <span class="text-xs text-[#67837f] truncate">@conv.LastMessage</span>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    </aside>
+
+    <!-- Chat Area -->
+    <section class="flex-1 flex flex-col bg-background-light dark:bg-background-dark border-r border-[#e5e7eb] dark:border-[#333]">
+        @if (SelectedConversation == null)
+        {
+            <div class="flex-1 flex flex-col items-center justify-center text-slate-400">
+                <span class="material-icons-round text-6xl mb-4 text-slate-300 dark:text-slate-600">chat_bubble_outline</span>
+                <p>Select a conversation to start chatting</p>
+            </div>
+        }
+        else
+        {
+            <!-- Chat Header -->
+            <div class="px-6 py-4 bg-white dark:bg-background-dark border-b border-[#e5e7eb] dark:border-[#333] flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                     <div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10" 
+                          style='background-image: url("@(string.IsNullOrEmpty(SelectedConversation.PartnerAvatar) ? $"https://ui-avatars.com/api/?name={SelectedConversation.PartnerName}&background=random" : SelectedConversation.PartnerAvatar)");'></div>
+                    <div>
+                        <h2 class="text-base font-bold text-[#121716] dark:text-white">@SelectedConversation.PartnerName</h2>
+                        <div class="flex items-center gap-1">
+                            @if (SelectedConversation.IsOnline)
+                            {
+                                <div class="size-2 bg-green-500 rounded-full"></div>
+                                <span class="text-[12px] text-[#67837f] font-medium">Active now</span>
+                            }
+                            else
+                            {
+                                <span class="text-[12px] text-[#67837f] font-medium">Offline</span>
+                            }
+                        </div>
+                    </div>
+                </div>
+                <!-- Right Side Actions -->
+                <div class="flex items-center gap-2">
+                    <div class="flex items-center gap-2 bg-primary/10 px-3 py-1.5 rounded-full border border-primary/20">
+                        <span class="material-icons-round text-primary text-sm">verified_user</span>
+                        <span class="text-[12px] font-bold text-[#121716] dark:text-white uppercase tracking-wider">Protected</span>
+                    </div>
+                
+                    @if (!SelectedConversation.IsBlocked)
+                    {
+                        <button @onclick="BlockUser" class="p-2 text-slate-400 hover:text-red-500 transition-colors bg-slate-50 dark:bg-[#2a2d32] rounded-full" title="Block User">
+                            <span class="material-icons-round">block</span>
+                        </button>
+                    }
+                </div>
+            </div>
+
+            <!-- Messages Stream -->
+
+            
+            <div class="flex-1 overflow-y-auto p-6 space-y-6" id="messages-container">
+                 @foreach (var msg in ChatHistory)
+                 {
+                    <div class="flex items-start gap-3 @(msg.SenderId == CurrentUserId ? "justify-end" : "")">
+                        @if(msg.SenderId != CurrentUserId) {
+                             <div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-8 shrink-0" 
+                                  style='background-image: url("@(string.IsNullOrEmpty(SelectedConversation.PartnerAvatar) ? $"https://ui-avatars.com/api/?name={SelectedConversation.PartnerName}&background=random" : SelectedConversation.PartnerAvatar)");'></div>
+                        }
+                        
+                        <div class="flex flex-col gap-1 @(msg.SenderId == CurrentUserId ? "items-end" : "items-start")">
+                            <p class="text-[#67837f] text-[12px] font-medium @(msg.SenderId == CurrentUserId ? "mr-1" : "ml-1")">
+                                @(msg.SenderId == CurrentUserId ? "You" : SelectedConversation.PartnerName)
+                            </p>
+                            
+                            @if (msg.MessageType == "Image")
+                            {
+                                <div class="max-w-[300px] overflow-hidden rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700">
+                                    <img src="@(string.IsNullOrEmpty(msg.MediaUrl) ? msg.Content : msg.MediaUrl)" alt="Image" class="w-full h-auto cursor-pointer" @onclick='() => NavManager.NavigateTo(msg.MediaUrl)' />
+                                </div>
+                            }
+                            else if (msg.MessageType == "Video")
+                            {
+                                <div class="max-w-[300px] overflow-hidden rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700">
+                                    <video controls src="@(string.IsNullOrEmpty(msg.MediaUrl) ? msg.Content : msg.MediaUrl)" class="w-full h-auto"></video>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="max-w-[400px] px-4 py-3 text-sm shadow-sm @(msg.SenderId == CurrentUserId ? "bg-primary text-[#121716] rounded-2xl rounded-tr-none font-medium" : "bg-white dark:bg-[#2a2d32] text-[#121716] dark:text-white rounded-2xl rounded-tl-none")">
+                                    @msg.Content
+                                </div>
+                            }
+                            <span class="text-[10px] text-slate-400">@msg.SentAt.ToString("HH:mm")</span>
+                        </div>
+                         @if(msg.SenderId == CurrentUserId) {
+                             <div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-8 shrink-0" 
+                                  style='background-image: url("https://ui-avatars.com/api/?name=You&background=06b5ef&color=fff");'></div>
+                        }
+                    </div>
+                 }
+                 
+                 @if (IsLoadingHistory)
+                 {
+                     <div class="text-center text-xs text-slate-400 py-4">Loading history...</div>
+                 }
+            </div>
+
+            <!-- Input Area -->
+            @if (SelectedConversation.IsBlocked)
+            {
+                <div class="p-6 bg-slate-50 dark:bg-slate-800/50 border-t border-[#e5e7eb] dark:border-[#333] flex items-center justify-center">
+                    <div class="flex items-center gap-2 text-slate-500 dark:text-slate-400">
+                        <span class="material-icons-round">block</span>
+                        <span class="font-bold text-sm">You have blocked this user.</span>
+                        <button @onclick="UnblockUser" class="text-primary hover:underline text-sm ml-2">Unblock</button>
+                    </div>
+                </div>
+            }
+            else 
+            {
+                <div class="p-6 bg-white dark:bg-background-dark border-t border-[#e5e7eb] dark:border-[#333]">
+                    <div class="flex items-end gap-3 bg-[#f1f4f3] dark:bg-[#2a2d32] rounded-xl p-2 pr-3 relative z-20">
+                        
+                        @if (IsEmojiPickerOpen)
+                        {
+                            <div class="absolute bottom-full left-0 mb-4 bg-white dark:bg-[#1e293b] shadow-2xl rounded-2xl p-3 grid grid-cols-5 gap-2 border border-slate-100 dark:border-slate-700 w-72 animate-fade-in-up">
+                                @foreach (var emoji in Emojis)
+                                {
+                                    <button @onclick="() => AddEmoji(emoji)" class="text-2xl hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg p-2 transition-colors">@emoji</button>
+                                }
+                            </div>
+                            
+                            <!-- Backdrop to close -->
+                            <div class="fixed inset-0 z-[-1]" @onclick="() => IsEmojiPickerOpen = false"></div>
+                        }
+
+                        <button class="p-2 text-[#67837f] hover:text-primary transition-colors tooltip-container relative" onclick="document.getElementById('chatFileInput').click()">
+                            <span class="material-icons-round">attach_file</span>
+                            <InputFile OnChange="HandleFileSelected" id="chatFileInput" class="hidden" accept="image/*,video/*" />
+                        </button>
+                        
+                        <button @onclick="ToggleEmojiPicker" class="p-2 text-[#67837f] hover:text-primary transition-colors">
+                            <span class="material-icons-round">sentiment_satisfied_alt</span>
+                        </button>
+                        <textarea @bind="NewMessageInput" 
+                                  @bind:event="oninput"
+                                  @onkeydown="HandleKeyDown"
+                                  class="flex-1 border-none bg-transparent focus:ring-0 text-sm resize-none py-2 max-h-32 placeholder:text-[#67837f] dark:text-white" 
+                                  placeholder="Type a message..." rows="1"></textarea>
+                        <button @onclick="SendMessage" disabled="@string.IsNullOrWhiteSpace(NewMessageInput)"
+                                class="bg-primary text-[#121716] px-4 py-2 rounded-lg font-bold text-sm hover:opacity-90 transition-opacity flex items-center gap-2 disabled:opacity-50">
+                            Send
+                            <span class="material-icons-round text-sm">send</span>
+                        </button>
+                    </div>
+                </div>
+            }
+        }
+    </section>
+    
+    <!-- User & Listing Details Sidebar (Checked) -->
+    <aside class="w-80 flex-shrink-0 bg-white dark:bg-background-dark overflow-y-auto hidden lg:block border-l border-[#e5e7eb] dark:border-[#333]">
+        @if(SelectedConversation != null) {
+        <div class="p-6">
+            <h3 class="text-sm font-bold text-[#67837f] uppercase tracking-widest mb-4">Chat Details</h3>
+            
+            <div class="flex flex-col items-center mb-6">
+                 <div class="size-24 rounded-full bg-cover bg-center mb-3" style='background-image: url("@(string.IsNullOrEmpty(SelectedConversation.PartnerAvatar) ? $"https://ui-avatars.com/api/?name={SelectedConversation.PartnerName}&background=random" : SelectedConversation.PartnerAvatar)");'></div>
+                 <h4 class="font-bold text-lg dark:text-white">@SelectedConversation.PartnerName</h4>
+                 <p class="text-slate-500 text-sm">Student</p>
+            </div>
+            
+            @if (SelectedConversation.ListingId.HasValue)
+            {
+                <div class="mb-6">
+                    <h3 class="text-sm font-bold text-[#67837f] uppercase tracking-widest mb-3">Listing Interest</h3>
+                    <div class="rounded-xl overflow-hidden border border-[#e5e7eb] dark:border-[#333] shadow-sm">
+                        <div class="h-32 bg-center bg-cover" 
+                             style='background-image: url("@(string.IsNullOrEmpty(SelectedConversation.ListingImage) ? "https://via.placeholder.com/300" : SelectedConversation.ListingImage)");'></div>
+                        <div class="p-4">
+                            <div class="flex justify-between items-start mb-2">
+                                <h4 class="font-bold text-[#121716] dark:text-white leading-tight line-clamp-2">@SelectedConversation.ListingTitle</h4>
+                                @if(SelectedConversation.IsVerifiedHost) {
+                                    <span class="bg-primary/20 text-primary-dark text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-primary/30 uppercase shrink-0 ml-1">Verified</span>
+                                }
+                            </div>
+                            <p class="text-primary font-extrabold text-base mb-1">
+                                @(SelectedConversation.ListingPrice >= 1000000 ? $"{(SelectedConversation.ListingPrice / 1000000):0.##}M" : $"{SelectedConversation.ListingPrice:N0} đ") 
+                                <span class="text-[10px] text-[#67837f] font-normal italic">/ month</span>
+                            </p>
+                            <div class="flex items-center gap-1 text-[#67837f] text-xs">
+                                <span class="material-icons-round text-[14px]">location_on</span>
+                                <span class="truncate">@SelectedConversation.ListingAddress</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <div class="p-4 rounded-xl border-2 border-dashed border-[#e5e7eb] dark:border-[#333]">
+                    <h5 class="text-xs font-bold text-[#121716] dark:text-white mb-2">Quick Reminders:</h5>
+                    <ul class="space-y-2">
+                        <li class="flex items-start gap-2 text-[11px] text-[#67837f]">
+                            <span class="material-icons-round text-[14px] text-green-500">check_circle</span>
+                            Visit in daylight hours
+                        </li>
+                        <li class="flex items-start gap-2 text-[11px] text-[#67837f]">
+                            <span class="material-icons-round text-[14px] text-green-500">check_circle</span>
+                            Bring a friend with you
+                        </li>
+                        <li class="flex items-start gap-2 text-[11px] text-[#67837f]">
+                            <span class="material-icons-round text-[14px] text-green-500">check_circle</span>
+                            Validate the contract
+                        </li>
+                    </ul>
+                </div>
+        </div>
+        }
+    </aside>
+    <!-- Custom Modal -->
+    @if (IsModalOpen)
+    {
+        <div class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <!-- Backdrop -->
+            <div class="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity" @onclick="CloseModal"></div>
+            
+            <!-- Modal Content -->
+            <div class="relative bg-white dark:bg-[#1e293b] rounded-2xl shadow-2xl w-full max-w-sm p-6 transform transition-all animate-bounce-in border border-slate-100 dark:border-slate-700">
+                <div class="text-center mb-6">
+                    <div class="size-14 mx-auto bg-red-100 dark:bg-red-900/30 text-red-500 rounded-full flex items-center justify-center mb-4">
+                        <span class="material-icons-round text-3xl">@(ModalType == "Confirm" ? "gpp_bad" : "info")</span>
+                    </div>
+                    
+                    <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">@ModalTitle</h3>
+                    <p class="text-slate-500 dark:text-slate-400 text-sm">@ModalMessage</p>
+                </div>
+                
+                <div class="flex gap-3">
+                    @if (ModalType == "Confirm")
+                    {
+                        <button @onclick="CloseModal" class="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-white font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                            Cancel
+                        </button>
+                        <button @onclick="ConfirmAction" class="flex-1 px-4 py-2.5 rounded-xl bg-red-500 text-white font-bold hover:bg-red-600 shadow-lg shadow-red-500/30 transition-all active:scale-95">
+                            Confirm
+                        </button>
+                    }
+                    else
+                    {
+                         <button @onclick="CloseModal" class="w-full px-4 py-2.5 rounded-xl bg-primary text-[#121716] font-bold hover:opacity-90 shadow-lg shadow-primary/30 transition-all active:scale-95">
+                            Got it
+                        </button>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@using Microsoft.AspNetCore.SignalR.Client
+@implements IAsyncDisposable
+
+@code {
+    private List<ConversationDto> Conversations = new();
+    private List<MessageDto> ChatHistory = new();
+    private ConversationDto? SelectedConversation;
+    
+    private bool IsEmojiPickerOpen = false;
+    private List<string> Emojis = new() { "😀", "😂", "🥰", "😍", "😘", "😜", "😇", "😎", "🤩", "🥳", "😡", "😭", "👍", "👎", "❤️", "💔", "🔥", "✨", "🎉", "💩" };
+
+    
+    private string NewMessageInput = "";
+    private bool IsLoadingConversations = true;
+    private bool IsLoadingHistory = false;
+    private int CurrentUserId = 0;
+    
+    // SIGNALR
+    private HubConnection? hubConnection;
+
+    // MODAL STATE
+    private bool IsModalOpen = false;
+    private string ModalTitle = "";
+    private string ModalMessage = "";
+    private string ModalType = "Info"; // Info, Confirm
+    private Func<Task>? OnConfirm;
+
+    private void ShowModal(string title, string message, string type = "Info", Func<Task>? onConfirm = null)
+    {
+        ModalTitle = title;
+        ModalMessage = message;
+        ModalType = type;
+        OnConfirm = onConfirm;
+        IsModalOpen = true;
+        StateHasChanged();
+    }
+
+    private void CloseModal()
+    {
+        IsModalOpen = false;
+        StateHasChanged();
+    }
+
+    private async Task ConfirmAction()
+    {
+        if (OnConfirm != null) await OnConfirm.Invoke();
+        CloseModal();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCurrentUser();
+    }
+    
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await InitSignalR();
+            await LoadConversations();
+            StateHasChanged();
+        }
+    }
+
+    private async Task InitSignalR()
+    {
+        var token = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "authToken");
+        if (string.IsNullOrEmpty(token)) return;
+
+        try 
+        {
+            hubConnection = new HubConnectionBuilder()
+                .WithUrl($"{Http.BaseAddress}chatHub", options =>
+                {
+                    options.AccessTokenProvider = () => Task.FromResult(token);
+                })
+                .WithAutomaticReconnect()
+                .Build();
+
+            hubConnection.On<MessageDto>("ReceiveMessage", async (message) =>
+            {
+                await InvokeAsync(async () =>
+                {
+                    if (SelectedConversation != null && 
+                       (message.SenderId == SelectedConversation.PartnerId || message.SenderId == CurrentUserId)) 
+                    {
+                        var pendingMsg = ChatHistory.FirstOrDefault(m => m.MessageId == 0 && m.Content == message.Content && m.SenderId == message.SenderId);
+                        if (pendingMsg != null)
+                        {
+                             pendingMsg.MessageId = message.MessageId;
+                             pendingMsg.SentAt = message.SentAt;
+                             StateHasChanged();
+                        }
+                        else if (!ChatHistory.Any(m => m.MessageId == message.MessageId && message.MessageId != 0))
+                        {
+                            ChatHistory.Add(message);
+                            await ScrollToBottom();
+                            StateHasChanged();
+                        }
+                    }
+                    
+                    var conv = Conversations.FirstOrDefault(c => c.PartnerId == message.SenderId || (message.SenderId == CurrentUserId && c.PartnerId == SelectedConversation?.PartnerId));
+                    if (conv != null)
+                    {
+                        conv.LastMessage = message.MessageType == "Image" ? "[Image]" : message.Content;
+                        conv.LastMessageAt = message.SentAt;
+                        StateHasChanged();
+                    }
+                });
+            });
+            
+            hubConnection.On<string>("ReceiveError", async (error) => 
+            {
+                ShowModal("Error", error); 
+            });
+
+             await hubConnection.StartAsync();
+             Console.WriteLine("SignalR Connected.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("SignalR Init Error: " + ex.Message);
+        }
+    }
+    
+    private async Task LoadCurrentUser()
+    {
+        try {
+             var token = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "authToken");
+             if (!string.IsNullOrEmpty(token))
+             {
+                 var payload = token.Split('.')[1];
+                 switch (payload.Length % 4)
+                 {
+                    case 2: payload += "=="; break;
+                    case 3: payload += "="; break;
+                 }
+                 var jsonBytes = Convert.FromBase64String(payload);
+                 var json = System.Text.Encoding.UTF8.GetString(jsonBytes);
+                 var claims = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(json);
+                 
+                 if (claims != null && claims.TryGetValue("nameid", out var idObj))
+                 {
+                     if (int.TryParse(idObj.ToString(), out int id))
+                     {
+                         CurrentUserId = id;
+                     }
+                 }
+                 else if (claims != null && claims.TryGetValue("sub", out var subObj)) // Fallback standard
+                 {
+                     if (int.TryParse(subObj.ToString(), out int id))
+                     {
+                         CurrentUserId = id;
+                     }
+                 }
+             }
+        } catch(Exception ex) { Console.WriteLine("Auth Parse Error: " + ex.Message); }
+    }
+
+    private async Task LoadConversations()
+    {
+        IsLoadingConversations = true;
+        try 
+        {
+            var token = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "authToken");
+             if (string.IsNullOrEmpty(token)) return;
+
+             var request = new HttpRequestMessage(HttpMethod.Get, "api/Chat/conversations");
+             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+             
+             var response = await Http.SendAsync(request);
+             if (response.IsSuccessStatusCode)
+             {
+                 Conversations = await response.Content.ReadFromJsonAsync<List<ConversationDto>>() ?? new();
+                 
+                 if (Conversations.Count == 0)
+                 {
+                     Conversations.Add(new ConversationDto { ConversationId = 2, PartnerId = 100, PartnerName = "Tran Thi B", LastMessage = "Giá điện nước thế nào ạ?", LastMessageAt = DateTime.Now.AddHours(-1) });
+                 }
+             }
+        }
+        catch(Exception ex)
+        {
+            Console.WriteLine("Load Conv Error: " + ex.Message);
+        }
+        finally 
+        {
+            IsLoadingConversations = false;
+        }
+    }
+
+    private async Task SelectConversation(ConversationDto conv)
+    {
+        SelectedConversation = conv;
+        ChatHistory.Clear();
+        IsLoadingHistory = true;
+        StateHasChanged();
+        
+        try
+        {
+             var token = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "authToken");
+             var request = new HttpRequestMessage(HttpMethod.Get, $"api/Chat/history/{conv.PartnerId}");
+             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+             
+             var response = await Http.SendAsync(request);
+             if (response.IsSuccessStatusCode)
+             {
+                 ChatHistory = await response.Content.ReadFromJsonAsync<List<MessageDto>>() ?? new();
+                 
+                 // Mock fallback
+                 if (ChatHistory.Count == 0 && conv.ConversationId == 1) 
+                 {
+                     ChatHistory.Add(new MessageDto { MessageId = 1, SenderId = conv.PartnerId, Content = "Chào bạn, bạn cần tìm phòng à?", SentAt = DateTime.Now.AddMinutes(-10) });
+                     ChatHistory.Add(new MessageDto { MessageId = 2, SenderId = CurrentUserId, Content = "Dạ vâng, phòng còn không ạ?", SentAt = DateTime.Now.AddMinutes(-9) });
+                     ChatHistory.Add(new MessageDto { MessageId = 3, SenderId = conv.PartnerId, Content = "Phòng vẫn còn bạn nhé. Bạn qua xem lúc nào?", SentAt = DateTime.Now.AddMinutes(-5) });
+                 }
+                 
+                 await ScrollToBottom();
+             }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("History Error: " + ex.Message);
+        }
+        finally
+        {
+            IsLoadingHistory = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task SendMessage()
+    {
+        if (string.IsNullOrWhiteSpace(NewMessageInput) || SelectedConversation == null) return;
+        
+        var content = NewMessageInput;
+        NewMessageInput = ""; // Clear input immediately
+
+        // 1. Optimistic Update (Show immediately)
+        var tempMsg = new MessageDto 
+        { 
+            SenderId = CurrentUserId, 
+            Content = content, 
+            SentAt = DateTime.Now,
+            MessageId = 0 // Pending
+        };
+        ChatHistory.Add(tempMsg);
+        await ScrollToBottom();
+        StateHasChanged(); // Force refresh
+        
+        if (hubConnection is not null && hubConnection.State == HubConnectionState.Connected)
+        {
+            try
+            {
+                var request = new SendMessageRequest
+                {
+                    ReceiverId = SelectedConversation.PartnerId,
+                    Content = content,
+                    MessageType = "Text"
+                };
+                
+                await hubConnection.SendAsync("SendMessage", request);
+            }
+            catch(Exception ex)
+            {
+                Console.WriteLine("Send Failed: " + ex.Message);
+            }
+        }
+        else
+        {
+            // Fallback / Offline Mode
+            // Mock Reply
+             _ = Task.Delay(1500).ContinueWith(async _ => 
+            {
+                var reply = new MessageDto { SenderId = SelectedConversation.PartnerId, Content = "Ok (Mock Reply)", SentAt = DateTime.Now };
+                ChatHistory.Add(reply);
+                await InvokeAsync(StateHasChanged);
+                await ScrollToBottom();
+            });
+        }
+    }
+    
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !e.ShiftKey)
+        {
+            await SendMessage();
+        }
+    }
+
+    private void ToggleEmojiPicker() => IsEmojiPickerOpen = !IsEmojiPickerOpen;
+
+    private void AddEmoji(string emoji)
+    {
+        NewMessageInput += emoji;
+        IsEmojiPickerOpen = false;
+    }
+
+    private async Task HandleFileSelected(InputFileChangeEventArgs e)
+    {
+        try 
+        {
+            var file = e.File;
+            if (file != null)
+            {
+                Console.WriteLine($"[Chat] File selected: {file.Name}, Size: {file.Size}");
+                
+                // Limit size: max 10MB
+                if(file.Size > 10 * 1024 * 1024) {
+                     ShowModal("File too large", "Please select a file smaller than 10MB.");
+                     return;
+                }
+
+                // 1. Upload to API
+                var content = new MultipartFormDataContent();
+                var fileContent = new StreamContent(file.OpenReadStream(10 * 1024 * 1024));
+                fileContent.Headers.ContentType = new MediaTypeHeaderValue(file.ContentType);
+                content.Add(fileContent, "file", file.Name);
+                
+                // Use the injected Http client
+                var response = await Http.PostAsync("api/Upload/chat-image", content);
+                
+                if (!response.IsSuccessStatusCode)
+                {
+                    var error = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"[Chat] Upload failed: {response.StatusCode} - {error}");
+                    ShowModal("Upload Failed", "Could not upload file. Please try again.");
+                    return;
+                }
+
+                var uploadResult = await response.Content.ReadFromJsonAsync<UploadResponseDto>();
+                string mediaUrl = uploadResult?.Url ?? "";
+                
+                if (string.IsNullOrEmpty(mediaUrl))
+                {
+                     ShowModal("Error", "Upload succeeded but no URL returned.");
+                     return;
+                }
+
+                string msgType = file.ContentType.StartsWith("video/") ? "Video" : "Image";
+                
+                // 2. Optimistic UI Update
+                var tempMsg = new MessageDto 
+                { 
+                    SenderId = CurrentUserId, 
+                    MessageType = msgType,
+                    MediaUrl = mediaUrl,
+                    Content = msgType == "Image" ? "[Image]" : "[Video]",
+                    SentAt = DateTime.Now,
+                    MessageId = 0
+                };
+                
+                ChatHistory.Add(tempMsg);
+                await ScrollToBottom();
+                StateHasChanged();
+
+                // 3. Send SignalR Message with URL
+                if (hubConnection is not null && hubConnection.State == HubConnectionState.Connected)
+                {
+                     var request = new SendMessageRequest
+                     {
+                         ReceiverId = SelectedConversation.PartnerId,
+                         Content = msgType == "Image" ? "[Image]" : "[Video]",
+                         MessageType = msgType,
+                         MediaUrl = mediaUrl
+                     };
+                     await hubConnection.SendAsync("SendMessage", request);
+                     Console.WriteLine("[Chat] Message sent to SignalR.");
+                }
+            }
+        }
+        catch(Exception ex)
+        {
+             Console.WriteLine($"[Chat] File Error: {ex.Message}");
+             ShowModal("Error", "Failed to send file: " + ex.Message);
+        }
+    }
+
+    private void BlockUser()
+    {
+        if (SelectedConversation == null) return;
+        
+        ShowModal("Block User", $"Are you sure you want to block {SelectedConversation.PartnerName}? This action cannot be undone.", "Confirm", async () => 
+        {
+            try 
+            {
+                 // Call API to block
+                 var response = await Http.PostAsync($"api/User/block/{SelectedConversation.PartnerId}", null);
+                 
+                 // For demo purposes, we'll assume success or mock it if API fails
+                 SelectedConversation.IsBlocked = true;
+                 StateHasChanged();
+                 
+                 // Reuse info modal for success optional or just close
+            }
+            catch (Exception ex)
+            {
+                 Console.WriteLine("Block Error: " + ex.Message);
+                 // Mock success
+                 SelectedConversation.IsBlocked = true;
+                 StateHasChanged();
+            }
+        });
+    }
+
+    private async Task UnblockUser()
+    {
+        if (SelectedConversation == null) return;
+        
+        try 
+        {
+             var response = await Http.PostAsync($"api/User/unblock/{SelectedConversation.PartnerId}", null);
+             
+             SelectedConversation.IsBlocked = false;
+             StateHasChanged();
+        }
+        catch 
+        {
+             // Mock
+             SelectedConversation.IsBlocked = false;
+             StateHasChanged();
+        }
+    }
+
+    public class UploadResponseDto
+    {
+        public string Url { get; set; } = string.Empty;
+    }
+    
+    private async Task ScrollToBottom()
+    {
+        await Task.Delay(50); 
+        await JSRuntime.InvokeVoidAsync("eval", "var objDiv = document.getElementById('messages-container'); if(objDiv) objDiv.scrollTop = objDiv.scrollHeight;");
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (hubConnection is not null)
+        {
+            await hubConnection.DisposeAsync();
+        }
+    }
+}
