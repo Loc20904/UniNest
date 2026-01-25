@@ -8,11 +8,11 @@ public class Listing
 
     public int OwnerId { get; set; }
     [ForeignKey("OwnerId")]
-    public User Owner { get; set; }
+    public User? Owner { get; set; }
 
     [Required]
     [MaxLength(200)]
-    public string Title { get; set; }
+    public string? Title { get; set; }
 
     public string? Description { get; set; }
 
@@ -29,7 +29,8 @@ public class Listing
     public DateTime CreatedAt { get; set; } = DateTime.Now;
 
     // Quan hệ 1-1 hoặc 1-n: Một bài đăng có 1 địa chỉ
-    public Address? Address { get; set; }
+    public int AddressId { get; set; }
+    public virtual Address? Address { get; set; }
 
-    public ICollection<ListingImage> Images { get; set; }
+    public ICollection<ListingImage>? Images { get; set; }
 }
