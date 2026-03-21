@@ -1,11 +1,12 @@
-﻿using System.Text;
+using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-
+using UniNestBE.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddScoped<IAiMatchingService, AiMatchingService>();
+builder.Services.AddTransient<IEmailService, EmailService>();
 // Add services to the container.
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
