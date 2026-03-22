@@ -1,4 +1,4 @@
-﻿@inherits LayoutComponentBase
+@inherits LayoutComponentBase
 @using Microsoft.AspNetCore.Components.Authorization
 @inject IJSRuntime JSRuntime
 
@@ -6,7 +6,7 @@
 
     <Header />
 
-    <main class="flex flex-1 overflow-hidden relative">
+    <main class="flex flex-1 overflow-y-auto relative">
         @Body
     </main>
 </div>

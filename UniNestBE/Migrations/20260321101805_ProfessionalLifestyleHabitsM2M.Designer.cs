@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace UniNestBE.Migrations
 {
     [DbContext(typeof(UniNestDbContext))]
-    partial class UniNestDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260321101805_ProfessionalLifestyleHabitsM2M")]
+    partial class ProfessionalLifestyleHabitsM2M
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -325,11 +328,6 @@ namespace UniNestBE.Migrations
                     b.Property<int>("AddressId")
                         .HasColumnType("int");
 
-                    b.Property<string>("ApprovalStatus")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
                     b.Property<double>("AreaSquareMeters")
                         .HasColumnType("float");
 
@@ -372,10 +370,9 @@ namespace UniNestBE.Migrations
                         {
                             ListingId = 1,
                             AddressId = 0,
-                            ApprovalStatus = "Pending",
                             AreaSquareMeters = 20.0,
-                            CreatedAt = new DateTime(2026, 3, 22, 19, 15, 29, 953, DateTimeKind.Local).AddTicks(5975),
-                            ExpireAt = new DateTime(2026, 4, 21, 19, 15, 29, 953, DateTimeKind.Local).AddTicks(5992),
+                            CreatedAt = new DateTime(2026, 3, 21, 17, 18, 3, 487, DateTimeKind.Local).AddTicks(2479),
+                            ExpireAt = new DateTime(2026, 4, 20, 17, 18, 3, 487, DateTimeKind.Local).AddTicks(2493),
                             GenderPreference = "Any",
                             IsAvailable = true,
                             OwnerId = 1,
@@ -386,10 +383,9 @@ namespace UniNestBE.Migrations
                         {
                             ListingId = 2,
                             AddressId = 0,
-                            ApprovalStatus = "Pending",
                             AreaSquareMeters = 40.0,
-                            CreatedAt = new DateTime(2026, 3, 22, 19, 15, 29, 953, DateTimeKind.Local).AddTicks(6010),
-                            ExpireAt = new DateTime(2026, 4, 21, 19, 15, 29, 953, DateTimeKind.Local).AddTicks(6010),
+                            CreatedAt = new DateTime(2026, 3, 21, 17, 18, 3, 487, DateTimeKind.Local).AddTicks(2505),
+                            ExpireAt = new DateTime(2026, 4, 20, 17, 18, 3, 487, DateTimeKind.Local).AddTicks(2506),
                             GenderPreference = "Any",
                             IsAvailable = true,
                             OwnerId = 1,

@@ -1,4 +1,4 @@
-﻿window.uniNestMap = {
+window.uniNestMap = {
     map: null,
     apiKey: null,
     mapKey: null,
@@ -308,5 +308,105 @@
             .addTo(this.map);
 
         this.searchMarker.togglePopup(); // Hiện tên luôn
+    }
+};
+// ------------------------------------------------
+//Dùng cho Editlisting.razor (chọn vị trí trên map để lấy lat/lng)
+window.mapInterop = {
+    initMap: function (dotNetHelper, elementId, initialLat, initialLng) {
+        var id = elementId || 'map';
+        
+        // Cleanup existing map if it exists
+        if (this.maps[id]) {
+            this.maps[id].remove();
+            delete this.maps[id];
+        }
+
+        // Safeguard for Leaflet internal state
+        var container = L.DomUtil.get(id);
+        if (container && container._leaflet_id) {
+            container._leaflet_id = null;
+        }
+
+        console.log("Map initialized on " + id + " with:", initialLat, initialLng);
+        
+        var startLat = (initialLat && initialLat !== 0) ? initialLat : 16.0544;
+        var startLng = (initialLng && initialLng !== 0) ? initialLng : 108.2022;
+        
+        var map = L.map(id).setView([startLat, startLng], 14);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
+
+        var marker;
+        
+        // Add initial marker if coordinates exist
+        if (startLat !== 16.0544 || startLng !== 108.2022) {
+            marker = L.marker([startLat, startLng]).addTo(map);
+        }
+
+        map.on('click', function (e) {
+            var lat = e.latlng.lat;
+            var lng = e.latlng.lng;
+
+            // update marker
+            if (marker) {
+                marker.setLatLng(e.latlng);
+            } else {
+                marker = L.marker(e.latlng).addTo(map);
+            }
+
+            // 🔥 gọi trực tiếp qua dotNetHelper
+            if (dotNetHelper) {
+                dotNetHelper.invokeMethodAsync("OnMapClick", lat, lng);
+            }
+        });
+
+        this.maps[id] = map;
+
+        // Force resize for modals
+        setTimeout(function() {
+            map.invalidateSize();
+        }, 400);
+    },
+
+    // Store multiple map instances if needed
+    maps: {},
+
+    initReadOnlyMap: function (elementId, lat, lng) {
+        var id = elementId || 'map';
+        
+        // Cleanup existing map if it exists
+        if (this.maps[id]) {
+            this.maps[id].remove();
+            delete this.maps[id];
+        }
+
+        // Safeguard for Leaflet internal state
+        var container = L.DomUtil.get(id);
+        if (container && container._leaflet_id) {
+            container._leaflet_id = null;
+        }
+
+        var startLat = (lat && lat !== 0) ? lat : 16.0544;
+        var startLng = (lng && lng !== 0) ? lng : 108.2022;
+        
+        var map = L.map(id).setView([startLat, startLng], 14);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
+
+        if (startLat !== 16.0544 || startLng !== 108.2022) {
+            L.marker([startLat, startLng]).addTo(map);
+        }
+
+        this.maps[id] = map;
+        
+        // Force resize after short delay to handle modal rendering
+        setTimeout(function() {
+            map.invalidateSize();
+        }, 400);
     }
 };

@@ -1,0 +1,481 @@
+@page "/listing/{Id:int}"
+@using System.Net.Http.Json
+@using UniNestFE.DTOs
+@inject HttpClient Http
+@inject NavigationManager NavManager
+@inject AuthenticationStateProvider AuthStateProvider
+@inject IJSRuntime JS
+
+<div class="listing-detail flex flex-col items-center bg-[#fafaf9] min-h-screen py-10 w-full relative overflow-hidden text-slate-800">
+    @if (showMessage)
+    {
+        <div class="fixed top-5 right-5 z-50 px-6 py-3 rounded-xl shadow-lg text-white
+                        @(messageType == "success" ? "bg-green-500" : "bg-red-500")">
+            @message
+        </div>
+    }
+    @if (isLoading)
+    {
+        <!-- Skeleton -->
+        <div class="w-full max-w-full px-6 flex flex-col gap-6 animate-pulse">
+            <div class="h-10 bg-slate-200 rounded w-1/3"></div>
+            <div class="flex gap-4 h-[400px]">
+                <div class="w-1/2 bg-slate-200 rounded-2xl"></div>
+                <div class="w-1/2 grid grid-cols-2 gap-4">
+                    <div class="bg-slate-200 rounded-xl"></div>
+                    <div class="bg-slate-200 rounded-xl"></div>
+                    <div class="bg-slate-200 rounded-xl"></div>
+                    <div class="bg-slate-200 rounded-xl"></div>
+                </div>
+            </div>
+        </div>
+    }
+    else if (listing == null)
+    {
+        <div class="text-center p-20">
+            <h1 class="text-4xl text-slate-300 font-bold">Listing not found</h1>
+            <button @onclick='() => NavManager.NavigateTo("/search")' class="mt-4 px-6 py-2 bg-primary text-white rounded-lg">Return to Search</button>
+        </div>
+    }
+    else
+    {
+        <div class="w-full max-w-full px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-[1fr_350px] gap-6 lg:gap-10">
+            <!-- Left Column: Details -->
+            <div class="details-section flex flex-col gap-8">
+                
+                <!-- Photos Grid -->
+                <div class="photos-grid relative group">
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 h-[300px] md:h-[450px]">
+                        @{
+                            var primImg = listing.Images.FirstOrDefault() ?? listing.PrimaryImageUrl;
+                            var mainImgUrl = string.IsNullOrEmpty(primImg) ? "default.jpg" : "https://localhost:7045" + primImg;
+                            <div class="md:col-span-2 md:row-span-2 rounded-2xl overflow-hidden cursor-pointer" @onclick="() => showFullGallery = true">
+                                <img src="@mainImgUrl" class="w-full h-full object-cover" />
+                            </div>
+                            
+                            @for(int i = 1; i < Math.Min(5, listing.Images.Count); i++)
+                            {
+                                var imgUrl = "https://localhost:7045" + listing.Images[i];
+                                bool isLast = i == 4 && listing.Images.Count > 5;
+                                <div class="rounded-2xl overflow-hidden hidden md:block relative cursor-pointer" @onclick="() => showFullGallery = true">
+                                    <img src="@imgUrl" class="w-full h-full object-cover" />
+                                    @if (isLast)
+                                    {
+                                        <div class="absolute inset-0 bg-black/50 flex flex-col items-center justify-center text-white font-bold transition-all group-hover:bg-black/40">
+                                            <span class="text-2xl">+ @(listing.Images.Count - 5)</span>
+                                            <span class="text-xs uppercase tracking-widest">Show more</span>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        }
+                    </div>
+
+                    @if (listing.Images.Count > 5)
+                    {
+                        <button @onclick="() => showFullGallery = true" class="absolute bottom-4 right-4 bg-white/90 backdrop-blur-md text-slate-800 font-bold px-4 py-2 rounded-xl shadow-lg border border-slate-100 hover:bg-white transition-all transform active:scale-95 flex items-center gap-2">
+                            <i class="material-icons-round">apps</i> Show all @listing.Images.Count photos
+                        </button>
+                    }
+                </div>
+
+
+                <!-- Full Gallery Modal -->
+                @if (showFullGallery)
+                {
+                    <div class="fixed inset-0 z-[100] bg-white overflow-y-auto animate-fade-in-up">
+                        <div class="max-w-4xl mx-auto py-10 px-6">
+                            <div class="flex justify-between items-center mb-8 sticky top-0 bg-white/80 backdrop-blur-md z-10 py-4">
+                                <h2 class="text-2xl font-extrabold text-slate-800">Photo Gallery</h2>
+                                <button @onclick="() => showFullGallery = false" class="p-2 rounded-full hover:bg-slate-100 transition-colors">
+                                    <i class="material-icons-round text-3xl">close</i>
+                                </button>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                @foreach(var img in listing.Images)
+                                {
+                                    <div class="rounded-3xl overflow-hidden shadow-lg mb-4">
+                                        <img src="@("https://localhost:7045" + img)" class="w-full h-auto object-cover" />
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+
+
+                <!-- Title & Basic Info -->
+                <div class="header flex justify-between items-start">
+                    <div>
+                        <h1 class="text-3xl font-extrabold text-slate-900 mb-2">@listing.Title</h1>
+                        <span class="text-primary font-bold text-xl block sm:inline-block sm:mr-4">@listing.Price.ToString("N0") VNĐ <span class="text-sm text-slate-400">/ month</span></span>
+                        <span class="bg-green-100 text-green-700 text-xs font-bold px-3 py-1 rounded-full"><i class="material-icons-round text-[12px] align-middle">verified</i> Verified</span>
+                    </div>
+                    <div class="flex gap-2 relative z-20">
+                        <button class="w-10 h-10 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center hover:bg-slate-200 transition-colors shadow-sm"><i class="material-icons-round">share</i></button>
+                        <button @onclick="ToggleSave"
+                         class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center transition-colors shadow-sm
+                            @(isSaved ? "text-red-500 bg-red-50" : "text-slate-500 hover:bg-red-50 hover:text-red-500")">
+
+                            <i class="material-icons-round transition-transform duration-200 @(isSaved ? "scale-110" : "")">
+                                @(isSaved ? "favorite" : "favorite_border")
+                            </i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Property Features -->
+                <div class="flex gap-4 flex-wrap">
+                    <div class="flex-1 min-w-[120px] bg-slate-50 border border-slate-100 p-4 rounded-xl flex flex-col items-center justify-center text-center">
+                        <i class="material-icons-round text-primary text-2xl mb-1">square_foot</i>
+                        <span class="text-xs font-bold text-slate-400 uppercase">Area</span>
+                        <span class="font-bold text-slate-700">@listing.AreaSquareMeters m²</span>
+                    </div>
+                    <div class="flex-1 min-w-[120px] bg-slate-50 border border-slate-100 p-4 rounded-xl flex flex-col items-center justify-center text-center">
+                        <i class="material-icons-round text-primary text-2xl mb-1">wc</i>
+                        <span class="text-xs font-bold text-slate-400 uppercase">Gender</span>
+                        <span class="font-bold text-slate-700">@listing.GenderPreference</span>
+                    </div>
+                    <div class="flex-1 min-w-[120px] bg-slate-50 border border-slate-100 p-4 rounded-xl flex flex-col items-center justify-center text-center">
+                        <i class="material-icons-round text-primary text-2xl mb-1">calendar_today</i>
+                        <span class="text-xs font-bold text-slate-400 uppercase">Posted</span>
+                        <span class="font-bold text-slate-700">@listing.CreatedAt.ToString("MMM dd, yyyy")</span>
+                    </div>
+                </div>
+
+                <!-- Protected Content Area (Description, Amenities, Location) -->
+                <div class="protected-content relative mt-6 transition-all duration-500 @(!isLoggedIn ? "filter blur-md pointer-events-none select-none h-[400px] overflow-hidden" : "")">
+                    
+                    <!-- Description -->
+                    <div class="mb-8">
+                        <h2 class="text-xl font-bold mb-4">Description</h2>
+                        <p class="text-slate-600 leading-relaxed whitespace-pre-wrap">@listing.Description</p>
+                    </div>
+
+                    <!-- Amenities -->
+                    <div class="mb-8">
+                        <h2 class="text-xl font-bold mb-4">What this place offers</h2>
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-y-4 gap-x-6">
+                            @foreach(var amenity in listing.Amenities)
+                            {
+                                <div class="flex items-center gap-3 text-slate-600">
+                                    <i class="material-symbols-outlined text-xl text-primary">@amenity.Icon</i>
+                                    <span>@amenity.Name</span>
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Habits -->
+                    <div class="mb-8">
+                        <h2 class="text-xl font-bold mb-4">Roommate Preferences</h2>
+                        <div class="flex flex-wrap gap-2">
+                            @foreach(var habit in listing.LifestyleHabits)
+                            {
+                                <div class="flex items-center gap-2 bg-slate-100 text-slate-600 px-4 py-2 rounded-full font-medium text-sm">
+                                    <i class="material-icons-round text-sm text-slate-400">check_circle</i> @habit.Name
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Location -->
+                    <div class="mb-10">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-xl font-bold">Location</h2>
+                            @if (!showLargeMap)
+                            {
+                                <button @onclick="OpenLargeMap" disabled="@isMapLoading" class="text-primary hover:underline font-bold text-sm flex items-center gap-1">
+                                    <i class="material-icons-round text-lg">open_in_full</i> 
+                                    @(isMapLoading ? "Connecting..." : "Expand Map")
+                                </button>
+                            }
+                        </div>
+                        <div class="bg-slate-200 w-full h-80 rounded-2xl relative overflow-hidden flex items-center justify-center group">
+                            <!-- JS Interop ReadOnly Map -->
+                            <div id="detailMap" class="w-full h-full z-10"></div>
+
+                            @if (!showLargeMap)
+                            {
+                                <div class="absolute bg-white/80 backdrop-blur-md px-4 py-3 rounded-xl shadow-lg font-bold flex items-center gap-2 z-[400] border border-white/40 text-slate-700 top-3 right-3 pointer-events-none transition-opacity duration-300">
+                                    <i class="material-icons-round text-primary text-lg">location_on</i> @listing.FullAddress
+                                </div>
+                            }
+
+                            <!-- Overlay Button on hover -->
+                            @if (!showLargeMap)
+                            {
+                                <div class="absolute inset-0 z-[401] bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                                    <button class="bg-white text-slate-800 font-extrabold px-6 py-2.5 rounded-full shadow-2xl pointer-events-auto transform transition-transform active:scale-95" 
+                                            @onclick="OpenLargeMap" disabled="@isMapLoading">
+                                        @(isMapLoading ? "Loading map..." : "Show Large Map")
+                                    </button>
+                                </div>
+                            }
+                        </div>
+                        
+                        <div class="mt-8 flex items-center justify-start">
+                            <button @onclick="GoBack" class="flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold hover:bg-slate-50 hover:border-slate-300 hover:text-primary transition-all shadow-sm active:scale-95 group">
+                                <i class="material-icons-round text-slate-400 group-hover:text-primary transition-colors">arrow_back</i>
+                                Back to listings
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Large Map Modal -->
+                    @if (showLargeMap)
+                    {
+                        <div class="fixed inset-0 z-[200] bg-white flex flex-col animate-fade-in-up">
+                            <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white">
+                                <div>
+                                    <h2 class="text-xl font-extrabold text-slate-800">Location Map</h2>
+                                    <p class="text-xs text-slate-500 flex items-center gap-1 mt-0.5"><i class="material-icons-round text-sm">location_on</i> @listing.FullAddress</p>
+                                </div>
+                                <button @onclick="() => showLargeMap = false" class="p-2 rounded-full hover:bg-slate-100 transition-colors">
+                                    <i class="material-icons-round text-3xl">close</i>
+                                </button>
+                            </div>
+                            <div class="flex-1 relative">
+                                <div id="largeDetailMap" class="w-full h-full"></div>
+                                
+                                <div class="absolute bottom-6 left-6 right-6 z-[400] bg-white/90 backdrop-blur-md p-4 rounded-2xl shadow-2xl border border-white flex items-center justify-between">
+                                    <div class="flex items-center gap-4">
+                                        <div class="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center text-primary">
+                                            <i class="material-icons-round text-2xl">map</i>
+                                        </div>
+                                        <div>
+                                            <span class="block font-extrabold text-slate-800">Approximate location</span>
+                                            <span class="text-sm text-slate-500 font-medium">Coordinate: @listing.Latitude, @listing.Longitude</span>
+                                        </div>
+                                    </div>
+                                    <button @onclick='() => JS.InvokeVoidAsync("open", $"https://www.google.com/maps?q={listing.Latitude},{listing.Longitude}", "_blank")' 
+                                            class="bg-slate-900 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-black transition-colors flex items-center gap-2">
+                                        <i class="material-icons-round">navigation</i> Open in Google Maps
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Right Column: Host & Action Card -->
+            <div class="sidebar relative">
+                <div class="sticky top-24 bg-white border border-slate-100 shadow-xl shadow-slate-200/50 rounded-3xl p-6 flex flex-col gap-6">
+                    
+                    <!-- Host Info -->
+                    <div class="flex items-center gap-4">
+                        <div class="w-16 h-16 rounded-full bg-slate-200 overflow-hidden shrink-0 ring-4 ring-primary/10">
+                            <img src="@(string.IsNullOrEmpty(listing.HostAvatar) ? "default_avatar.jpg" : listing.HostAvatar)" class="w-full h-full object-cover" />
+                        </div>
+                        <div>
+                            <h3 class="font-extrabold text-slate-800 text-lg">@listing.HostName</h3>
+                            <p class="text-xs text-slate-500 font-medium tracking-wide">· @listing.HostTotalListings.ToString() Listings</p>
+                        </div>
+                    </div>
+
+                    @if (isLoggedIn)
+                    {
+                        <button class="w-full py-3.5 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/30 hover:bg-[#05a0d3] transition-all transform active:scale-95 flex items-center justify-center gap-2">
+                            <i class="material-icons-round">chat</i> Contact Host
+                        </button>
+                        <button @onclick="ToggleSave"
+                                class="w-full py-3.5 bg-slate-50 border border-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-100 transition-colors flex items-center justify-center gap-2">                       
+                            <i class="material-icons-round text-slate-400">
+                                @(isSaved ? "favorite" : "favorite_border")
+                            </i>
+                            @(isSaved ? "Saved" : "Save Listing")
+                        </button>
+                    }
+                    else
+                    {
+                        <div class="p-4 bg-slate-50 border border-transparent rounded-xl flex flex-col items-center justify-center text-center">
+                            <span class="material-icons-round text-slate-300 text-3xl mb-2">lock</span>
+                            <span class="text-sm text-slate-500">Sign in to contact the host or save this listing.</span>
+                        </div>
+                    }
+
+                </div>
+            </div>
+
+            <!-- Lock Overlay if Not Logged In -->
+            @if (!isLoggedIn)
+            {
+                <div class="absolute inset-0 top-[400px] z-50 flex items-center justify-center pt-24 pb-10 bg-gradient-to-t from-[#fafaf9] via-[#fafaf9]/90 to-transparent">
+                    <div class="bg-white/90 backdrop-blur-xl border border-slate-200 shadow-2xl rounded-3xl p-10 flex flex-col items-center justify-center text-center max-w-sm animate-fade-in-up">
+                        <div class="w-16 h-16 bg-[#00BAF2]/10 text-primary rounded-full flex items-center justify-center mb-6 ring-8 ring-primary/5">
+                            <i class="material-icons-round text-3xl">lock</i>
+                        </div>
+                        <h3 class="text-2xl font-extrabold text-slate-800 mb-3 tracking-tight">Login to see full details</h3>
+                        <p class="text-slate-500 mb-8 leading-relaxed">Access detailed descriptions, full photo gallery, precise map locations, and contact the host directly.</p>
+                        
+                        <a href="/login?returnUrl=/listing/@Id" class="w-full py-4 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/30 hover:bg-[#05a0d3] transition-all transform active:scale-95 text-lg mb-4 block">
+                            Login / Sign Up
+                        </a>
+                        <p class="text-xs font-semibold text-slate-400 flex items-center gap-2 justify-center">
+                            <i class="material-icons-round text-[14px]">group</i> Join 5,000+ students finding homes
+                        </p>
+                        
+
+                    </div>
+                </div>
+            }
+
+        </div>
+    }
+
+    <UniNestFE.Layout.ScrollButton />
+</div>
+
+
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+    
+    private DetailListingDto listing;
+    private bool isLoading = true;
+    private bool isLoggedIn = false;
+    private bool showLargeMap = false;
+    private bool isMapLoading = false;
+    private bool mapInitialized = false;
+
+    bool isSaved = false;
+    private string? message;
+    private string messageType = "success"; // success | error
+    
+    private bool showFullGallery = false;
+    private bool showMessage = false;
+
+    private async Task GoBack()
+    {
+        await JS.InvokeVoidAsync("history.back");
+    }
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        isLoggedIn = authState.User.Identity.IsAuthenticated;
+
+        if (isLoggedIn)
+        {
+            var token = await JS.InvokeAsync<string>("localStorage.getItem", "authToken");
+
+            if (!string.IsNullOrEmpty(token))
+            {
+                Http.DefaultRequestHeaders.Authorization =
+                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+                try
+                {
+                    isSaved = await Http.GetFromJsonAsync<bool>($"api/favorites/check/{Id}");
+                }
+                catch
+                {
+                    isSaved = false;
+                }
+            }
+        }
+
+        await LoadListingDetail();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (listing != null && !isLoading && !mapInitialized)
+        {
+            mapInitialized = true;
+            await JS.InvokeVoidAsync("mapInterop.initReadOnlyMap", "detailMap", listing.Latitude, listing.Longitude);
+        }
+    }
+
+    private async Task OpenLargeMap()
+    {
+        if (isMapLoading || showLargeMap) return;
+        
+        isMapLoading = true;
+        showLargeMap = true;
+        StateHasChanged();
+        
+        // Wait for modal to render element
+        await Task.Delay(400); 
+        
+        try 
+        {
+            await JS.InvokeVoidAsync("mapInterop.initReadOnlyMap", "largeDetailMap", listing.Latitude, listing.Longitude);
+        }
+        finally
+        {
+            isMapLoading = false;
+            StateHasChanged();
+        }
+    }
+    private async Task LoadListingDetail()
+
+    {
+        isLoading = true;
+        try
+        {
+            listing = await Http.GetFromJsonAsync<DetailListingDto>($"api/DetailListings/{Id}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error loading listing detail: " + ex.Message);
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+    private async void ShowMessage(string msg, string type)
+    {
+        message = msg;
+        messageType = type;
+        showMessage = true;
+
+        StateHasChanged();
+
+        await Task.Delay(2500); // 2.5s tự biến mất
+
+        showMessage = false;
+        StateHasChanged();
+    }
+    private async Task ToggleSave()
+    {
+        try
+        {
+            if (isSaved)
+            {
+                var res = await Http.DeleteAsync($"api/favorites/{Id}");
+
+                if (res.IsSuccessStatusCode)
+                {
+                    isSaved = false;
+                    ShowMessage("Removed from favorites", "success");
+                }
+                else
+                {
+                    ShowMessage("Failed to remove. Please try again.", "error");
+                }
+            }
+            else
+            {
+                var res = await Http.PostAsync($"api/favorites/{Id}", null);
+
+                if (res.IsSuccessStatusCode)
+                {
+                    isSaved = true;
+                    ShowMessage("Saved successfully ❤️", "success");
+                }
+                else
+                {
+                    ShowMessage("Could not save. Please login again.", "error");
+                }
+            }
+        }
+        catch
+        {
+            ShowMessage("Network error. Please check your connection.", "error");
+        }
+    }
+    }
+}

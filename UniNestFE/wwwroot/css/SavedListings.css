@@ -1,0 +1,54 @@
+/* Saved Listings Page Styles */
+
+.saved-listings-page {
+    max-width: none !important;
+    width: 100% !important;
+    margin: 0 auto;
+    min-height: 100vh;
+    background-color: #fafaf9;
+    padding-top: 2rem;
+    padding-bottom: 8rem;
+}
+
+/* Expansion for the content container */
+.saved-listings-page .content-container {
+    width: 100%;
+    max-width: 1400px; /* Optional: set a larger max-width or remove it for full width */
+    margin: 0 auto;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+}
+
+@media (min-width: 1024px) {
+    .saved-listings-page .content-container {
+        padding-left: 2.5rem;
+        padding-right: 2.5rem;
+    }
+}
+
+/* Custom Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+    height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1;
+    border-radius: 10px;
+}
+
+/* Card Transitions */
+.card-container {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-container:hover {
+    transform: translateY(-4px);
+}
+
+.card-container img {
+    transition: transform 0.5s ease;
+}
+
+.card-container:hover img {
+    transform: scale(1.05);
+}

@@ -1,4 +1,4 @@
-﻿using System.Security.Claims;
+using System.Security.Claims;
 using System.Text.Json;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.JSInterop;
@@ -24,7 +24,8 @@ public class CustomAuthStateProvider : AuthenticationStateProvider
             {
                 var claims = ParseClaimsFromJwt(token);
                 // "JwtAuth" indicates the user is authenticated
-                identity = new ClaimsIdentity(claims, "JwtAuth"); 
+                // Mapping "FullName" to Name claim and "role" to Role claim for internal logic like IsInRole
+                identity = new ClaimsIdentity(claims, "JwtAuth", "FullName", "role"); 
             }
         }
         catch
