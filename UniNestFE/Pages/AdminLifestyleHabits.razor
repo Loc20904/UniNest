@@ -1,0 +1,110 @@
+@page "/admin/habits"
+@inject HttpClient Http
+@inject IJSRuntime JS
+
+<div class="admin-container">
+    <h2 class="admin-title">Manage Lifestyle Habits (Admin Master Data)</h2>
+    
+    <div class="add-form">
+        <div class="form-group-admin">
+            <label>Habit Name (e.g. Non-smoker, Pet friendly)</label>
+            <input @bind="newHabit.Name" placeholder="Enter habit name..." />
+        </div>
+        <button class="btn-add" @onclick="AddHabit">
+            + Add New
+        </button>
+    </div>
+
+    <table class="amenity-table">
+        <thead>
+            <tr>
+                <th style="width: 80px">ID</th>
+                <th>Name</th>
+                <th style="text-align: right">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @{ int index = 1; }
+            @foreach(var habit in habits)
+            {
+                <tr>
+                    <td>#@index</td>
+                    <td style="font-weight: 500;">@habit.Name</td>
+                    <td style="text-align: right">
+                        <button class="btn-delete" @onclick="() => DeleteHabit(habit)">
+                            Delete
+                        </button>
+                    </td>
+                </tr>
+                index++;
+            }
+            @if(habits.Count == 0)
+            {
+                <tr>
+                    <td colspan="3" style="text-align: center; padding: 40px; color: #666;">
+                        No lifestyle habits found in database.
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <UniNestFE.Layout.ScrollButton />
+</div>
+
+@code {
+    public class LifestyleHabitDto { public int LifestyleHabitId { get; set;} public string Name { get; set; } }
+    List<LifestyleHabitDto> habits = new();
+    LifestyleHabitDto newHabit = new();
+
+    private async Task AttachTokenAsync()
+    {
+        var token = await JS.InvokeAsync<string>("localStorage.getItem", "authToken");
+        if (!string.IsNullOrEmpty(token))
+        {
+            Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var res = await Http.GetFromJsonAsync<List<LifestyleHabitDto>>("https://localhost:7045/api/LifestyleHabits");
+            if (res != null) habits = res;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+    }
+
+    async Task AddHabit()
+    {
+        if (string.IsNullOrWhiteSpace(newHabit.Name))
+            return;
+
+        await AttachTokenAsync();
+        var response = await Http.PostAsJsonAsync("https://localhost:7045/api/LifestyleHabits", newHabit);
+        
+        if (response.IsSuccessStatusCode)
+        {
+            var added = await response.Content.ReadFromJsonAsync<LifestyleHabitDto>();
+            if (added != null)
+            {
+                habits.Add(added);
+                newHabit = new LifestyleHabitDto(); // Reset form
+            }
+        }
+    }
+
+    async Task DeleteHabit(LifestyleHabitDto habit)
+    {
+        await AttachTokenAsync();
+        var response = await Http.DeleteAsync($"https://localhost:7045/api/LifestyleHabits/{habit.LifestyleHabitId}");
+        
+        if (response.IsSuccessStatusCode)
+        {
+            habits.Remove(habit);
+        }
+    }
+}

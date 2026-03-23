@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 
 public class UniNestDbContext : DbContext
 {
@@ -17,6 +17,8 @@ public class UniNestDbContext : DbContext
     public DbSet<University> Universities { get; set; }
     public DbSet<Favorite> Favorites { get; set; }
     public DbSet<Request> Requests { get; set; }
+    public DbSet<Amenity> Amenities { get; set; }
+    public DbSet<LifestyleHabit> LifestyleHabits { get; set; }
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -46,6 +48,24 @@ public class UniNestDbContext : DbContext
             // Gần Cầu Rồng
             new Address { AddressId = 2, ListingId = 2, FullAddress = "Đường Trần Hưng Đạo", Latitude = 16.061735m, Longitude = 108.232372m }
         );
+
+        // Khởi tạo các tiện ích cơ bản (Seed Data cho Amenities)
+        modelBuilder.Entity<Amenity>().HasData(
+            new Amenity { AmenityId = 1, Name = "Wi-Fi", Icon = "wifi" },
+            new Amenity { AmenityId = 2, Name = "Air Conditioning", Icon = "ac_unit" },
+            new Amenity { AmenityId = 3, Name = "Private Bath", Icon = "bathtub" },
+            new Amenity { AmenityId = 4, Name = "Parking", Icon = "directions_car" },
+            new Amenity { AmenityId = 5, Name = "Kitchen", Icon = "kitchen" },
+            new Amenity { AmenityId = 6, Name = "Laundry", Icon = "local_laundry_service" }
+        );
+
+        // Khởi tạo thói quen sinh hoạt cơ bản (Seed Data cho LifestyleHabits)
+        modelBuilder.Entity<LifestyleHabit>().HasData(
+            new LifestyleHabit { LifestyleHabitId = 1, Name = "Non-smoker only" },
+            new LifestyleHabit { LifestyleHabitId = 2, Name = "Pet friendly" },
+            new LifestyleHabit { LifestyleHabitId = 3, Name = "Late-night studying" }
+        );
+
         modelBuilder.Entity<Conversation>()
         .HasOne(c => c.ParticipantOne)
         .WithMany() // Hoặc .WithMany(u => u.ConversationsAsPartOne) nếu bạn đã khai báo trong User
