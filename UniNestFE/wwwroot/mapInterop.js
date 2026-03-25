@@ -1,4 +1,4 @@
-﻿window.uniNestMap = {
+window.uniNestMap = {
     map: null,
     apiKey: null,
     mapKey: null,
@@ -126,46 +126,101 @@
     // ------------------------------------------------
     // ADD MARKER (ROOM)
     // ------------------------------------------------
-    addMarker: function (dotNetRef, id, lat, lng, title, price, address) {
+    addMarker: function (dotNetRef, data) {
         if (!this.map) return;
+        if (this.markers[data.id]) return;
 
-        // Return if marker already exists to avoid duplicates
-        if (this.markers[id]) return;
-
-        const popupContent = `
-            <div style="font-family: sans-serif; padding: 5px; min-width: 150px;">
-                <h3 style="margin: 0 0 5px 0; font-weight: bold; font-size: 14px;">${title}</h3>
-                <p style="margin: 0 0 5px 0; font-size: 12px; color: #555;">${address}</p> 
-                <p style="margin: 0; font-weight: bold; color: #ea580c;">${price}</p>
+        const popupHTML = `
+            <div class="w-[300px] bg-[#121416] border border-[#27353a] rounded-xl overflow-hidden shadow-2xl relative text-left">
+                <button onclick="document.querySelector('.mapboxgl-popup').remove()" class="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80 transition-colors backdrop-blur-sm z-20">
+                    <span class="material-icons-round text-sm" style="font-size: 16px;">close</span>
+                </button>
+                <div class="relative h-36 w-full bg-cover bg-center bg-gray-700" style="background-image: url('${data.image || "https://via.placeholder.com/300"}');">
+                     <div class="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-[#121416] via-[#121416]/80 to-transparent"></div>
+                     ${data.isVerified ? `
+                     <div class="absolute top-2 left-2 bg-emerald-500/90 backdrop-blur-md text-white text-[10px] font-bold px-2 py-1 rounded-lg flex items-center gap-1 shadow-lg z-10">
+                         <span class="material-icons-round text-[12px]">verified</span>VERIFIED HOST
+                     </div>` : ''}
+                </div>
+                <div class="p-4 -mt-2 relative z-10 text-white">
+                    <h3 class="text-base font-bold truncate leading-tight">${data.title}</h3>
+                    <div class="flex items-center gap-2 mt-2 text-xs text-secondary-text" style="color: #94a3b8;">
+                        <span class="material-icons-round text-[14px] shrink-0">location_on</span>
+                        <span class="truncate">${data.address}</span>
+                    </div>
+                    <div class="flex items-center gap-2 mt-1 text-xs text-emerald-400">
+                        <span class="material-icons-round text-[14px] shrink-0">near_me</span>
+                        <span class="font-bold" id="dist-${data.id}">Calculating distance...</span>
+                    </div>
+                    <div class="flex justify-between items-center mt-4 pt-3 border-t border-[#27353a]">
+                        <div>
+                            <p class="text-[10px] uppercase font-bold tracking-wider" style="color: #64748b;">Price/Month</p>
+                            <p class="font-extrabold text-lg" style="color: #06b5ef;">${data.priceStr}</p>
+                        </div>
+                        <button class="text-xs hover:opacity-90 px-4 py-2 rounded-lg font-bold transition-all shadow-lg" style="background-color: #06b5ef; color: #121416;">
+                            View Details
+                        </button>
+                    </div>
+                </div>
             </div>
         `;
 
-        // ... rest of function ...
-
-        const popup = new goongjs.Popup({ offset: 25, closeButton: false }).setHTML(popupContent);
+        const popup = new goongjs.Popup({ offset: 25, closeButton: false, closeOnClick: true, maxWidth: 'none' })
+            .setHTML(popupHTML);
 
         const marker = new goongjs.Marker({ color: "#ea580c" })
-            .setLngLat([lng, lat])
+            .setLngLat([data.lng, data.lat])
             .setPopup(popup)
             .addTo(this.map);
 
         const el = marker.getElement();
         el.style.cursor = "pointer";
 
-        // Hover: chỉ mở popup nếu đang đóng
-        el.addEventListener("mouseenter", () => {
-            if (!popup.isOpen()) marker.togglePopup();
-        });
-        el.addEventListener("mouseleave", () => {
-            if (popup.isOpen()) marker.togglePopup();
-        });
-
-        // Click → gọi C# để mở popup bên Blazor
+        // Click → Tính khoảng cách
         el.addEventListener('click', () => {
-            dotNetRef.invokeMethodAsync('OnMarkerClick', id);
+            // Goong/Mapbox natively toggles the popup bound to the marker, 
+            // so we DO NOT call marker.togglePopup() here, which would immediately close it again!
+
+            // Tính toán thẳng trong JS rồi điền text vào div:
+            this.calculateDistanceForMarker(data.id, data.lat, data.lng);
+
+            // Gọi hàm C# nếu cần (như zoom)
+            dotNetRef.invokeMethodAsync('OnMarkerClick', data.id);
         });
 
-        this.markers[id] = marker;
+        this.markers[data.id] = marker;
+    },
+
+    calculateDistanceForMarker: function (id, destLat, destLng) {
+        if (!this.apiKey) return;
+        const distSpan = document.getElementById(`dist-${id}`);
+        if (distSpan) distSpan.innerText = "Calculating distance...";
+
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition((position) => {
+                const userLat = position.coords.latitude;
+                const userLng = position.coords.longitude;
+                const origin = `${userLat},${userLng}`;
+                const destination = `${destLat},${destLng}`;
+                const url = `https://rsapi.goong.io/DistanceMatrix?origins=${origin}&destinations=${destination}&vehicle=bike&api_key=${this.apiKey}`;
+
+                fetch(url)
+                    .then(res => res.json())
+                    .then(resData => {
+                        const row = resData.rows?.[0]?.elements?.[0];
+                        const distEl = document.getElementById(`dist-${id}`);
+                        if (distEl) {
+                            distEl.innerText = row?.status === "OK" ? row.distance.text : "Distance N/A";
+                        }
+                    }).catch(e => {
+                        const distEl = document.getElementById(`dist-${id}`);
+                        if (distEl) distEl.innerText = "Error loading distance";
+                    });
+            });
+        } else {
+            const distEl = document.getElementById(`dist-${id}`);
+            if (distEl) distEl.innerText = "Location disabled";
+        }
     },
 
     // ------------------------------------------------
@@ -182,6 +237,9 @@
         if (!popup.isOpen()) popup.addTo(this.map);
 
         popup.setLngLat(marker.getLngLat());
+
+        // Tính toán khoảng cách khi bấm từ sidebar
+        this.calculateDistanceForMarker(id, marker.getLngLat().lat, marker.getLngLat().lng);
     },
 
     // ------------------------------------------------
@@ -308,5 +366,105 @@
             .addTo(this.map);
 
         this.searchMarker.togglePopup(); // Hiện tên luôn
+    }
+};
+// ------------------------------------------------
+//Dùng cho Editlisting.razor (chọn vị trí trên map để lấy lat/lng)
+window.mapInterop = {
+    initMap: function (dotNetHelper, elementId, initialLat, initialLng) {
+        var id = elementId || 'map';
+        
+        // Cleanup existing map if it exists
+        if (this.maps[id]) {
+            this.maps[id].remove();
+            delete this.maps[id];
+        }
+
+        // Safeguard for Leaflet internal state
+        var container = L.DomUtil.get(id);
+        if (container && container._leaflet_id) {
+            container._leaflet_id = null;
+        }
+
+        console.log("Map initialized on " + id + " with:", initialLat, initialLng);
+        
+        var startLat = (initialLat && initialLat !== 0) ? initialLat : 16.0544;
+        var startLng = (initialLng && initialLng !== 0) ? initialLng : 108.2022;
+        
+        var map = L.map(id).setView([startLat, startLng], 14);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
+
+        var marker;
+        
+        // Add initial marker if coordinates exist
+        if (startLat !== 16.0544 || startLng !== 108.2022) {
+            marker = L.marker([startLat, startLng]).addTo(map);
+        }
+
+        map.on('click', function (e) {
+            var lat = e.latlng.lat;
+            var lng = e.latlng.lng;
+
+            // update marker
+            if (marker) {
+                marker.setLatLng(e.latlng);
+            } else {
+                marker = L.marker(e.latlng).addTo(map);
+            }
+
+            // 🔥 gọi trực tiếp qua dotNetHelper
+            if (dotNetHelper) {
+                dotNetHelper.invokeMethodAsync("OnMapClick", lat, lng);
+            }
+        });
+
+        this.maps[id] = map;
+
+        // Force resize for modals
+        setTimeout(function() {
+            map.invalidateSize();
+        }, 400);
+    },
+
+    // Store multiple map instances if needed
+    maps: {},
+
+    initReadOnlyMap: function (elementId, lat, lng) {
+        var id = elementId || 'map';
+        
+        // Cleanup existing map if it exists
+        if (this.maps[id]) {
+            this.maps[id].remove();
+            delete this.maps[id];
+        }
+
+        // Safeguard for Leaflet internal state
+        var container = L.DomUtil.get(id);
+        if (container && container._leaflet_id) {
+            container._leaflet_id = null;
+        }
+
+        var startLat = (lat && lat !== 0) ? lat : 16.0544;
+        var startLng = (lng && lng !== 0) ? lng : 108.2022;
+        
+        var map = L.map(id).setView([startLat, startLng], 14);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
+
+        if (startLat !== 16.0544 || startLng !== 108.2022) {
+            L.marker([startLat, startLng]).addTo(map);
+        }
+
+        this.maps[id] = map;
+        
+        // Force resize after short delay to handle modal rendering
+        setTimeout(function() {
+            map.invalidateSize();
+        }, 400);
     }
 };

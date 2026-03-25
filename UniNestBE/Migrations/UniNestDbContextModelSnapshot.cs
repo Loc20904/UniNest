@@ -82,6 +82,82 @@ namespace UniNestBE.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Amenity", b =>
+                {
+                    b.Property<int>("AmenityId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("AmenityId"));
+
+                    b.Property<string>("Icon")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("AmenityId");
+
+                    b.ToTable("Amenities");
+
+                    b.HasData(
+                        new
+                        {
+                            AmenityId = 1,
+                            Icon = "wifi",
+                            Name = "Wi-Fi"
+                        },
+                        new
+                        {
+                            AmenityId = 2,
+                            Icon = "ac_unit",
+                            Name = "Air Conditioning"
+                        },
+                        new
+                        {
+                            AmenityId = 3,
+                            Icon = "bathtub",
+                            Name = "Private Bath"
+                        },
+                        new
+                        {
+                            AmenityId = 4,
+                            Icon = "directions_car",
+                            Name = "Parking"
+                        },
+                        new
+                        {
+                            AmenityId = 5,
+                            Icon = "kitchen",
+                            Name = "Kitchen"
+                        },
+                        new
+                        {
+                            AmenityId = 6,
+                            Icon = "local_laundry_service",
+                            Name = "Laundry"
+                        });
+                });
+
+            modelBuilder.Entity("AmenityListing", b =>
+                {
+                    b.Property<int>("AmenitiesAmenityId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ListingsListingId")
+                        .HasColumnType("int");
+
+                    b.HasKey("AmenitiesAmenityId", "ListingsListingId");
+
+                    b.HasIndex("ListingsListingId");
+
+                    b.ToTable("AmenityListing");
+                });
+
             modelBuilder.Entity("Conversation", b =>
                 {
                     b.Property<int>("ConversationID")
@@ -138,6 +214,56 @@ namespace UniNestBE.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("Favorites");
+                });
+
+            modelBuilder.Entity("LifestyleHabit", b =>
+                {
+                    b.Property<int>("LifestyleHabitId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("LifestyleHabitId"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("LifestyleHabitId");
+
+                    b.ToTable("LifestyleHabits");
+
+                    b.HasData(
+                        new
+                        {
+                            LifestyleHabitId = 1,
+                            Name = "Non-smoker only"
+                        },
+                        new
+                        {
+                            LifestyleHabitId = 2,
+                            Name = "Pet friendly"
+                        },
+                        new
+                        {
+                            LifestyleHabitId = 3,
+                            Name = "Late-night studying"
+                        });
+                });
+
+            modelBuilder.Entity("LifestyleHabitListing", b =>
+                {
+                    b.Property<int>("LifestyleHabitsLifestyleHabitId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ListingsListingId")
+                        .HasColumnType("int");
+
+                    b.HasKey("LifestyleHabitsLifestyleHabitId", "ListingsListingId");
+
+                    b.HasIndex("ListingsListingId");
+
+                    b.ToTable("LifestyleHabitListing");
                 });
 
             modelBuilder.Entity("LifestyleProfile", b =>
@@ -199,6 +325,11 @@ namespace UniNestBE.Migrations
                     b.Property<int>("AddressId")
                         .HasColumnType("int");
 
+                    b.Property<string>("ApprovalStatus")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
                     b.Property<double>("AreaSquareMeters")
                         .HasColumnType("float");
 
@@ -207,6 +338,9 @@ namespace UniNestBE.Migrations
 
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("ExpireAt")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("GenderPreference")
                         .IsRequired()
@@ -238,8 +372,10 @@ namespace UniNestBE.Migrations
                         {
                             ListingId = 1,
                             AddressId = 0,
+                            ApprovalStatus = "Pending",
                             AreaSquareMeters = 20.0,
-                            CreatedAt = new DateTime(2026, 3, 21, 17, 22, 42, 261, DateTimeKind.Local).AddTicks(3671),
+                            CreatedAt = new DateTime(2026, 3, 22, 19, 15, 29, 953, DateTimeKind.Local).AddTicks(5975),
+                            ExpireAt = new DateTime(2026, 4, 21, 19, 15, 29, 953, DateTimeKind.Local).AddTicks(5992),
                             GenderPreference = "Any",
                             IsAvailable = true,
                             OwnerId = 1,
@@ -250,8 +386,10 @@ namespace UniNestBE.Migrations
                         {
                             ListingId = 2,
                             AddressId = 0,
+                            ApprovalStatus = "Pending",
                             AreaSquareMeters = 40.0,
-                            CreatedAt = new DateTime(2026, 3, 21, 17, 22, 42, 261, DateTimeKind.Local).AddTicks(3689),
+                            CreatedAt = new DateTime(2026, 3, 22, 19, 15, 29, 953, DateTimeKind.Local).AddTicks(6010),
+                            ExpireAt = new DateTime(2026, 4, 21, 19, 15, 29, 953, DateTimeKind.Local).AddTicks(6010),
                             GenderPreference = "Any",
                             IsAvailable = true,
                             OwnerId = 1,
@@ -567,6 +705,21 @@ namespace UniNestBE.Migrations
                     b.Navigation("University");
                 });
 
+            modelBuilder.Entity("AmenityListing", b =>
+                {
+                    b.HasOne("Amenity", null)
+                        .WithMany()
+                        .HasForeignKey("AmenitiesAmenityId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Listing", null)
+                        .WithMany()
+                        .HasForeignKey("ListingsListingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Conversation", b =>
                 {
                     b.HasOne("User", "ParticipantOne")
@@ -603,6 +756,21 @@ namespace UniNestBE.Migrations
                     b.Navigation("Listing");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("LifestyleHabitListing", b =>
+                {
+                    b.HasOne("LifestyleHabit", null)
+                        .WithMany()
+                        .HasForeignKey("LifestyleHabitsLifestyleHabitId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Listing", null)
+                        .WithMany()
+                        .HasForeignKey("ListingsListingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("LifestyleProfile", b =>

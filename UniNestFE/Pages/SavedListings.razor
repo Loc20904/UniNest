@@ -1,0 +1,362 @@
+@page "/saved-listings"
+@page "/favorites"
+@using UniNestFE.DTOs
+@inject HttpClient Http
+@inject IJSRuntime JS
+@inject AuthenticationStateProvider AuthStateProvider
+
+<div class="saved-listings-page">
+    <div class="content-container">
+        
+        <!-- Header Section -->
+        <div class="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
+            <div>
+                <div class="flex items-center gap-2 text-[#00BAF2] font-bold text-xs uppercase tracking-wider mb-2">
+                    <i class="material-icons-round text-sm">favorite</i>
+                    Personal Collection
+                </div>
+                <div class="flex items-center gap-4">
+                    <h1 class="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">Your Favorites</h1>
+                    <span class="bg-slate-200 text-slate-600 px-3 py-1 rounded-full text-sm font-bold">@savedItems.Count items</span>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-3">
+                <button @onclick="ClearFilters" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-2.5 px-5 rounded-xl transition-all active:scale-95">
+                    Clear Filters
+                </button>
+            </div>
+        </div>
+
+        <!-- Search and Filter Section -->
+        <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 mb-8 flex flex-col md:flex-row gap-6 items-start md:items-end">
+            
+            <!-- Text Search -->
+            <div class="flex-1 w-full relative">
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Search Favorites</label>
+                <div class="relative">
+                    <i class="material-icons-round absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">search</i>
+                    <input type="text" 
+                           @bind="SearchTerm" 
+                           @bind:event="oninput" 
+                           placeholder="Search title, district..." 
+                           class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-[#00BAF2] focus:ring-2 focus:ring-[#00BAF2]/20 transition-all font-medium text-slate-700"
+                           @onfocus="() => ShowSuggestions = true"
+                           @onblur="HideSuggestionsDelay" />
+                           
+                    <!-- Suggestions Dropdown -->
+                    @if (ShowSuggestions && Suggestions.Any())
+                    {
+                        <div class="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-slate-100 z-50 overflow-hidden max-h-60 overflow-y-auto">
+                            @foreach (var suggestion in Suggestions)
+                            {
+                                <div class="px-4 py-3 hover:bg-slate-50 cursor-pointer text-sm text-slate-700 border-b border-slate-50 last:border-0"
+                                     @onclick="() => SelectSuggestion(suggestion)">
+                                    <span class="font-semibold text-slate-800">@suggestion.Title</span>
+                                    <span class="text-xs text-slate-500 block">@suggestion.District</span>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Price Range -->
+            <div class="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Min Price</label>
+                    <div class="relative">
+                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-medium">₫</span>
+                        <input type="number" 
+                               @bind="MinPrice" 
+                               @bind:event="oninput"
+                               placeholder="Min" 
+                               class="w-full sm:w-32 pl-8 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-[#00BAF2] focus:ring-2 focus:ring-[#00BAF2]/20 transition-all font-medium text-slate-700" />
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Max Price</label>
+                    <div class="relative">
+                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-medium">₫</span>
+                        <input type="number" 
+                               @bind="MaxPrice" 
+                               @bind:event="oninput"
+                               placeholder="Max" 
+                               class="w-full sm:w-32 pl-8 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-[#00BAF2] focus:ring-2 focus:ring-[#00BAF2]/20 transition-all font-medium text-slate-700" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Grid of Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            @if (isLoading)
+            {
+                <div class="col-span-1 sm:col-span-2 lg:col-span-4 text-center py-20 text-slate-500 font-semibold">
+                    Loading your favorites...
+                </div>
+            }
+            else if (!savedItems.Any())
+            {
+                <div class="col-span-1 sm:col-span-2 lg:col-span-4 text-center py-20 text-slate-500 font-semibold">
+                    You haven't saved any listings yet ❤️
+                </div>
+            }
+            else if (!FilteredItems.Any())
+            {
+                <div class="col-span-1 sm:col-span-2 lg:col-span-4 text-center py-20 text-slate-500 font-semibold">
+                    No items match your search and filter criteria.
+                </div>
+            }
+            else
+            {
+                @foreach (var item in PaginatedItems)
+                {
+                    <div class="card-container relative bg-white rounded-3xl p-3 shadow-sm border border-slate-100 transition-all duration-300 hover:shadow-xl @(item.IsBookedOut ? "grayscale opacity-80" : "")">
+                    
+                        <!-- Image Area -->
+                        <div class="relative w-full h-48 rounded-2xl overflow-hidden mb-4 bg-slate-100">
+                            @{
+                                var imgUrl = string.IsNullOrEmpty(item.ImageUrl) ? "default.jpg" : "https://localhost:7045" + item.ImageUrl;
+                            }
+                            <img src="@imgUrl" class="w-full h-full object-cover transition-transform duration-500 hover:scale-105" alt="Room image" />
+                        
+                            <!-- Badge Top Left -->
+                            @if (item.IsBookedOut)
+                            {
+                                <div class="absolute inset-0 bg-slate-900/40 flex items-center justify-center">
+                                    <span class="bg-slate-800/80 text-white font-bold text-xs px-4 py-2 rounded-full uppercase tracking-wider backdrop-blur-sm border border-white/20">Booked Out</span>
+                                </div>
+                            }
+                            else
+                            {
+                                 <div class="absolute top-3 left-3 px-3 py-1.5 rounded-full text-[10px] font-extrabold uppercase tracking-wide flex items-center gap-1 shadow-sm
+                                      @(item.BadgeText == "LAST ROOM" ? "bg-orange-100 text-orange-600" : "bg-cyan-50 text-[#00BAF2]")">
+                                    <i class="material-icons-round text-[12px]">@(item.BadgeText == "LAST ROOM" ? "local_fire_department" : "circle")</i> @item.BadgeText
+                                </div>
+                            }
+
+                            <!-- Heart Action Top Right -->
+                            <button @onclick="() => RemoveFavorite(item.Id)" class="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/90 backdrop-blur-md flex items-center justify-center text-[#00BAF2] shadow-sm hover:scale-110 transition-transform @(item.IsBookedOut ? "text-slate-400" : "")">
+                                <i class="material-icons-round text-[16px]">favorite</i>
+                            </button>
+                        </div>
+
+                        <!-- Content Area -->
+                        <div class="px-2">
+                            <h3 class="font-bold text-[15px] leading-tight text-slate-800 mb-2 h-10 line-clamp-2 @(item.IsBookedOut ? "text-slate-500" : "")">
+                                @item.Title
+                            </h3>
+                        
+                            <div class="price mb-3">
+                                <span class="font-extrabold text-[17px] @(item.IsBookedOut ? "text-slate-500" : "text-[#00BAF2]")">@item.Price VND</span>
+                                <span class="text-[10px] text-slate-400 font-semibold uppercase tracking-wide">/ Month</span>
+                            </div>
+
+                            <div class="flex items-center gap-1 text-slate-400 text-xs font-semibold mb-4">
+                                <i class="material-icons-round text-[14px]">location_on</i>
+                                <span class="truncate">@item.District</span>
+                            </div>
+                        </div>
+
+                        <!-- Footer Action -->
+                        <div class="border-t border-slate-100 pt-3 px-2 pb-1 flex items-center justify-between">
+                            @if (item.IsBookedOut)
+                            {
+                                <button class="text-[#00BAF2] text-xs font-bold hover:underline w-full text-center">
+                                    Notify me of availability
+                                </button>
+                            }
+                            else
+                            {
+                                <div class="flex-1"></div>
+                                <a href="/listing/@item.Id" class="text-[#00BAF2] text-xs font-bold flex items-center gap-1 hover:text-[#05a0d3] hover:underline transition-colors">
+                                    View Details <i class="material-icons-round text-[14px]">arrow_forward</i>
+                                </a>
+                            }
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    @if (TotalPages > 1)
+    {
+        <div class="content-container mt-12 mb-8 flex items-center justify-center gap-2">
+            <button @onclick="PrevPage" disabled="@(CurrentPage == 1)" class="w-10 h-10 rounded-xl flex items-center justify-center font-bold transition-all @(CurrentPage == 1 ? "bg-slate-100 text-slate-400 cursor-not-allowed" : "bg-white text-slate-700 hover:bg-slate-50 shadow-sm border border-slate-200")">
+                <i class="material-icons-round text-lg">chevron_left</i>
+            </button>
+            
+            <div class="flex items-center gap-1 bg-white px-2 py-1.5 rounded-xl shadow-sm border border-slate-200">
+                @for (int i = 1; i <= TotalPages; i++)
+                {
+                    var pageNum = i;
+                    <button @onclick="() => GoToPage(pageNum)" class="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold transition-all @(CurrentPage == pageNum ? "bg-[#00BAF2] text-white shadow-md" : "text-slate-600 hover:bg-slate-100")">
+                        @pageNum
+                    </button>
+                }
+            </div>
+
+            <button @onclick="NextPage" disabled="@(CurrentPage == TotalPages)" class="w-10 h-10 rounded-xl flex items-center justify-center font-bold transition-all @(CurrentPage == TotalPages ? "bg-slate-100 text-slate-400 cursor-not-allowed" : "bg-white text-slate-700 hover:bg-slate-50 shadow-sm border border-slate-200")">
+                <i class="material-icons-round text-lg">chevron_right</i>
+            </button>
+        </div>
+    }
+    <UniNestFE.Layout.ScrollButton />
+</div> 
+
+
+
+@code {
+    private List<SavedListingDto> savedItems = new();
+    private bool isLoading = true;
+
+    // Filter fields
+    private string _searchTerm = "";
+    private string SearchTerm
+    {
+        get => _searchTerm;
+        set
+        {
+            _searchTerm = value;
+            CurrentPage = 1;
+            UpdateSuggestions();
+        }
+    }
+
+    private decimal? _minPrice;
+    private decimal? MinPrice
+    {
+        get => _minPrice;
+        set { _minPrice = value; CurrentPage = 1; }
+    }
+
+    private decimal? _maxPrice;
+    private decimal? MaxPrice
+    {
+        get => _maxPrice;
+        set { _maxPrice = value; CurrentPage = 1; }
+    }
+
+    // Suggestions logic
+    private bool ShowSuggestions = false;
+    private List<SavedListingDto> Suggestions = new();
+
+    private void UpdateSuggestions()
+    {
+        if (string.IsNullOrWhiteSpace(SearchTerm))
+        {
+            Suggestions.Clear();
+            return;
+        }
+        var lower = SearchTerm.ToLowerInvariant();
+        Suggestions = savedItems
+            .Where(x => x.Title.ToLowerInvariant().Contains(lower) || (x.District != null && x.District.ToLowerInvariant().Contains(lower)))
+            .Take(5)
+            .ToList();
+    }
+
+    private void SelectSuggestion(SavedListingDto item)
+    {
+        SearchTerm = item.Title; // Apply title to search
+        ShowSuggestions = false;
+    }
+
+    private async Task HideSuggestionsDelay()
+    {
+        await Task.Delay(200);
+        ShowSuggestions = false;
+    }
+
+    // Pagination logic
+    private int CurrentPage = 1;
+    private int PageSize = 10;
+
+    private IEnumerable<SavedListingDto> FilteredItems
+    {
+        get
+        {
+            var query = savedItems.AsEnumerable();
+
+            if (!string.IsNullOrWhiteSpace(SearchTerm))
+            {
+                var lower = SearchTerm.ToLowerInvariant();
+                query = query.Where(x => x.Title.ToLowerInvariant().Contains(lower) || (x.District != null && x.District.ToLowerInvariant().Contains(lower)));
+            }
+            if (MinPrice.HasValue)
+            {
+                query = query.Where(x => x.Price >= MinPrice.Value);
+            }
+            if (MaxPrice.HasValue)
+            {
+                query = query.Where(x => x.Price <= MaxPrice.Value);
+            }
+            return query;
+        }
+    }
+
+    private int TotalPages => (int)Math.Ceiling(FilteredItems.Count() / (double)PageSize);
+    private IEnumerable<SavedListingDto> PaginatedItems => FilteredItems.Skip((CurrentPage - 1) * PageSize).Take(PageSize);
+
+    private void NextPage() { if (CurrentPage < TotalPages) CurrentPage++; }
+    private void PrevPage() { if (CurrentPage > 1) CurrentPage--; }
+    private void GoToPage(int page) { CurrentPage = page; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var token = await JS.InvokeAsync<string>("localStorage.getItem", "authToken");
+
+            if (!string.IsNullOrEmpty(token))
+            {
+                Http.DefaultRequestHeaders.Authorization =
+                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+                savedItems = await Http.GetFromJsonAsync<List<SavedListingDto>>("api/favorites") ?? new List<SavedListingDto>();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task RemoveFavorite(int listingId)
+    {
+        try
+        {
+            var token = await JS.InvokeAsync<string>("localStorage.getItem", "authToken");
+            Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            var response = await Http.DeleteAsync($"api/favorites/{listingId}");
+            if (response.IsSuccessStatusCode)
+            {
+                savedItems.RemoveAll(x => x.Id == listingId);
+                // Adjust current page if we deleted the last item on the current page
+                if (CurrentPage > TotalPages && TotalPages > 0)
+                {
+                    CurrentPage = TotalPages;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+    }
+
+    private void ClearFilters()
+    {
+        // reset filter
+        SearchTerm = "";
+        MinPrice = null;
+        MaxPrice = null;
+    }
+}

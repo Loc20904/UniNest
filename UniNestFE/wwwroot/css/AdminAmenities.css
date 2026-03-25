@@ -1,0 +1,110 @@
+﻿.admin-container {
+    padding: 40px;
+    max-width: 900px;
+    margin: 0 auto;
+    font-family: 'Inter', sans-serif;
+}
+
+.admin-title {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 24px;
+    color: #1a1a1a;
+}
+
+.add-form {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 32px;
+    background: #f8f9fa;
+    padding: 24px;
+    border-radius: 12px;
+    align-items: flex-end;
+}
+
+.form-group-admin {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+}
+
+    .form-group-admin label {
+        font-size: 14px;
+        font-weight: 600;
+        color: #4a4a4a;
+    }
+
+    .form-group-admin input {
+        padding: 12px 16px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        outline: none;
+        font-size: 15px;
+    }
+
+.btn-add {
+    background: #FF6B00;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    height: 45px;
+    transition: 0.2s;
+}
+
+    .btn-add:hover {
+        background: #e66000;
+    }
+
+.amenity-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+    .amenity-table th {
+        background: #f1f3f5;
+        padding: 16px;
+        text-align: left;
+        font-size: 14px;
+        color: #4a4a4a;
+    }
+
+    .amenity-table td {
+        padding: 16px;
+        border-bottom: 1px solid #f1f3f5;
+        vertical-align: middle;
+    }
+
+.table-icon-preview {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: #fff3e0;
+    color: #FF6B00;
+    border-radius: 8px;
+}
+
+.btn-delete {
+    background: #fee2e2;
+    color: #ef4444;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+    .btn-delete:hover {
+        background: #fca5a5;
+    }
