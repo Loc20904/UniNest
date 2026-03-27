@@ -18,7 +18,7 @@ namespace UniNestFE.DTOs
             }
 
             var email = value.ToString()!.Trim().ToLower();
-            return email.EndsWith(".edu.vn");
+            return email.EndsWith(".edu.vn") || email.EndsWith("udn.vn");
         }
     }
 }

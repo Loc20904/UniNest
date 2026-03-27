@@ -1,0 +1,187 @@
+@page "/admin/student-verification"
+@layout Layout.AdminLayout
+
+<PageTitle>Xác minh sinh viên | Quản trị UniNest</PageTitle>
+
+<div class="flex flex-col space-y-8 animate-fade-in-up">
+    <!-- Header -->
+    <div class="flex justify-between items-end">
+        <div>
+            <h2 class="text-3xl font-extrabold text-[#171c1f] dark:text-white tracking-tight">Xác minh sinh viên</h2>
+            <p class="text-sm text-[#515f74] dark:text-slate-400 mt-2">Xem xét và xác thực danh tính sinh viên để duy trì cộng đồng an toàn.</p>
+        </div>
+        <div class="text-right">
+            <div class="text-4xl font-black text-[#171c1f] dark:text-white leading-none">@requests.Count(r => r.Status == "Pending")</div>
+            <div class="text-xs font-bold text-[#515f74] uppercase tracking-widest mt-1">Yêu cầu chờ duyệt</div>
+        </div>
+    </div>
+
+    <!-- Stats & Filters -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="col-span-2 bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-100 dark:border-slate-700 flex gap-8">
+            <div class="flex-1 space-y-3">
+                <label class="text-[10px] font-bold text-[#515f74] uppercase tracking-widest">Lọc theo trường</label>
+                <div class="flex flex-wrap gap-2">
+                    <button class="px-4 py-2 bg-[#004ac6] text-white text-xs font-bold rounded shadow-md">Tất cả</button>
+                    <button class="px-3 py-2 bg-slate-100 dark:bg-slate-700 text-[#515f74] dark:text-slate-300 text-xs font-semibold rounded hover:bg-slate-200">Bách khoa ĐN</button>
+                    <button class="px-3 py-2 bg-slate-100 dark:bg-slate-700 text-[#515f74] dark:text-slate-300 text-xs font-semibold rounded hover:bg-slate-200">Duy Tân</button>
+                </div>
+            </div>
+            <div class="w-px bg-slate-100 dark:bg-slate-700"></div>
+            <div class="flex-1 space-y-3">
+                <label class="text-[10px] font-bold text-[#515f74] uppercase tracking-widest">Trạng thái hồ sơ</label>
+                <select class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded px-3 py-2 outline-none focus:ring-1 focus:ring-[#004ac6] text-sm">
+                    <option>Chờ duyệt (Pending)</option>
+                    <option>Đã duyệt (Verified)</option>
+                    <option>Bị từ chối (Rejected)</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="bg-[#d1fae5] dark:bg-emerald-900/30 p-6 rounded-xl border border-emerald-100 dark:border-emerald-800/50 flex items-center justify-between">
+            <div class="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-600 flex items-center justify-center">
+                <span class="material-symbols-outlined text-2xl">verified_user</span>
+            </div>
+            <div class="text-right">
+                <div class="text-2xl font-black text-[#059669] dark:text-emerald-400">98.4%</div>
+                <div class="text-[10px] font-bold text-emerald-700 dark:text-emerald-500 uppercase tracking-widest mt-1">Chỉ số Trust Score</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Table -->
+    <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 overflow-hidden shadow-sm">
+        <table class="w-full text-left">
+            <thead>
+                <tr class="bg-slate-50 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-700">
+                    <th class="px-6 py-4 text-[10px] uppercase tracking-widest font-extrabold text-[#515f74]">Hồ sơ sinh viên</th>
+                    <th class="px-6 py-4 text-[10px] uppercase tracking-widest font-extrabold text-[#515f74]">Trường đại học</th>
+                    <th class="px-6 py-4 text-[10px] uppercase tracking-widest font-extrabold text-[#515f74]">Phương thức cung cấp</th>
+                    <th class="px-6 py-4 text-[10px] uppercase tracking-widest font-extrabold text-[#515f74]">Trạng thái</th>
+                    <th class="px-6 py-4 text-[10px] uppercase tracking-widest font-extrabold text-[#515f74] text-right">Thao tác</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+                @foreach(var req in requests)
+                {
+                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors group">
+                        <td class="px-6 py-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-100 to-indigo-100 flex items-center justify-center text-blue-600 font-bold">
+                                    @req.FullName.Substring(0, 1)
+                                </div>
+                                <div>
+                                    <div class="font-bold text-sm text-[#171c1f] dark:text-white">@req.FullName</div>
+                                    <div class="text-[10px] text-[#515f74] uppercase">ID: STU-@req.Id</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="text-sm font-semibold text-[#171c1f] dark:text-slate-300">@req.University</div>
+                            <div class="text-[10px] text-[#515f74]">@req.Semester</div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="flex items-center gap-2 text-sm text-[#515f74] dark:text-slate-400">
+                                <span class="material-symbols-outlined text-sm">@(req.Method == "Email Edu" ? "email" : "badge")</span>
+                                @req.Method
+                            </div>
+                        </td>
+                        <td class="px-6 py-4">
+                            @if(req.Status == "Pending")
+                            {
+                                <span class="px-3 py-1 bg-[#ffeed2] text-[#d97706] text-[10px] font-bold uppercase rounded-full tracking-wider">Chờ duyệt</span>
+                            }
+                            else if(req.Status == "Verified")
+                            {
+                                <span class="px-3 py-1 bg-[#d1fae5] text-[#059669] text-[10px] font-bold uppercase rounded-full tracking-wider">Đã duyệt</span>
+                            }
+                            else
+                            {
+                                <span class="px-3 py-1 bg-red-100 text-red-600 text-[10px] font-bold uppercase rounded-full tracking-wider">Từ chối</span>
+                            }
+                        </td>
+                        <td class="px-6 py-4 text-right space-x-2">
+                            @if(req.Status == "Pending")
+                            {
+                                <button class="text-[#004ac6] hover:bg-blue-50 dark:hover:bg-slate-700 px-3 py-1.5 rounded text-xs font-bold transition-colors">Xem thẻ</button>
+                                <button @onclick="() => VerifyStudent(req, true)" class="bg-[#004ac6] hover:bg-blue-700 text-white px-3 py-1.5 rounded text-xs font-bold transition-colors shadow">Duyệt</button>
+                                <button @onclick="() => VerifyStudent(req, false)" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded text-xs font-bold transition-colors shadow hidden group-hover:inline-block">Từ chối</button>
+                            }
+                            else
+                            {
+                                <button class="text-[#515f74] hover:bg-slate-100 px-3 py-1.5 rounded text-xs font-semibold">Xem chi tiết</button>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        
+        <div class="p-4 border-t border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50">
+            <span class="text-xs text-[#515f74]">Đang hiển thị 1-10 trên @requests.Count yêu cầu</span>
+            <div class="flex space-x-1">
+                <button class="px-3 py-1 bg-slate-200 dark:bg-slate-700 text-[#515f74] dark:text-slate-300 rounded text-xs font-semibold">Trước</button>
+                <button class="px-3 py-1 bg-[#004ac6] text-white rounded text-xs font-semibold">Sau</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    @if(ShowNotification)
+    {
+        <div class="fixed bottom-10 right-10 bg-[#171c1f] text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-4 animate-fade-in-up z-50">
+            <div class="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-400 flex justify-center items-center">
+                <span class="material-symbols-outlined text-sm">mark_email_read</span>
+            </div>
+            <div>
+                <h4 class="font-bold text-sm">Đã gửi kết quả</h4>
+                <p class="text-[11px] text-slate-400">Hệ thống đã tự động gửi email thông báo cho sinh viên.</p>
+            </div>
+        </div>
+    }
+</div>
+
+<style>
+    .animate-fade-in-up { animation: fadeInUp 0.4s ease-out forwards; }
+    @@keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+
+@code {
+    private List<VerificationMock> requests = new()
+    {
+        new VerificationMock { Id = "8829-X", FullName = "Nguyễn Văn Đạt", University = "ĐHQG TPHCM", Semester = "Sinh viên năm 3", Method = "CMND/Thẻ SV", Status = "Pending" },
+        new VerificationMock { Id = "4412-M", FullName = "Trần Tuấn Khải", University = "Đại học Bách Khoa", Semester = "Sinh viên năm 2", Method = "Email Edu", Status = "Verified" },
+        new VerificationMock { Id = "1190-L", FullName = "Lê Thị Ngọc Hân", University = "Hutech", Semester = "Học kỳ 1 / Năm 1", Method = "CMND/Thẻ SV", Status = "Pending" },
+        new VerificationMock { Id = "6652-Q", FullName = "Đinh Đức Trí", University = "Đại học Duy Tân", Semester = "Sinh viên năm 4+", Method = "Email Edu", Status = "Pending" },
+        new VerificationMock { Id = "3211-P", FullName = "Hoàng Kim Oanh", University = "Đại học Khoa Học Cần Thơ", Semester = "Sinh viên năm 2", Method = "CMND/Thẻ SV", Status = "Rejected" }
+    };
+
+    public class VerificationMock
+    {
+        public string Id { get; set; } = "";
+        public string FullName { get; set; } = "";
+        public string University { get; set; } = "";
+        public string Semester { get; set; } = "";
+        public string Method { get; set; } = "";
+        public string Status { get; set; } = "";
+    }
+
+    private bool ShowNotification = false;
+
+    private async Task VerifyStudent(VerificationMock req, bool approve)
+    {
+        req.Status = approve ? "Verified" : "Rejected";
+        
+        // Hiện thông báo gửi email
+        ShowNotification = true;
+        StateHasChanged();
+        
+        // Mock delay 3s rồi ẩn thông báo
+        await Task.Delay(3000);
+        ShowNotification = false;
+        StateHasChanged();
+    }
+}

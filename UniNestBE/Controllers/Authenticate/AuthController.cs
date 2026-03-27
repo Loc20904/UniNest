@@ -62,41 +62,167 @@ namespace UniNestBE.Controllers
             return Ok(new { message = "Đăng xuất thành công. Vui lòng xóa token ở phía Client." });
         }
 
-        // POST: api/Auth/register
-        [HttpPost("register")]
-        public async Task<IActionResult> Register([FromBody] RegisterDto registerDto)
+        // POST: api/Auth/request-registration
+        [HttpPost("request-registration")]
+        public async Task<IActionResult> RequestRegistration([FromBody] RequestRegistrationDto dto)
         {
             try
             {
-                // 1. Kiểm tra Email đã tồn tại chưa
-                var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == registerDto.Email);
+                if (string.IsNullOrEmpty(dto.Email))
+                    return BadRequest(new { message = "Email không được để trống." });
+
+                var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
                 if (existingUser != null)
                 {
                     return BadRequest(new { message = "Email này đã được sử dụng." });
                 }
 
-                // 2. Mã hóa mật khẩu
-                string passwordHash = string.IsNullOrEmpty(registerDto.Password) 
-                    ? string.Empty 
-                    : BCrypt.Net.BCrypt.HashPassword(registerDto.Password);
-
-                // 3. Tạo User mới
-                var newUser = new User
+                // Generate a temporary JWT token just for registration containing the email
+                var jwtSettings = _configuration.GetSection("Jwt");
+                var key = Encoding.ASCII.GetBytes(jwtSettings["Key"]);
+                var claims = new List<Claim>
                 {
-                    FullName = registerDto.FullName,
-                    Email = registerDto.Email,
-                    PasswordHash = passwordHash,
-                    Role = string.IsNullOrEmpty(registerDto.Role) ? "student" : registerDto.Role,
-                    IsVerified = false,
-                    IsOnline = false,
-                    LastActiveAt = DateTime.UtcNow
+                    new Claim(ClaimTypes.Email, dto.Email),
+                    new Claim("IsRegistrationToken", "true")
                 };
 
-                // 4. Lưu vào cơ sở dữ liệu
-                _context.Users.Add(newUser);
-                await _context.SaveChangesAsync();
+                var tokenDescriptor = new SecurityTokenDescriptor
+                {
+                    Subject = new ClaimsIdentity(claims),
+                    Expires = DateTime.UtcNow.AddHours(1), // Link valid for 1 hour
+                    Issuer = jwtSettings["Issuer"],
+                    Audience = jwtSettings["Audience"],
+                    SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+                };
 
-                return Ok(new { message = "Đăng ký tài khoản thành công." });
+                var tokenHandler = new JwtSecurityTokenHandler();
+                var token = tokenHandler.CreateToken(tokenDescriptor);
+                var tokenString = tokenHandler.WriteToken(token);
+
+                // Send Email
+                var registerLink = $"https://localhost:5015/register-complete?token={tokenString}";
+                var emailType = dto.Email.EndsWith(".edu.vn") ? "Tài khoản sinh viên" : "Tài khoản (cần xét duyệt)";
+                var emailBody = $@"
+                    <h3>Hoàn tất đăng ký UniNest</h3>
+                    <p>Chào bạn,</p>
+                    <p>Bạn đã yêu cầu đăng ký <b>{emailType}</b> trên UniNest.</p>
+                    <p>Vui lòng click vào link bên dưới để tiếp tục thiết lập tài khoản:</p>
+                    <p><a href='{registerLink}' style='display:inline-block; padding: 10px 20px; background-color: #00bda4; color: white; text-decoration: none; border-radius: 5px;'>Tiếp tục Đăng ký</a></p>
+                    <p>Link này sẽ hết hạn sau 1 giờ.</p>";
+
+                await _emailService.SendEmailAsync(dto.Email, "Xác nhận Đăng ký UniNest", emailBody);
+
+                return Ok(new { message = "Link hoàn tất đăng ký đã được gửi đến email của bạn." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = $"Đã xảy ra lỗi: {ex.Message}" });
+            }
+        }
+
+        // POST: api/Auth/complete-registration
+        [HttpPost("complete-registration")]
+        public async Task<IActionResult> CompleteRegistration([FromForm] CompleteRegistrationDto dto)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(dto.Token)) return BadRequest(new { message = "Token không hợp lệ." });
+
+                // Decode and Validate Token
+                var tokenHandler = new JwtSecurityTokenHandler();
+                var jwtSettings = _configuration.GetSection("Jwt");
+                var key = Encoding.ASCII.GetBytes(jwtSettings["Key"]);
+
+                try
+                {
+                    tokenHandler.ValidateToken(dto.Token, new TokenValidationParameters
+                    {
+                        ValidateIssuerSigningKey = true,
+                        IssuerSigningKey = new SymmetricSecurityKey(key),
+                        ValidateIssuer = true,
+                        ValidIssuer = jwtSettings["Issuer"],
+                        ValidateAudience = true,
+                        ValidAudience = jwtSettings["Audience"],
+                        ValidateLifetime = true,
+                        ClockSkew = TimeSpan.Zero
+                    }, out SecurityToken validatedToken);
+
+                    var jwtToken = (JwtSecurityToken)validatedToken;
+                    var email = jwtToken.Claims.FirstOrDefault(x => x.Type == ClaimTypes.Email)?.Value;
+                    var isRegToken = jwtToken.Claims.FirstOrDefault(x => x.Type == "IsRegistrationToken")?.Value;
+
+                    if (string.IsNullOrEmpty(email) || isRegToken != "true")
+                        return BadRequest(new { message = "Token không hợp lệ." });
+
+                    // Proceed with registration
+                    var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+                    if (existingUser != null)
+                        return BadRequest(new { message = "Email này đã được sử dụng." });
+
+                    bool isEduEmail = email.EndsWith(".edu.vn");
+
+                    // Validations for regular email
+                    if (!isEduEmail)
+                    {
+                        if (dto.frontIdImage == null || dto.backIdImage == null || string.IsNullOrEmpty(dto.Semester))
+                            return BadRequest(new { message = "Tài khoản đăng ký bằng email thường yêu cầu tải lên ảnh 2 mặt thẻ sinh viên và khai báo học kỳ." });
+                    }
+
+                    string passwordHash = string.IsNullOrEmpty(dto.Password) ? string.Empty : BCrypt.Net.BCrypt.HashPassword(dto.Password);
+
+                    var newUser = new User
+                    {
+                        FullName = dto.FullName,
+                        Email = email,
+                        PhoneNumber = dto.PhoneNumber,
+                        PasswordHash = passwordHash,
+                        Role = string.IsNullOrEmpty(dto.Role) ? "student" : dto.Role,
+                        IsVerified = isEduEmail, // Auto verify if edu email
+                        IsOnline = false,
+                        LastActiveAt = DateTime.UtcNow
+                    };
+
+                    _context.Users.Add(newUser);
+                    await _context.SaveChangesAsync(); // Save to get UserId
+
+                    // If not edu email, handle files and VerificationRequest
+                    if (!isEduEmail)
+                    {
+                        var uploadPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", "verifications");
+                        if (!Directory.Exists(uploadPath)) Directory.CreateDirectory(uploadPath);
+
+                        var frontFileName = $"{Guid.NewGuid()}_{dto.frontIdImage!.FileName}";
+                        var frontFilePath = Path.Combine(uploadPath, frontFileName);
+                        using (var stream = new FileStream(frontFilePath, FileMode.Create)) { await dto.frontIdImage.CopyToAsync(stream); }
+
+                        var backFileName = $"{Guid.NewGuid()}_{dto.backIdImage!.FileName}";
+                        var backFilePath = Path.Combine(uploadPath, backFileName);
+                        using (var stream = new FileStream(backFilePath, FileMode.Create)) { await dto.backIdImage.CopyToAsync(stream); }
+
+                        var verificationReq = new StudentVerificationRequest
+                        {
+                            UserId = newUser.UserId,
+                            FrontIdImageUrl = $"/images/verifications/{frontFileName}",
+                            BackIdImageUrl = $"/images/verifications/{backFileName}",
+                            CurrentSemester = dto.Semester ?? "",
+                            Status = "Pending",
+                            SubmittedAt = DateTime.UtcNow
+                        };
+
+                        _context.StudentVerificationRequests.Add(verificationReq);
+                        await _context.SaveChangesAsync();
+                    }
+
+                    return Ok(new { message = "Đăng ký tài khoản thành công." });
+                }
+                catch (SecurityTokenExpiredException)
+                {
+                    return BadRequest(new { message = "Link đăng ký đã hết hạn. Vui lòng yêu cầu link mới." });
+                }
+                catch (Exception)
+                {
+                    return BadRequest(new { message = "Token đăng ký không hợp lệ." });
+                }
             }
             catch (Exception ex)
             {

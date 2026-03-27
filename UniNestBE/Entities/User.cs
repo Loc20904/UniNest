@@ -73,4 +73,11 @@ public class User
 
     [InverseProperty("ParticipantTwo")]
     public virtual ICollection<Conversation>? ConversationsAsUser2 { get; set; }
+
+    // 8. StudentVerificationReview (Xác minh sinh viên)
+    [InverseProperty("User")]
+    public virtual ICollection<StudentVerificationRequest>? VerificationRequestsAsUser { get; set; }
+
+    [InverseProperty("Admin")]
+    public virtual ICollection<StudentVerificationRequest>? VerificationRequestsReviewed { get; set; }
 }

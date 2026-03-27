@@ -182,6 +182,16 @@
         WarningMessage = "";
         IsLoading = true;
         
+        // Mock Admin Login
+        if (item.Email == "admin@udn.vn" && item.Password == "123")
+        {
+            await JSRuntime.InvokeVoidAsync("localStorage.setItem", "authToken", "admin-demo-token");
+            await JSRuntime.InvokeVoidAsync("localStorage.setItem", "userFullName", "Administrator");
+            NavManager.NavigateTo("/admin/dashboard", forceLoad: true);
+            IsLoading = false;
+            return;
+        }
+
         try
         {
             var response = await Http.PostAsJsonAsync("api/Auth/login", item);
