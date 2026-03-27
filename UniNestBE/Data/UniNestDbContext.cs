@@ -17,8 +17,12 @@ public class UniNestDbContext : DbContext
     public DbSet<University> Universities { get; set; }
     public DbSet<Favorite> Favorites { get; set; }
     public DbSet<Request> Requests { get; set; }
+<<<<<<< HEAD
     public DbSet<Amenity> Amenities { get; set; }
     public DbSet<LifestyleHabit> LifestyleHabits { get; set; }
+=======
+    public DbSet<StudentVerificationRequest> StudentVerificationRequests { get; set; }
+>>>>>>> 31228cb (Update register, demo admin dashboard)
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -186,5 +190,18 @@ public class UniNestDbContext : DbContext
             .WithOne(a => a.Listing)
             .HasForeignKey<Address>(a => a.ListingId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // --- 9. Cấu hình StudentVerificationRequest ---
+        modelBuilder.Entity<StudentVerificationRequest>()
+            .HasOne(svr => svr.User)
+            .WithMany(u => u.VerificationRequestsAsUser)
+            .HasForeignKey(svr => svr.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<StudentVerificationRequest>()
+            .HasOne(svr => svr.Admin)
+            .WithMany(u => u.VerificationRequestsReviewed)
+            .HasForeignKey(svr => svr.ReviewedByAdminId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }
