@@ -114,4 +114,17 @@ app.UseAuthorization();
 
 app.MapControllers();
 
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        UniNestBE.Data.DbInitializer.Initialize(services);
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Error occurred seeding the DB: {ex.Message}");
+    }
+}
+
 app.Run();

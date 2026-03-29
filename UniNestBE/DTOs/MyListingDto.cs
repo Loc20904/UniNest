@@ -14,7 +14,7 @@ namespace UniNestBE.DTOs
 
         public bool IsAvailable { get; set; }
         public string ApprovalStatus { get; set; }
-
+        public int? PropertyTypeId { get; set; }
         public string GenderPreference { get; set; }
 
         public DateTime CreatedAt { get; set; }
@@ -32,7 +32,7 @@ namespace UniNestBE.DTOs
         public double Longitude { get; set; }
 
         public string PrimaryImageUrl { get; set; }
-        
+
         public List<ListingImageDto> Images { get; set; } = new List<ListingImageDto>();
 
         public List<AmenityDto> Amenities { get; set; } = new List<AmenityDto>();

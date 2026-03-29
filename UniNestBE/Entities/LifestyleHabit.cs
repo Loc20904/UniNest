@@ -12,4 +12,7 @@ public class LifestyleHabit
 
     // Relationship: A habit can be selected in multiple listings
     public List<Listing> Listings { get; set; } = new List<Listing>();
+
+    // Relationship: A habit can be possessed by multiple user profiles
+    public List<LifestyleProfile> LifestyleProfiles { get; set; } = new List<LifestyleProfile>();
 }

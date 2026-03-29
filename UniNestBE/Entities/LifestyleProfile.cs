@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 public class LifestyleProfile
@@ -30,4 +30,7 @@ public class LifestyleProfile
 
     [Column(TypeName = "decimal(18, 2)")]
     public decimal BudgetMax { get; set; }
+
+    // Relationship: A profile can possess many lifestyle habits
+    public List<LifestyleHabit> LifestyleHabits { get; set; } = new List<LifestyleHabit>();
 }

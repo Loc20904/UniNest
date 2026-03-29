@@ -26,7 +26,8 @@ namespace UniNestBE.Controllers.ManagerListing
                 .Include(l => l.Images)
                 .Include(l => l.Amenities)
                 .Include(l => l.LifestyleHabits)
-                .Where(l => l.ListingId == id && l.IsAvailable)
+                .Include(l => l.PropertyType)
+                .Where(l => l.ListingId == id && (l.IsAvailable || l.ApprovalStatus == "Pending" || l.ApprovalStatus == "Published"))
                 .FirstOrDefaultAsync();
 
             if (listing == null) return NotFound();
@@ -42,6 +43,7 @@ namespace UniNestBE.Controllers.ManagerListing
                 GenderPreference = listing.GenderPreference,
                 District = listing.Address?.District ?? "",
                 FullAddress = listing.Address?.FullAddress ?? "",
+                PropertyTypeName = listing.PropertyType?.Name ?? "General",
                 PrimaryImageUrl = listing.Images.Where(i => i.IsPrimary).Select(i => i.ImageUrl).FirstOrDefault() ?? "",
                 CreatedAt = listing.CreatedAt,
                 Description = listing.Description,
@@ -51,16 +53,16 @@ namespace UniNestBE.Controllers.ManagerListing
                 HostName = listing.Owner?.FullName ?? "Unknown",
                 HostAvatar = listing.Owner?.StudentAvatar ?? "default_avatar.jpg",
                 HostTotalListings = totalListingsByHost,
-                
+
                 Images = listing.Images.Select(i => i.ImageUrl).ToList(),
-                
+
                 Amenities = listing.Amenities.Select(a => new AmenityDto
                 {
                     AmenityId = a.AmenityId,
                     Name = a.Name,
                     Icon = a.Icon
                 }).ToList(),
-                
+
                 LifestyleHabits = listing.LifestyleHabits.Select(h => new LifestyleHabitDto
                 {
                     LifestyleHabitId = h.LifestyleHabitId,
