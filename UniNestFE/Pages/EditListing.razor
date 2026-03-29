@@ -3,6 +3,7 @@
 @inject HttpClient Http
 @inject NavigationManager Nav
 @inject IJSRuntime JS
+@inject IConfiguration Configuration
 
 <div class="edit-listing-container">
     <!-- Header -->
@@ -37,21 +38,34 @@
                 </div>
 
                 <div class="form-group-space">
+                    <div class="form-group mb-4">
+                        <label class="form-label">Property Type <span class="text-red-500 text-lg" title="Information must be entered">*</span></label>
+                        <div class="property-type-grid">
+                            @foreach (var type in propertyTypes)
+                            {
+                                <div class="type-card @(listing.PropertyTypeId == type.PropertyTypeId ? "active" : "")" 
+                                     @onclick="() => listing.PropertyTypeId = type.PropertyTypeId">
+                                    <span class="type-name">@type.Name</span>
+                                </div>
+                            }
+                        </div>
+                    </div>
+
                     <div class="form-group">
-                        <label class="form-label">Listing Title</label>
+                        <label class="form-label">Listing Title <span class="text-red-500 text-lg" title="Information must be entered">*</span></label>
                         <input type="text" @bind="listing.Title" class="form-input" placeholder="e.g. Modern Studio near Duy Tan University" />
                     </div>
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label">Monthly Rent (VND)</label>
+                            <label class="form-label">Monthly Rent (VND) <span class="text-red-500 text-lg" title="Information must be entered">*</span></label>
                             <div class="form-input-container">
                                 <input type="number" @bind="listing.Price" class="form-input" placeholder="3,500,000" />
                                 <span class="form-input-suffix">VND</span>
                             </div>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Area (M²)</label>
+                            <label class="form-label">Area (M²) <span class="text-red-500 text-lg" title="Information must be entered">*</span></label>
                             <div class="form-input-container" style="justify-content: flex-end;">
                                 <input type="number" @bind="listing.AreaSquareMeters" class="form-input" placeholder="25" />
                                 <span class="form-input-suffix">m²</span>
@@ -60,7 +74,7 @@
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">Description</label>
+                        <label class="form-label">Description <span class="text-red-500 text-lg" title="Information must be entered">*</span></label>
                         <textarea @bind="listing.Description" rows="4" class="form-textarea" placeholder="Describe the room, furniture, and surroundings..."></textarea>
                     </div>
                 </div>
@@ -74,21 +88,35 @@
                     </div>
                     <h2>Location</h2>
                 </div>
+                
+                @if(!string.IsNullOrEmpty(locationErrorMessage))
+                {
+                    <div class="error-msg" style="color: red; margin-bottom: 16px; background-color: #fee2e2; padding: 12px; border-radius: 8px;">
+                        <i class="material-icons" style="vertical-align: middle;">error</i> <strong>@locationErrorMessage</strong>
+                    </div>
+                }
 
                 <div class="form-row" style="margin-bottom: 24px;">
                     <div class="form-group">
-                        <label class="form-label">District</label>
+                        <label class="form-label">District <span class="text-red-500 text-lg" title="Information must be entered">*</span></label>
                         <div class="form-input-container">
                             <input type="text"
                                    class="form-input"
-                                   @bind="listing.District"
-                                   readonly />
+                                   @bind="listing.District" placeholder="Enter district..." title="District can be auto-filled or entered manually" />
                         </div>
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">Address</label>
-                        <input type="text" @bind="listing.Address" class="form-input" />
+                        <label class="form-label">Address <span class="text-red-500 text-lg" title="Information must be entered">*</span></label>
+                        <div class="flex gap-2">
+                            <input type="text" @bind="listing.Address" 
+                                   @onkeyup='(e) => { if (e.Key == "Enter") SearchAddressOnMap(); }'
+                                   placeholder="Enter address or click map..." class="form-input flex-1" title="Specific address can be auto-filled or entered manually" />
+                            <button type="button" class="bg-[#00BAF2] text-white px-4 rounded-xl hover:bg-[#05a0d3] transition-all active:scale-95 shadow-md flex items-center justify-center" 
+                                    @onclick="SearchAddressOnMap" title="Update map from entered address">
+                                <i class="material-icons">search</i>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -119,11 +147,8 @@
 
                 </div>
             </div>
-
+    
             <!-- Portalled Modal to end of file -->
-
-
-            
 
             <!-- 3. Amenities -->
             <div class="section-card">
@@ -204,7 +229,7 @@
                     <h3 class="upload-title">Click to upload photos</h3>
                     <p class="upload-desc">High-quality images get 5x more views. (Max 10 files)</p>
                     <InputFile id="fileInput" OnChange="HandleFileSelected" multiple accept="image/*" style="display: none;" />
-                    <button type="button" class="btn-upload" onclick="document.getElementById('fileInput').click()">Browse Files</button>
+                    <button type="button" class="btn-upload">Browse Files</button>
                 </div>
 
                 <div class="media-grid">
@@ -262,12 +287,26 @@
                 </button>
                 <div class="footer-right">
                     <span class="auto-save-text">All changes automatically saved</span>
-                    <button type="button" class="btn-save-main" @onclick="UpdateListing">
+                    @if (listing.ApprovalStatus == "Draft")
+                    {
+                        <button type="button" class="btn-post-up" @onclick='() => SubmitWithStatus("Pending")' style="background-color: #00BAF2; color: white; padding: 10px 20px; border-radius: 12px; font-weight: bold; display: flex; align-items: center; gap: 8px; transition: all 0.2s; box-shadow: 0 4px 12px rgba(0, 186, 242, 0.2);">
+                            Post Up <i class="material-icons">publish</i>
+                        </button>
+                    }
+                    <button type="button" class="btn-save-main" @onclick="() => UpdateListing()">
                         Save Changes <i class="material-icons">check</i>
                     </button>
                 </div>
             </div>
         
+    }
+
+    @if (showSuccessAlert)
+    {
+        <div class="fixed top-5 right-5 z-[9999] bg-green-500 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 animate-fade-in-up">
+            <i class="material-icons">check_circle</i>
+            <div class="font-bold">Listing updated successfully! Redirecting...</div>
+        </div>
     }
 
     <!-- Large Map Modal for Selection (Placed at root to avoid stacking context issues) -->
@@ -307,7 +346,7 @@
         </div>
     }
 </div>
-
+<link href="css/EditListing.css" rel="stylesheet" />
 @code {
     [Parameter]
     public int id { get; set; }
@@ -324,12 +363,14 @@
         public string GenderPreference { get; set; }
         public string District { get; set; }
         public string Address { get; set; }
+        public string ApprovalStatus { get; set; }
+        public int? PropertyTypeId { get; set; }
         public double Latitude { get; set; }
         public double Longitude { get; set; }
+        public List<int> AmenityIds { get; set; } = new();
+        public List<int> LifestyleHabitIds { get; set; } = new();
         public List<AmenityItem> Amenities { get; set; } = new();
-        public List<int> AmenityIds => Amenities.Select(a => a.AmenityId).ToList();
         public List<HabitItem> LifestyleHabits { get; set; } = new();
-        public List<int> LifestyleHabitIds => LifestyleHabits.Select(h => h.LifestyleHabitId).ToList();
         public List<ListingImageDto> Images { get; set; } = new();
     }
 
@@ -344,7 +385,9 @@
     List<AmenityItem> AvailableAmenities = new();
     
     public class HabitItem { public int LifestyleHabitId { get; set; } public string Name { get; set; } }
+    public class PropertyType { public int PropertyTypeId { get; set; } public string Name { get; set; } }
     List<HabitItem> AvailableHabits = new();
+    List<PropertyType> propertyTypes = new();
 
     void ToggleAmenity(AmenityItem amenity)
     {
@@ -377,10 +420,11 @@
         try
         {
             var token = await JS.InvokeAsync<string>("localStorage.getItem", "authToken");
-
-            Http.DefaultRequestHeaders.Authorization =
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-
+            if (!string.IsNullOrEmpty(token)) {
+                 Http.DefaultRequestHeaders.Authorization =
+                     new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+            }
+            
             listing = await Http.GetFromJsonAsync<ListingEditDto>(
                 $"https://localhost:7045/api/MyListings/{id}"
             );
@@ -390,6 +434,9 @@
             
             var habitsRes = await Http.GetFromJsonAsync<List<HabitItem>>("https://localhost:7045/api/LifestyleHabits");
             if (habitsRes != null) AvailableHabits = habitsRes;
+
+            var typesRes = await Http.GetFromJsonAsync<List<PropertyType>>("api/PropertyTypes");
+            if (typesRes != null) propertyTypes = typesRes;
         }
         catch (Exception ex)
         {
@@ -508,16 +555,41 @@
         preview.IsPrimary = true;
     }
 
+    async Task SubmitWithStatus(string status)
+    {
+        listing.ApprovalStatus = status;
+        await UpdateListing();
+    }
+
     async Task UpdateListing()
     {
-        if (listing.Images.Count + selectedImagePreviews.Count == 0)
+        // Populate IDs for serialization
+        listing.AmenityIds = listing.Amenities.Select(a => a.AmenityId).ToList();
+        listing.LifestyleHabitIds = listing.LifestyleHabits.Select(h => h.LifestyleHabitId).ToList();
+
+        if (listing.ApprovalStatus != "Draft")
         {
-            uploadErrorMessage = "You must upload at least one image before saving!";
-            return;
+            if (string.IsNullOrWhiteSpace(listing.Title) ||
+                listing.Price <= 0 ||
+                listing.AreaSquareMeters <= 0 ||
+                listing.PropertyTypeId == null || listing.PropertyTypeId == 0 ||
+                string.IsNullOrWhiteSpace(listing.District) ||
+                string.IsNullOrWhiteSpace(listing.Address))
+            {
+                uploadErrorMessage = "Information must be entered for all required fields (*).";
+                return;
+            }
+
+            if (listing.Images.Count + selectedImagePreviews.Count == 0)
+            {
+                uploadErrorMessage = "Information must be entered: You must upload at least one image before saving!";
+                return;
+            }
         }
         
         try
         {
+            Console.WriteLine($"Updating listing {listing.ListingId} to status {listing.ApprovalStatus}...");
             var response = await Http.PutAsJsonAsync(
                 $"https://localhost:7045/api/MyListings/{listing.ListingId}",
                 listing
@@ -546,18 +618,29 @@
                     await Http.PostAsync($"https://localhost:7045/api/MyListings/{listing.ListingId}/images", content);
                 }
 
+                showSuccessAlert = true;
+                StateHasChanged();
+                Console.WriteLine("Update success!");
+                await Task.Delay(1500); 
                 Nav.NavigateTo("/mylistings");
             }
             else
             {
-                Console.WriteLine("Update failed");
+                var errorText = await response.Content.ReadAsStringAsync();
+                uploadErrorMessage = $"Update failed: {response.StatusCode} - {errorText}";
+                Console.WriteLine(uploadErrorMessage);
+                StateHasChanged();
             }
         }
         catch (Exception ex)
         {
+            uploadErrorMessage = "Connection error: " + ex.Message;
             Console.WriteLine(ex.Message);
+            StateHasChanged();
         }
     }
+
+    bool showSuccessAlert = false;
 
     void Cancel()
     {
@@ -575,9 +658,11 @@
         showLargeMap = false;
         StateHasChanged();
         // Re-init small map to reflect changes
-        await Task.Delay(200);
+        await Task.Delay(400);
         if (objRef == null) objRef = DotNetObjectReference.Create(this);
-        await JS.InvokeVoidAsync("mapInterop.initMap", objRef, "map", listing.Latitude, listing.Longitude);
+        
+        await JS.InvokeVoidAsync("listingGoongMap.initMap", objRef, "map", listing.Latitude, listing.Longitude, 14);
+        await DrawPois();
     }
     
     private async Task OpenLargeMap()
@@ -594,7 +679,8 @@
         try 
         {
             if (objRef == null) objRef = DotNetObjectReference.Create(this);
-            await JS.InvokeVoidAsync("mapInterop.initMap", objRef, "largeSelectionMap", listing.Latitude, listing.Longitude);
+            await JS.InvokeVoidAsync("listingGoongMap.initMap", objRef, "largeSelectionMap", listing.Latitude, listing.Longitude, 16);
+            await DrawPois();
         }
         finally
         {
@@ -605,24 +691,103 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        // Khởi tạo map một lần duy nhất, NGAY SAU KHI listing đã load và div "#map" đã xuất hiện trên UI
         if (listing != null && !mapInitialized)
         {
             mapInitialized = true;
             objRef = DotNetObjectReference.Create(this);
 
-            await JS.InvokeVoidAsync("mapInterop.initMap", objRef, "map", listing.Latitude, listing.Longitude);
+            var mapKey = Configuration["GoongSettings:MapKey"];
+            var apiKey = Configuration["GoongSettings:ApiKey"];
+            await JS.InvokeVoidAsync("listingGoongMap.setKeys", mapKey, apiKey);
+
+            await JS.InvokeVoidAsync("listingGoongMap.initMap", objRef, "map", listing.Latitude, listing.Longitude, 14);
+            await DrawPois();
         }
     }
+    public class NominatimLocation { public string lat { get; set; } public string lon { get; set; } }
+
+    async Task SearchAddressOnMap()
+    {
+        if(string.IsNullOrWhiteSpace(listing.Address)) 
+        {
+            uploadErrorMessage = "Please enter an address to search.";
+            return;
+        }
+        
+        try {
+            locationErrorMessage = "";
+            var addressText = listing.Address ?? "";
+            var districtText = listing.District ?? "";
+            
+            var searchStr = addressText;
+            if (!string.IsNullOrWhiteSpace(districtText) && !addressText.Contains(districtText, StringComparison.OrdinalIgnoreCase))
+            {
+                searchStr += $", {districtText}";
+            }
+            if (!addressText.Contains("Da Nang", StringComparison.OrdinalIgnoreCase) && !addressText.Contains("Đà Nẵng", StringComparison.OrdinalIgnoreCase))
+            {
+                searchStr += ", Da Nang, Vietnam";
+            }
+            
+            var url = $"https://nominatim.openstreetmap.org/search?q={Uri.EscapeDataString(searchStr)}&format=json&limit=1&email=uninest.noreply@gmail.com";
+            
+            using var client = new HttpClient();
+            var result = await client.GetFromJsonAsync<List<NominatimLocation>>(url);
+            
+            // Fallback: nếu không tìm thấy địa chỉ cụ thể như số nhà dài, thử tìm Phường/Quận
+            if (result == null || result.Count == 0)
+            {
+                var fallbackStr = districtText;
+                if (!fallbackStr.Contains("Da Nang", StringComparison.OrdinalIgnoreCase) && !fallbackStr.Contains("Đà Nẵng", StringComparison.OrdinalIgnoreCase))
+                {
+                    fallbackStr += ", Da Nang, Vietnam";
+                }
+                
+                var fallbackUrl = $"https://nominatim.openstreetmap.org/search?q={Uri.EscapeDataString(fallbackStr)}&format=json&limit=1&email=uninest.noreply@gmail.com";
+                result = await client.GetFromJsonAsync<List<NominatimLocation>>(fallbackUrl);
+                
+                if (result != null && result.Count > 0)
+                {
+                    locationErrorMessage = "Không tìm thấy số nhà chính xác, bản đồ tạm hiển thị trung tâm khu vực. Bạn hãy nhấp chuột lên bản đồ để chọn lại vị trí đúng nhất nhé!";
+                }
+            }
+            
+            if(result != null && result.Count > 0)
+            {
+                var loc = result[0];
+                listing.Latitude = double.Parse(loc.lat, System.Globalization.CultureInfo.InvariantCulture);
+                listing.Longitude = double.Parse(loc.lon, System.Globalization.CultureInfo.InvariantCulture);
+                
+                await JS.InvokeVoidAsync("listingGoongMap.updateMarker", listing.Latitude, listing.Longitude, listing.Address);
+                StateHasChanged();
+            }
+            else {
+                 locationErrorMessage = "Could not find location on map. Try adjusting your address text.";
+            }
+        } catch(Exception e) { 
+            Console.WriteLine(e); 
+            locationErrorMessage = "Error requesting location: Bạn đang bị chặn IP do nhấn quá nhanh. Vui lòng đợi 5 phút.";
+        }
+    }
+
+    private bool isGeocoding = false;
+    private string locationErrorMessage = "";
+
     [JSInvokable]
     public async Task OnMapClick(double lat, double lng)
     {
+        if (isGeocoding) return;
+
         try
         {
+            isGeocoding = true;
+            locationErrorMessage = "";
             listing.Latitude = lat;
             listing.Longitude = lng;
 
-            var url = $"https://nominatim.openstreetmap.org/reverse?lat={lat}&lon={lng}&format=json";
+            var latStr = lat.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            var lonStr = lng.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            var url = $"https://nominatim.openstreetmap.org/reverse?lat={latStr}&lon={lonStr}&format=json&email=uninest.noreply@gmail.com";
 
             // Khởi tạo HttpClient mới thay vì dùng Http đang chứa Bearer Token 
             // Điều này phòng tránh Nominatim từ chối request do header lạ và CORS
@@ -632,12 +797,11 @@
             if (result != null)
             {
                 // 🔥 full address
-                string rawAddress = result.display_name;
-                listing.Address = rawAddress.Replace(" Ward", "").Trim();
-
-                // 🔥 district (có thể là suburb / city_district)
                 string rawDistrict = result.address?.city_district ?? result.address?.suburb ?? result.address?.city ?? "Unknown";
                 listing.District = rawDistrict.Replace(" Ward", "").Trim();
+
+                // Cập nhật marker
+                await JS.InvokeVoidAsync("listingGoongMap.updateMarker", lat, lng, listing.Address);
 
                 StateHasChanged(); // refresh UI
             }
@@ -645,6 +809,38 @@
         catch (Exception ex)
         {
             Console.WriteLine(ex.Message);
+            locationErrorMessage = "Không thể tải địa chỉ! IP mạng của bạn đang bị chặn tạm thời vì thao tác quá nhanh. Xin vui lòng chờ 5 phút rồi thử lại!";
+            StateHasChanged();
+        }
+        finally
+        {
+            isGeocoding = false;
+        }
+    }
+
+
+    public class PoiDto { public string Name { get; set; } = ""; public double Lat { get; set; } public double Lng { get; set; } public string Type { get; set; } = "other"; }
+    
+    // Reference list of POIs in Da Nang
+    List<PoiDto> ReferencePois = new()
+    {
+        new PoiDto { Name = "ĐH Bách Khoa (DUT)", Lat = 16.0738, Lng = 108.1499, Type = "university" },
+        new PoiDto { Name = "ĐH Kinh Tế (DUE)", Lat = 16.0469, Lng = 108.2430, Type = "university" },
+        new PoiDto { Name = "ĐH Sư Phạm (UED)", Lat = 16.0604, Lng = 108.1585, Type = "university" },
+        new PoiDto { Name = "ĐH Duy Tân", Lat = 16.0604, Lng = 108.2222, Type = "university" },
+        new PoiDto { Name = "ĐH Kiến Trúc (DAU)", Lat = 16.0543, Lng = 108.2219, Type = "university" },
+        new PoiDto { Name = "ĐH FPT Đà Nẵng", Lat = 15.9686, Lng = 108.2607, Type = "university" },
+        new PoiDto { Name = "Vincom Plaza Da Nang", Lat = 16.0717, Lng = 108.2281, Type = "shopping" },
+        new PoiDto { Name = "Siêu thị GO! (Big C)", Lat = 16.0632, Lng = 108.2163, Type = "shopping" },
+        new PoiDto { Name = "Lotte Mart Da Nang", Lat = 16.0354, Lng = 108.2281, Type = "shopping" }
+    };
+
+    async Task DrawPois()
+    {
+        try {
+            await JS.InvokeVoidAsync("listingGoongMap.addPoiMarkers", ReferencePois);
+        } catch (Exception ex) {
+            Console.WriteLine("Error drawing POIs: " + ex.Message);
         }
     }
 

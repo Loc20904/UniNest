@@ -1,4 +1,4 @@
-﻿.admin-container {
+.admin-container {
     padding: 40px;
     max-width: 900px;
     margin: 0 auto;
@@ -41,6 +41,7 @@
         border-radius: 8px;
         outline: none;
         font-size: 15px;
+        background-color: transparent;
     }
 
 .btn-add {
@@ -97,3 +98,31 @@
     .btn-delete:hover {
         background: #fca5a5;
     }
+
+.th-id { width: 80px; }
+.th-actions { text-align: right; }
+.td-actions { text-align: right; }
+.font-medium-name { font-weight: 500; }
+.empty-state-text {
+    text-align: center;
+    padding: 40px;
+    color: #666;
+}
+
+/* Dark Mode Overrides */
+html.dark .admin-title { color: #f8fafc; }
+html.dark .add-form { background-color: #1e293b; }
+html.dark .form-group-admin label { color: #cbd5e1; }
+html.dark .form-group-admin input {
+    background-color: #0f172a;
+    border-color: #334155;
+    color: #f8fafc;
+}
+html.dark .amenity-table { background-color: #1e293b; }
+html.dark .amenity-table th { background-color: #3500fffc; color: #f8fafc; }
+html.dark .amenity-table td { border-bottom-color: #334155; color: #f8fafc; }
+html.dark .empty-state-text { color: #94a3b8; }
+html.dark .btn-add { background-color: #00b6ffd9; color: #fff; }
+html.dark .btn-add:hover { background-color: #008ebf; }
+html.dark .btn-delete { background-color: #450a0a; color: #f87171; }
+html.dark .btn-delete:hover { background-color: #7f1d1d; }
