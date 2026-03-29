@@ -5,12 +5,13 @@
 @inject NavigationManager NavManager
 @inject AuthenticationStateProvider AuthStateProvider
 @inject IJSRuntime JS
+@inject IConfiguration Configuration
 
-<div class="listing-detail flex flex-col items-center bg-[#fafaf9] min-h-screen py-10 w-full relative overflow-hidden text-slate-800">
+<div class="listing-detail flex flex-col items-center bg-[#fafaf9] dark:bg-slate-900 min-h-[calc(100vh-64px)] py-10 w-full relative text-slate-800 dark:text-slate-200">
     @if (showMessage)
     {
         <div class="fixed top-5 right-5 z-50 px-6 py-3 rounded-xl shadow-lg text-white
-                        @(messageType == "success" ? "bg-green-500" : "bg-red-500")">
+                            @(messageType == "success" ? "bg-green-500" : "bg-red-500")">
             @message
         </div>
     }
@@ -42,7 +43,7 @@
         <div class="w-full max-w-full px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-[1fr_350px] gap-6 lg:gap-10">
             <!-- Left Column: Details -->
             <div class="details-section flex flex-col gap-8">
-                
+
                 <!-- Photos Grid -->
                 <div class="photos-grid relative group">
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 h-[300px] md:h-[450px]">
@@ -52,8 +53,8 @@
                             <div class="md:col-span-2 md:row-span-2 rounded-2xl overflow-hidden cursor-pointer" @onclick="() => showFullGallery = true">
                                 <img src="@mainImgUrl" class="w-full h-full object-cover" />
                             </div>
-                            
-                            @for(int i = 1; i < Math.Min(5, listing.Images.Count); i++)
+
+                            @for (int i = 1; i < Math.Min(5, listing.Images.Count); i++)
                             {
                                 var imgUrl = "https://localhost:7045" + listing.Images[i];
                                 bool isLast = i == 4 && listing.Images.Count > 5;
@@ -83,16 +84,16 @@
                 <!-- Full Gallery Modal -->
                 @if (showFullGallery)
                 {
-                    <div class="fixed inset-0 z-[100] bg-white overflow-y-auto animate-fade-in-up">
+                    <div class="fixed inset-0 z-[100] bg-white dark:bg-slate-900 overflow-y-auto animate-fade-in-up">
                         <div class="max-w-4xl mx-auto py-10 px-6">
-                            <div class="flex justify-between items-center mb-8 sticky top-0 bg-white/80 backdrop-blur-md z-10 py-4">
-                                <h2 class="text-2xl font-extrabold text-slate-800">Photo Gallery</h2>
-                                <button @onclick="() => showFullGallery = false" class="p-2 rounded-full hover:bg-slate-100 transition-colors">
+                            <div class="flex justify-between items-center mb-8 sticky top-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md z-10 py-4 text-slate-800 dark:text-slate-100">
+                                <h2 class="text-2xl font-extrabold">Photo Gallery</h2>
+                                <button @onclick="() => showFullGallery = false" class="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
                                     <i class="material-icons-round text-3xl">close</i>
                                 </button>
                             </div>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                @foreach(var img in listing.Images)
+                                @foreach (var img in listing.Images)
                                 {
                                     <div class="rounded-3xl overflow-hidden shadow-lg mb-4">
                                         <img src="@("https://localhost:7045" + img)" class="w-full h-auto object-cover" />
@@ -107,15 +108,15 @@
                 <!-- Title & Basic Info -->
                 <div class="header flex justify-between items-start">
                     <div>
-                        <h1 class="text-3xl font-extrabold text-slate-900 mb-2">@listing.Title</h1>
+                        <h1 class="text-3xl font-extrabold text-slate-900 dark:text-slate-100 mb-2">@listing.Title</h1>
                         <span class="text-primary font-bold text-xl block sm:inline-block sm:mr-4">@listing.Price.ToString("N0") VNĐ <span class="text-sm text-slate-400">/ month</span></span>
                         <span class="bg-green-100 text-green-700 text-xs font-bold px-3 py-1 rounded-full"><i class="material-icons-round text-[12px] align-middle">verified</i> Verified</span>
                     </div>
                     <div class="flex gap-2 relative z-20">
                         <button class="w-10 h-10 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center hover:bg-slate-200 transition-colors shadow-sm"><i class="material-icons-round">share</i></button>
                         <button @onclick="ToggleSave"
-                         class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center transition-colors shadow-sm
-                            @(isSaved ? "text-red-500 bg-red-50" : "text-slate-500 hover:bg-red-50 hover:text-red-500")">
+                                class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center transition-colors shadow-sm
+                                @(isSaved ? "text-red-500 bg-red-50" : "text-slate-500 hover:bg-red-50 hover:text-red-500")">
 
                             <i class="material-icons-round transition-transform duration-200 @(isSaved ? "scale-110" : "")">
                                 @(isSaved ? "favorite" : "favorite_border")
@@ -126,39 +127,44 @@
 
                 <!-- Property Features -->
                 <div class="flex gap-4 flex-wrap">
-                    <div class="flex-1 min-w-[120px] bg-slate-50 border border-slate-100 p-4 rounded-xl flex flex-col items-center justify-center text-center">
+                    <div class="flex-1 min-w-[120px] bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 p-4 rounded-xl flex flex-col items-center justify-center text-center">
+                        <i class="material-icons-round text-primary text-2xl mb-1">home</i>
+                        <span class="text-xs font-bold text-slate-400 uppercase">Type</span>
+                        <span class="font-bold text-slate-700 dark:text-slate-100">@listing.PropertyTypeName</span>
+                    </div>
+                    <div class="flex-1 min-w-[120px] bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 p-4 rounded-xl flex flex-col items-center justify-center text-center">
                         <i class="material-icons-round text-primary text-2xl mb-1">square_foot</i>
                         <span class="text-xs font-bold text-slate-400 uppercase">Area</span>
-                        <span class="font-bold text-slate-700">@listing.AreaSquareMeters m²</span>
+                        <span class="font-bold text-slate-700 dark:text-slate-100">@listing.AreaSquareMeters m²</span>
                     </div>
-                    <div class="flex-1 min-w-[120px] bg-slate-50 border border-slate-100 p-4 rounded-xl flex flex-col items-center justify-center text-center">
+                    <div class="flex-1 min-w-[120px] bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 p-4 rounded-xl flex flex-col items-center justify-center text-center">
                         <i class="material-icons-round text-primary text-2xl mb-1">wc</i>
                         <span class="text-xs font-bold text-slate-400 uppercase">Gender</span>
-                        <span class="font-bold text-slate-700">@listing.GenderPreference</span>
+                        <span class="font-bold text-slate-700 dark:text-slate-100">@listing.GenderPreference</span>
                     </div>
-                    <div class="flex-1 min-w-[120px] bg-slate-50 border border-slate-100 p-4 rounded-xl flex flex-col items-center justify-center text-center">
+                    <div class="flex-1 min-w-[120px] bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 p-4 rounded-xl flex flex-col items-center justify-center text-center">
                         <i class="material-icons-round text-primary text-2xl mb-1">calendar_today</i>
                         <span class="text-xs font-bold text-slate-400 uppercase">Posted</span>
-                        <span class="font-bold text-slate-700">@listing.CreatedAt.ToString("MMM dd, yyyy")</span>
+                        <span class="font-bold text-slate-700 dark:text-slate-100">@listing.CreatedAt.ToString("MMM dd, yyyy")</span>
                     </div>
                 </div>
 
                 <!-- Protected Content Area (Description, Amenities, Location) -->
-                <div class="protected-content relative mt-6 transition-all duration-500 @(!isLoggedIn ? "filter blur-md pointer-events-none select-none h-[400px] overflow-hidden" : "")">
-                    
+                <div class="protected-content relative mt-6 transition-all duration-500">
+
                     <!-- Description -->
                     <div class="mb-8">
                         <h2 class="text-xl font-bold mb-4">Description</h2>
-                        <p class="text-slate-600 leading-relaxed whitespace-pre-wrap">@listing.Description</p>
+                        <p class="text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">@listing.Description</p>
                     </div>
 
                     <!-- Amenities -->
                     <div class="mb-8">
                         <h2 class="text-xl font-bold mb-4">What this place offers</h2>
                         <div class="grid grid-cols-2 md:grid-cols-3 gap-y-4 gap-x-6">
-                            @foreach(var amenity in listing.Amenities)
+                            @foreach (var amenity in listing.Amenities)
                             {
-                                <div class="flex items-center gap-3 text-slate-600">
+                                <div class="flex items-center gap-3 text-slate-600 dark:text-slate-300">
                                     <i class="material-symbols-outlined text-xl text-primary">@amenity.Icon</i>
                                     <span>@amenity.Name</span>
                                 </div>
@@ -170,9 +176,9 @@
                     <div class="mb-8">
                         <h2 class="text-xl font-bold mb-4">Roommate Preferences</h2>
                         <div class="flex flex-wrap gap-2">
-                            @foreach(var habit in listing.LifestyleHabits)
+                            @foreach (var habit in listing.LifestyleHabits)
                             {
-                                <div class="flex items-center gap-2 bg-slate-100 text-slate-600 px-4 py-2 rounded-full font-medium text-sm">
+                                <div class="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-4 py-2 rounded-full font-medium text-sm">
                                     <i class="material-icons-round text-sm text-slate-400">check_circle</i> @habit.Name
                                 </div>
                             }
@@ -186,7 +192,7 @@
                             @if (!showLargeMap)
                             {
                                 <button @onclick="OpenLargeMap" disabled="@isMapLoading" class="text-primary hover:underline font-bold text-sm flex items-center gap-1">
-                                    <i class="material-icons-round text-lg">open_in_full</i> 
+                                    <i class="material-icons-round text-lg">open_in_full</i>
                                     @(isMapLoading ? "Connecting..." : "Expand Map")
                                 </button>
                             }
@@ -206,14 +212,14 @@
                             @if (!showLargeMap)
                             {
                                 <div class="absolute inset-0 z-[401] bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-                                    <button class="bg-white text-slate-800 font-extrabold px-6 py-2.5 rounded-full shadow-2xl pointer-events-auto transform transition-transform active:scale-95" 
+                                    <button class="bg-white text-slate-800 font-extrabold px-6 py-2.5 rounded-full shadow-2xl pointer-events-auto transform transition-transform active:scale-95"
                                             @onclick="OpenLargeMap" disabled="@isMapLoading">
                                         @(isMapLoading ? "Loading map..." : "Show Large Map")
                                     </button>
                                 </div>
                             }
                         </div>
-                        
+
                         <div class="mt-8 flex items-center justify-start">
                             <button @onclick="GoBack" class="flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold hover:bg-slate-50 hover:border-slate-300 hover:text-primary transition-all shadow-sm active:scale-95 group">
                                 <i class="material-icons-round text-slate-400 group-hover:text-primary transition-colors">arrow_back</i>
@@ -225,11 +231,11 @@
                     <!-- Large Map Modal -->
                     @if (showLargeMap)
                     {
-                        <div class="fixed inset-0 z-[200] bg-white flex flex-col animate-fade-in-up">
-                            <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white">
+                        <div class="fixed inset-0 z-[200] bg-white dark:bg-slate-900 flex flex-col animate-fade-in-up">
+                            <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-white dark:bg-slate-900">
                                 <div>
-                                    <h2 class="text-xl font-extrabold text-slate-800">Location Map</h2>
-                                    <p class="text-xs text-slate-500 flex items-center gap-1 mt-0.5"><i class="material-icons-round text-sm">location_on</i> @listing.FullAddress</p>
+                                    <h2 class="text-xl font-extrabold text-slate-800 dark:text-slate-100">Location Map</h2>
+                                    <p class="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-0.5"><i class="material-icons-round text-sm">location_on</i> @listing.FullAddress</p>
                                 </div>
                                 <button @onclick="() => showLargeMap = false" class="p-2 rounded-full hover:bg-slate-100 transition-colors">
                                     <i class="material-icons-round text-3xl">close</i>
@@ -237,18 +243,18 @@
                             </div>
                             <div class="flex-1 relative">
                                 <div id="largeDetailMap" class="w-full h-full"></div>
-                                
-                                <div class="absolute bottom-6 left-6 right-6 z-[400] bg-white/90 backdrop-blur-md p-4 rounded-2xl shadow-2xl border border-white flex items-center justify-between">
+
+                                <div class="absolute bottom-6 left-6 right-6 z-[400] bg-white/90 dark:bg-slate-800/90 backdrop-blur-md p-4 rounded-2xl shadow-2xl border border-white dark:border-slate-700 flex items-center justify-between">
                                     <div class="flex items-center gap-4">
                                         <div class="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center text-primary">
                                             <i class="material-icons-round text-2xl">map</i>
                                         </div>
                                         <div>
-                                            <span class="block font-extrabold text-slate-800">Approximate location</span>
-                                            <span class="text-sm text-slate-500 font-medium">Coordinate: @listing.Latitude, @listing.Longitude</span>
+                                            <span class="block font-extrabold text-slate-800 dark:text-slate-100">Approximate location</span>
+                                            <span class="text-sm text-slate-500 dark:text-slate-400 font-medium">Coordinate: @listing.Latitude, @listing.Longitude</span>
                                         </div>
                                     </div>
-                                    <button @onclick='() => JS.InvokeVoidAsync("open", $"https://www.google.com/maps?q={listing.Latitude},{listing.Longitude}", "_blank")' 
+                                    <button @onclick='() => JS.InvokeVoidAsync("open", $"https://www.google.com/maps?q={listing.Latitude},{listing.Longitude}", "_blank")'
                                             class="bg-slate-900 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-black transition-colors flex items-center gap-2">
                                         <i class="material-icons-round">navigation</i> Open in Google Maps
                                     </button>
@@ -262,7 +268,7 @@
             <!-- Right Column: Host & Action Card -->
             <div class="sidebar relative">
                 <div class="sticky top-24 bg-white border border-slate-100 shadow-xl shadow-slate-200/50 rounded-3xl p-6 flex flex-col gap-6">
-                    
+
                     <!-- Host Info -->
                     <div class="flex items-center gap-4">
                         <div class="w-16 h-16 rounded-full bg-slate-200 overflow-hidden shrink-0 ring-4 ring-primary/10">
@@ -274,65 +280,34 @@
                         </div>
                     </div>
 
-                    @if (isLoggedIn)
-                    {
-                        <button class="w-full py-3.5 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/30 hover:bg-[#05a0d3] transition-all transform active:scale-95 flex items-center justify-center gap-2">
-                            <i class="material-icons-round">chat</i> Contact Host
-                        </button>
-                        <button @onclick="ToggleSave"
-                                class="w-full py-3.5 bg-slate-50 border border-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-100 transition-colors flex items-center justify-center gap-2">                       
-                            <i class="material-icons-round text-slate-400">
-                                @(isSaved ? "favorite" : "favorite_border")
-                            </i>
-                            @(isSaved ? "Saved" : "Save Listing")
-                        </button>
-                    }
-                    else
-                    {
-                        <div class="p-4 bg-slate-50 border border-transparent rounded-xl flex flex-col items-center justify-center text-center">
-                            <span class="material-icons-round text-slate-300 text-3xl mb-2">lock</span>
-                            <span class="text-sm text-slate-500">Sign in to contact the host or save this listing.</span>
-                        </div>
-                    }
+                    <button @onclick="ContactHostClicked" class="w-full py-3.5 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/30 hover:bg-[#05a0d3] transition-all transform active:scale-95 flex items-center justify-center gap-2">
+                        <i class="material-icons-round">chat</i> Contact Host
+                    </button>
+                    <button @onclick="ToggleSave"
+                            class="w-full py-3.5 bg-slate-50 border border-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-100 transition-colors flex items-center justify-center gap-2">
+                        <i class="material-icons-round text-slate-400">
+                            @(isSaved ? "favorite" : "favorite_border")
+                        </i>
+                        @(isSaved ? "Saved" : "Save Listing")
+                    </button>
 
                 </div>
             </div>
 
-            <!-- Lock Overlay if Not Logged In -->
-            @if (!isLoggedIn)
-            {
-                <div class="absolute inset-0 top-[400px] z-50 flex items-center justify-center pt-24 pb-10 bg-gradient-to-t from-[#fafaf9] via-[#fafaf9]/90 to-transparent">
-                    <div class="bg-white/90 backdrop-blur-xl border border-slate-200 shadow-2xl rounded-3xl p-10 flex flex-col items-center justify-center text-center max-w-sm animate-fade-in-up">
-                        <div class="w-16 h-16 bg-[#00BAF2]/10 text-primary rounded-full flex items-center justify-center mb-6 ring-8 ring-primary/5">
-                            <i class="material-icons-round text-3xl">lock</i>
-                        </div>
-                        <h3 class="text-2xl font-extrabold text-slate-800 mb-3 tracking-tight">Login to see full details</h3>
-                        <p class="text-slate-500 mb-8 leading-relaxed">Access detailed descriptions, full photo gallery, precise map locations, and contact the host directly.</p>
-                        
-                        <a href="/login?returnUrl=/listing/@Id" class="w-full py-4 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/30 hover:bg-[#05a0d3] transition-all transform active:scale-95 text-lg mb-4 block">
-                            Login / Sign Up
-                        </a>
-                        <p class="text-xs font-semibold text-slate-400 flex items-center gap-2 justify-center">
-                            <i class="material-icons-round text-[14px]">group</i> Join 5,000+ students finding homes
-                        </p>
-                        
-
-                    </div>
-                </div>
-            }
+            <!-- Guest Mode enabled: No Lock Overlay needed anymore -->
 
         </div>
     }
 
     <UniNestFE.Layout.ScrollButton />
 </div>
-
+<link href="css/ListingDetail.css" rel="stylesheet" />
 
 
 @code {
     [Parameter]
     public int Id { get; set; }
-    
+
     private DetailListingDto listing;
     private bool isLoading = true;
     private bool isLoggedIn = false;
@@ -343,7 +318,7 @@
     bool isSaved = false;
     private string? message;
     private string messageType = "success"; // success | error
-    
+
     private bool showFullGallery = false;
     private bool showMessage = false;
 
@@ -384,24 +359,31 @@
         if (listing != null && !isLoading && !mapInitialized)
         {
             mapInitialized = true;
-            await JS.InvokeVoidAsync("mapInterop.initReadOnlyMap", "detailMap", listing.Latitude, listing.Longitude);
+
+            var mapKey = Configuration["GoongSettings:MapKey"];
+            var apiKey = Configuration["GoongSettings:ApiKey"];
+            await JS.InvokeVoidAsync("listingGoongMap.setKeys", mapKey, apiKey);
+
+            await JS.InvokeVoidAsync("listingGoongMap.initReadOnlyMap", "detailMap", listing.Latitude, listing.Longitude, 15);
+            await DrawPois();
         }
     }
 
     private async Task OpenLargeMap()
     {
         if (isMapLoading || showLargeMap) return;
-        
+
         isMapLoading = true;
         showLargeMap = true;
         StateHasChanged();
-        
+
         // Wait for modal to render element
-        await Task.Delay(400); 
-        
-        try 
+        await Task.Delay(400);
+
+        try
         {
-            await JS.InvokeVoidAsync("mapInterop.initReadOnlyMap", "largeDetailMap", listing.Latitude, listing.Longitude);
+            await JS.InvokeVoidAsync("listingGoongMap.initReadOnlyMap", "largeDetailMap", listing.Latitude, listing.Longitude, 16);
+            await DrawPois();
         }
         finally
         {
@@ -439,8 +421,25 @@
         showMessage = false;
         StateHasChanged();
     }
+    private void ContactHostClicked()
+    {
+        if (!isLoggedIn)
+        {
+            ShowMessage("Please sign in to contact the host.", "error");
+            return;
+        }
+        // Redirect to chat or show contact info logic here
+        ShowMessage("Contact host feature coming soon!", "success");
+    }
+
     private async Task ToggleSave()
     {
+        if (!isLoggedIn)
+        {
+            ShowMessage("Please sign in to save listings.", "error");
+            return;
+        }
+
         try
         {
             if (isSaved)
@@ -477,5 +476,31 @@
             ShowMessage("Network error. Please check your connection.", "error");
         }
     }
+    public class PoiDto { public string Name { get; set; } = ""; public double Lat { get; set; } public double Lng { get; set; } public string Type { get; set; } = "other"; }
+
+    List<PoiDto> ReferencePois = new()
+    {
+        new PoiDto { Name = "ĐH Bách Khoa (DUT)", Lat = 16.0738, Lng = 108.1499, Type = "university" },
+        new PoiDto { Name = "ĐH Kinh Tế (DUE)", Lat = 16.0469, Lng = 108.2430, Type = "university" },
+        new PoiDto { Name = "ĐH Sư Phạm (UED)", Lat = 16.0604, Lng = 108.1585, Type = "university" },
+        new PoiDto { Name = "ĐH Duy Tân", Lat = 16.0604, Lng = 108.2222, Type = "university" },
+        new PoiDto { Name = "ĐH Kiến Trúc (DAU)", Lat = 16.0543, Lng = 108.2219, Type = "university" },
+        new PoiDto { Name = "ĐH FPT Đà Nẵng", Lat = 15.9686, Lng = 108.2607, Type = "university" },
+        new PoiDto { Name = "Vincom Plaza Da Nang", Lat = 16.0717, Lng = 108.2281, Type = "shopping" },
+        new PoiDto { Name = "Siêu thị GO! (Big C)", Lat = 16.0632, Lng = 108.2163, Type = "shopping" },
+        new PoiDto { Name = "Lotte Mart Da Nang", Lat = 16.0354, Lng = 108.2281, Type = "shopping" }
+    };
+
+    async Task DrawPois()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("listingGoongMap.addPoiMarkers", ReferencePois);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error drawing POIs: " + ex.Message);
+        }
     }
 }
+

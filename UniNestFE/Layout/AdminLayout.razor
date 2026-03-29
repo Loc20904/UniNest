@@ -1,4 +1,5 @@
 @inherits LayoutComponentBase
+@inject IJSRuntime JSRuntime
 
 <div class="text-[#171c1f] min-h-screen bg-[#f6fafe] font-body" style="font-family: 'Inter', sans-serif;">
     <!-- SideNavBar Anchor -->
@@ -72,6 +73,16 @@
                     <button class="hover:bg-slate-200/50 dark:hover:bg-slate-800/50 rounded-full p-2 transition-all">
                         <span class="material-symbols-outlined text-[#515f74]" data-icon="mail">mail</span>
                     </button>
+                    <button @onclick="ToggleTheme" class="p-2 rounded-full bg-slate-100 dark:bg-[#27353a] text-slate-500 dark:text-emerald-400 hover:scale-110 transition-transform">
+                        @if (IsDarkMode)
+                        {
+                            <span class="material-icons-round text-xl">light_mode</span>
+                        }
+                        else
+                        {
+                            <span class="material-icons-round text-xl">dark_mode</span>
+                        }
+                    </button>
                 </div>
                 
                 <div class="h-8 w-px bg-[#c3c6d7]/30 mx-2"></div>
@@ -91,3 +102,26 @@
         @Body
     </main>
 </div>
+@code {
+    private bool IsDarkMode = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var theme = await JSRuntime.InvokeAsync<string>("eval", "localStorage.getItem('theme')");
+            if (theme == "dark")
+            {
+                IsDarkMode = true;
+                StateHasChanged();
+                await JSRuntime.InvokeVoidAsync("uniNestMap.toggleTheme", true);
+            }
+        }
+    }
+
+    private async Task ToggleTheme()
+    {
+        IsDarkMode = !IsDarkMode;
+        await JSRuntime.InvokeVoidAsync("uniNestMap.toggleTheme", IsDarkMode);
+    }
+}

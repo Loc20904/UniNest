@@ -1,13 +1,21 @@
 /* Saved Listings Page Styles */
 
 .saved-listings-page {
-    max-width: none !important;
+    padding: 32px 48px;
     width: 100% !important;
+    max-width: none !important;
     margin: 0 auto;
-    min-height: 100vh;
-    background-color: #fafaf9;
-    padding-top: 2rem;
-    padding-bottom: 8rem;
+    font-family: 'Inter', sans-serif;
+    background-color: #fcfcfc;
+    min-height: calc(100vh - 64px);
+}
+
+/* Dark mode fix to prevent half-dark issue */
+html.dark .saved-listings-page, .dark .saved-listings-page {
+    background-color: transparent !important;
+}
+html.dark .header-title, .dark .header-title {
+    color: #f8fafc;
 }
 
 /* Expansion for the content container */

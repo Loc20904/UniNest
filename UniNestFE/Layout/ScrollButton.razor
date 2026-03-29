@@ -1,12 +1,12 @@
 @inject IJSRuntime JS
 
 <div class="fixed bottom-6 right-6 flex flex-col gap-3 z-[49] transition-all duration-300 @(isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10 pointer-events-none")">
-    <button @onclick="ScrollToTop" 
+    <button @onclick="ScrollToTop"
             class="p-3 bg-white dark:bg-[#1c2126] text-primary rounded-full shadow-2xl border border-slate-200 dark:border-[#27353a] hover:bg-slate-50 dark:hover:bg-slate-800 transition-all active:scale-90 group"
             title="Scroll to Top">
         <span class="material-icons-round text-2xl group-hover:-translate-y-0.5 transition-transform">arrow_upward</span>
     </button>
-    <button @onclick="ScrollToBottom" 
+    <button @onclick="ScrollToBottom"
             class="p-3 bg-white dark:bg-[#1c2126] text-slate-400 dark:text-gray-400 rounded-full shadow-2xl border border-slate-200 dark:border-[#27353a] hover:bg-slate-50 dark:hover:bg-slate-800 transition-all active:scale-90 group"
             title="Scroll to Bottom">
         <span class="material-icons-round text-2xl group-hover:translate-y-0.5 transition-transform">arrow_downward</span>
@@ -22,7 +22,7 @@
         {
             // We want to show buttons only after scrolling a bit
             // But for simplicity in Blazor WASM without complex event listeners:
-            isVisible = true; 
+            isVisible = true;
             StateHasChanged();
         }
     }
