@@ -40,6 +40,12 @@ namespace UniNestBE.Controllers
                 return Unauthorized(new { message = "Email hoặc mật khẩu không chính xác." });
             }
 
+            // Kiểm tra trạng thái xác thực đối với sinh viên
+            if (user.Role == "student" && !user.IsVerified)
+            {
+                return Unauthorized(new { message = "Tài khoản của bạn đang chờ quản trị viên xét duyệt thẻ sinh viên. Vui lòng thử lại sau." });
+            }
+
             // 3. Tạo Token
             var token = GenerateJwtToken(user);
 
@@ -101,7 +107,9 @@ namespace UniNestBE.Controllers
 
                 // Send Email
                 var registerLink = $"https://localhost:5015/register-complete?token={tokenString}";
-                var emailType = dto.Email.EndsWith(".edu.vn") ? "Tài khoản sinh viên" : "Tài khoản (cần xét duyệt)";
+                var allowedDomains = await _context.AllowedEmailDomains.Select(d => d.DomainName).ToListAsync();
+                bool isEduEmail = allowedDomains.Any(d => dto.Email.EndsWith(d, StringComparison.OrdinalIgnoreCase));
+                var emailType = isEduEmail ? "Tài khoản sinh viên" : "Tài khoản (cần xét duyệt)";
                 var emailBody = $@"
                     <h3>Hoàn tất đăng ký UniNest</h3>
                     <p>Chào bạn,</p>
@@ -126,7 +134,7 @@ namespace UniNestBE.Controllers
         {
             try
             {
-                if (string.IsNullOrEmpty(dto.Token)) return BadRequest(new { message = "Token không hợp lệ." });
+                if (string.IsNullOrEmpty(dto.Token)) return BadRequest(new { message = "Lỗi Binding: dto.Token is null. Frontend gửi form data không thành công." });
 
                 // Decode and Validate Token
                 var tokenHandler = new JwtSecurityTokenHandler();
@@ -148,18 +156,22 @@ namespace UniNestBE.Controllers
                     }, out SecurityToken validatedToken);
 
                     var jwtToken = (JwtSecurityToken)validatedToken;
-                    var email = jwtToken.Claims.FirstOrDefault(x => x.Type == ClaimTypes.Email)?.Value;
+                    var email = jwtToken.Claims.FirstOrDefault(x => x.Type == ClaimTypes.Email || x.Type == "email")?.Value;
                     var isRegToken = jwtToken.Claims.FirstOrDefault(x => x.Type == "IsRegistrationToken")?.Value;
 
-                    if (string.IsNullOrEmpty(email) || isRegToken != "true")
-                        return BadRequest(new { message = "Token không hợp lệ." });
+                    if (string.IsNullOrEmpty(email))
+                        return BadRequest(new { message = "Token thiếu Claim Email." });
+                    
+                    if (isRegToken != "true")
+                        return BadRequest(new { message = "Token không mang Claim IsRegistrationToken=true." });
 
                     // Proceed with registration
                     var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
                     if (existingUser != null)
                         return BadRequest(new { message = "Email này đã được sử dụng." });
 
-                    bool isEduEmail = email.EndsWith(".edu.vn");
+                    var allowedDomains = await _context.AllowedEmailDomains.Select(d => d.DomainName).ToListAsync();
+                    bool isEduEmail = allowedDomains.Any(d => email.EndsWith(d, StringComparison.OrdinalIgnoreCase));
 
                     // Validations for regular email
                     if (!isEduEmail)
@@ -219,9 +231,9 @@ namespace UniNestBE.Controllers
                 {
                     return BadRequest(new { message = "Link đăng ký đã hết hạn. Vui lòng yêu cầu link mới." });
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-                    return BadRequest(new { message = "Token đăng ký không hợp lệ." });
+                    return BadRequest(new { message = $"Đã xảy ra lỗi trong quá trình xử lý: {ex.Message}" });
                 }
             }
             catch (Exception ex)

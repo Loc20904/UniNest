@@ -1,5 +1,6 @@
 @page "/admin/settings"
 @layout Layout.AdminLayout
+@inject HttpClient Http
 
 <PageTitle>Cài đặt hệ thống | Quản trị UniNest</PageTitle>
 
@@ -52,13 +53,13 @@
                                     <span class="material-symbols-outlined text-[20px]">account_balance</span>
                                 </div>
                                 <div>
-                                    <h4 class="font-bold border-b-2 border-transparent text-[#171c1f] dark:text-white">@domain.Url</h4>
-                                    <p class="text-[10px] text-[#515f74] dark:text-slate-400">@domain.Name</p>
+                                    <h4 class="font-bold border-b-2 border-transparent text-[#171c1f] dark:text-white">@domain.DomainName</h4>
+                                    <p class="text-[10px] text-[#515f74] dark:text-slate-400">@domain.Description</p>
                                 </div>
                             </div>
                             <div class="flex items-center gap-4">
                                 <span class="px-3 py-1 bg-emerald-100 text-emerald-700 text-[10px] font-bold uppercase tracking-widest rounded-full">Kích hoạt</span>
-                                <button @onclick="() => domains.Remove(domain)" class="text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all">
+                                <button @onclick="() => DeleteDomain(domain.DomainId)" class="text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all">
                                     <span class="material-symbols-outlined text-[20px]">delete</span>
                                 </button>
                             </div>
@@ -180,31 +181,81 @@
     private bool IsAddingDomain = false;
     private string NewDomain = "";
 
-    private List<DomainMock> domains = new()
+    private List<AllowedEmailDomain> domains = new();
+
+    protected override async Task OnInitializedAsync()
     {
-        new DomainMock { Url = ".edu.vn", Name = "Email Sinh viên Toàn quốc" },
-        new DomainMock { Url = "udn.vn", Name = "Đại học Đà Nẵng" },
-        new DomainMock { Url = "dtu.edu.vn", Name = "Đại học Duy Tân" }
-    };
+        await LoadDomains();
+    }
+
+    private async Task LoadDomains()
+    {
+        try
+        {
+            var result = await Http.GetFromJsonAsync<List<AllowedEmailDomain>>("api/Admin/domains");
+            if (result != null)
+            {
+                domains = result;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Lỗi tải domains: {ex.Message}");
+        }
+    }
 
     private void ToggleAddDomain()
     {
         IsAddingDomain = !IsAddingDomain;
     }
 
-    private void AddDomain()
+    private async Task AddDomain()
     {
         if (!string.IsNullOrWhiteSpace(NewDomain))
         {
-            domains.Add(new DomainMock { Url = NewDomain, Name = "Hệ thống bổ sung" });
-            NewDomain = "";
-            IsAddingDomain = false;
+            var newEntity = new AllowedEmailDomain
+            {
+                DomainName = NewDomain,
+                Description = "Hệ thống bổ sung"
+            };
+
+            try
+            {
+                var response = await Http.PostAsJsonAsync("api/Admin/domains", newEntity);
+                if (response.IsSuccessStatusCode)
+                {
+                    await LoadDomains();
+                    NewDomain = "";
+                    IsAddingDomain = false;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Lỗi thêm domain: {ex.Message}");
+            }
         }
     }
 
-    public class DomainMock
+    private async Task DeleteDomain(int domainId)
     {
-        public string Url { get; set; } = "";
-        public string Name { get; set; } = "";
+        try
+        {
+            var response = await Http.DeleteAsync($"api/Admin/domains/{domainId}");
+            if (response.IsSuccessStatusCode)
+            {
+                await LoadDomains();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Lỗi xóa domain: {ex.Message}");
+        }
+    }
+
+    public class AllowedEmailDomain
+    {
+        public int DomainId { get; set; }
+        public string DomainName { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
     }
 }

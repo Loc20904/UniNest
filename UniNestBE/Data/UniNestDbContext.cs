@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using UniNestBE.Entities;
 
 public class UniNestDbContext : DbContext
 {
@@ -20,7 +21,11 @@ public class UniNestDbContext : DbContext
     public DbSet<Amenity> Amenities { get; set; }
     public DbSet<LifestyleHabit> LifestyleHabits { get; set; }
     public DbSet<StudentVerificationRequest> StudentVerificationRequests { get; set; }
+
     public DbSet<PropertyType> PropertyTypes { get; set; }
+
+
+    public DbSet<AllowedEmailDomain> AllowedEmailDomains { get; set; }
 
 
 
@@ -67,6 +72,11 @@ public class UniNestDbContext : DbContext
             new LifestyleHabit { LifestyleHabitId = 1, Name = "Non-smoker only" },
             new LifestyleHabit { LifestyleHabitId = 2, Name = "Pet friendly" },
             new LifestyleHabit { LifestyleHabitId = 3, Name = "Late-night studying" }
+        );
+
+        // Khởi tạo tên miền hợp lệ mặc định (Seed data cho AllowedEmailDomains)
+        modelBuilder.Entity<AllowedEmailDomain>().HasData(
+            new AllowedEmailDomain { DomainId = 1, DomainName = "edu.vn", Description = "Email Sinh viên Toàn quốc" }
         );
 
         modelBuilder.Entity<Conversation>()
