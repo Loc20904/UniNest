@@ -397,8 +397,8 @@ namespace UniNestBE.Migrations
                             CreatedAt = new DateTime(2026, 3, 29, 14, 50, 40, 180, DateTimeKind.Local).AddTicks(7646),
                             ExpireAt = new DateTime(2026, 4, 28, 14, 50, 40, 180, DateTimeKind.Local).AddTicks(7655),
 
-                            CreatedAt = new DateTime(2026, 3, 28, 20, 32, 10, 986, DateTimeKind.Local).AddTicks(6466),
-                            ExpireAt = new DateTime(2026, 4, 27, 20, 32, 10, 986, DateTimeKind.Local).AddTicks(6478),
+                            //CreatedAt = new DateTime(2026, 3, 28, 20, 32, 10, 986, DateTimeKind.Local).AddTicks(6466),
+                            //ExpireAt = new DateTime(2026, 4, 27, 20, 32, 10, 986, DateTimeKind.Local).AddTicks(6478),
 
                             GenderPreference = "Any",
                             IsAvailable = true,
@@ -416,8 +416,8 @@ namespace UniNestBE.Migrations
                             CreatedAt = new DateTime(2026, 3, 29, 14, 50, 40, 180, DateTimeKind.Local).AddTicks(7662),
                             ExpireAt = new DateTime(2026, 4, 28, 14, 50, 40, 180, DateTimeKind.Local).AddTicks(7662),
 
-                            CreatedAt = new DateTime(2026, 3, 28, 20, 32, 10, 986, DateTimeKind.Local).AddTicks(6490),
-                            ExpireAt = new DateTime(2026, 4, 27, 20, 32, 10, 986, DateTimeKind.Local).AddTicks(6490),
+                            //CreatedAt = new DateTime(2026, 3, 28, 20, 32, 10, 986, DateTimeKind.Local).AddTicks(6490),
+                            //ExpireAt = new DateTime(2026, 4, 27, 20, 32, 10, 986, DateTimeKind.Local).AddTicks(6490),
 
                             GenderPreference = "Any",
                             IsAvailable = true,
