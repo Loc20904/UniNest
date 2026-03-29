@@ -11,11 +11,11 @@
         <!-- Alert Section -->
         <div class="alert-banner">
             <div class="alert-content">
-                 <i class="fas fa-clock"></i>
-                 <div>
-                     <strong>Expiring soon!</strong>
-                     <span>"@expiring?.Title" listing is expiring in @((int)(expiring.ExpireAt - DateTime.Now).TotalDays) days. Extend its visibility now.</span>
-                 </div>
+                <i class="fas fa-clock"></i>
+                <div>
+                    <strong>Expiring soon!</strong>
+                    <span>"@expiring?.Title" listing is expiring in @((int)(expiring.ExpireAt - DateTime.Now).TotalDays) days. Extend its visibility now.</span>
+                </div>
             </div>
             <button class="btn-extend-top">Extend now</button>
         </div>
@@ -34,34 +34,65 @@
 
     <!-- Summary Cards -->
     <div class="summary-cards">
-        <div class="card">
+        <div class="card @(currentFilter == "All" ? "selected" : "")" @onclick='() => SetFilter("All")' style="cursor: pointer;">
             <div class="card-info">
                 <span>Total Listings</span>
                 <span class="count">@(listings?.Count ?? 0)</span>
             </div>
             <i class="fas fa-list-ul"></i>
         </div>
-        <div class="card active">
+        <div class="card active @(currentFilter == "Published" ? "selected" : "")" @onclick='() => SetFilter("Published")' style="cursor: pointer;">
             <div class="card-info">
-                <span>Active</span>
-                <span class="count">@(listings?.Count(l => l.IsAvailable) ?? 0)</span>
+                <span>Published</span>
+                <span class="count">@(listings?.Count(l => l.ApprovalStatus == "Approved" && l.ExpireAt >= DateTime.Now && l.IsAvailable) ?? 0)</span>
             </div>
             <i class="fas fa-check-circle"></i>
         </div>
-        <div class="card pending">
+        <div class="card pending @(currentFilter == "Pending" ? "selected" : "")" @onclick='() => SetFilter("Pending")' style="cursor: pointer;">
             <div class="card-info">
                 <span>Pending</span>
-                <span class="count">0</span>
+                <span class="count">@(listings?.Count(l => l.ApprovalStatus == "Pending") ?? 0)</span>
             </div>
             <i class="fas fa-hourglass-half"></i>
         </div>
-        <div class="card hidden-card">
+        <div class="card hidden-card @(currentFilter == "Hidden" ? "selected" : "")" @onclick='() => SetFilter("Hidden")' style="cursor: pointer;">
             <div class="card-info">
                 <span>Hidden</span>
-                <span class="count">@(listings?.Count(l => !l.IsAvailable) ?? 0)</span>
+                <span class="count">@(listings?.Count(l => l.ApprovalStatus == "Hidden" || (l.ApprovalStatus == "Published" && l.ExpireAt >= DateTime.Now && !l.IsAvailable)) ?? 0)</span>
             </div>
             <i class="fas fa-eye-slash"></i>
         </div>
+        <div class="card draft-card @(currentFilter == "Draft" ? "selected" : "")" @onclick='() => SetFilter("Draft")' style="cursor: pointer;">
+            <div class="card-info">
+                <span>Draft</span>
+                <span class="count">@(listings?.Count(l => l.ApprovalStatus == "Draft") ?? 0)</span>
+            </div>
+            <i class="fas fa-file-alt"></i>
+        </div>
+        <div class="card reject-card @(currentFilter == "Not Approved" ? "selected" : "")" @onclick='() => SetFilter("Not Approved")' style="cursor: pointer;">
+            <div class="card-info">
+                <span>Not Approved</span>
+                <span class="count">@(listings?.Count(l => l.ApprovalStatus == "Rejected" || l.ApprovalStatus == "Reject") ?? 0)</span>
+            </div>
+            <i class="fas fa-times-circle"></i>
+        </div>
+        <div class="card expire-card @(currentFilter == "Expired" ? "selected" : "")" @onclick='() => SetFilter("Expired")' style="cursor: pointer;">
+            <div class="card-info">
+                <span>Expired</span>
+                <span class="count">@(listings?.Count(l => l.ApprovalStatus == "Expired" || (l.ExpireAt < DateTime.Now && l.ApprovalStatus != "Draft" && l.ApprovalStatus != "Reject" && l.ApprovalStatus != "Rejected" && l.ApprovalStatus != "Pending")) ?? 0)</span>
+            </div>
+            <i class="fas fa-calendar-times"></i>
+        </div>
+    </div>
+
+    <div class="filter-tabs">
+        <button class="filter-btn @(currentFilter == "All" ? "active" : "")" @onclick='() => SetFilter("All")'>All</button>
+        <button class="filter-btn @(currentFilter == "Published" ? "active" : "")" @onclick='() => SetFilter("Published")'>Published</button>
+        <button class="filter-btn @(currentFilter == "Pending" ? "active" : "")" @onclick='() => SetFilter("Pending")'>Pending</button>
+        <button class="filter-btn @(currentFilter == "Not Approved" ? "active" : "")" @onclick='() => SetFilter("Not Approved")'>Not Approved</button>
+        <button class="filter-btn @(currentFilter == "Expired" ? "active" : "")" @onclick='() => SetFilter("Expired")'>Expired</button>
+        <button class="filter-btn @(currentFilter == "Hidden" ? "active" : "")" @onclick='() => SetFilter("Hidden")'>Hidden</button>
+        <button class="filter-btn @(currentFilter == "Draft" ? "active" : "")" @onclick='() => SetFilter("Draft")'>Draft</button>
     </div>
 
     <!-- Table Section -->
@@ -90,9 +121,9 @@
                 }
                 else
                 {
-                    @foreach (var listing in listings
-                            .Skip((currentPage - 1) * pageSize)
-                            .Take(pageSize))
+                    @foreach (var listing in FilteredListings
+                                    .Skip((currentPage - 1) * pageSize)
+                                    .Take(pageSize))
                     {
                         <tr>
                             <td>
@@ -105,21 +136,33 @@
                                 </div>
                             </td>
                             <td>
-                                @if (listing.ApprovalStatus == "Pending")
+                                @if (listing.ApprovalStatus == "Draft")
                                 {
-                                    <span class="status-badge pending" >Pending</span>
+                                    <span class="status-badge" style="background-color: #f1f5f9; color: #475569; padding: 4px 12px; border-radius: 9999px; font-weight: 700; font-size: 13px;">Draft</span>
                                 }
-                                else if (listing.IsAvailable)
+                                else if (listing.ApprovalStatus == "Rejected" || listing.ApprovalStatus == "Reject")
                                 {
-                                    <span class="status-badge published">Published</span>
+                                    <span class="status-badge" style="background-color: #fee2e2; color: #ef4444; padding: 4px 12px; border-radius: 9999px; font-weight: 700; font-size: 13px;">Not Approved</span>
+                                }
+                                else if (listing.ApprovalStatus == "Expired")
+                                {
+                                    <span class="status-badge" style="background-color: #FEF9C3; color: #C2410C; padding: 4px 12px; border-radius: 9999px; font-weight: 700; font-size: 13px;">Expired</span>
+                                }
+                                else if (listing.ApprovalStatus == "Pending")
+                                {
+                                    <span class="status-badge pending">Pending</span>
                                 }
                                 else if (listing.ExpireAt < DateTime.Now)
                                 {
                                     <span class="status-badge expired">Expired</span>
                                 }
-                                else
+                                else if (!listing.IsAvailable)
                                 {
                                     <span class="status-badge is-hidden">Hidden</span>
+                                }
+                                else
+                                {
+                                    <span class="status-badge published">Published</span>
                                 }
                             </td>
                             <td>
@@ -136,10 +179,10 @@
                                     <button class="btn-icon" @onclick="() => EditListing(listing.ListingId)">
                                         <i class="fas fa-pencil-alt"></i>
                                     </button>
-                                    <label class="toggle-switch" style="@(listing.ApprovalStatus == "Pending" ? "opacity: 0.5; pointer-events: none;" : "")">
+                                    <label class="toggle-switch" style="@(listing.ApprovalStatus == "Pending" || listing.ApprovalStatus == "Draft" || listing.ApprovalStatus == "Rejected" || listing.ApprovalStatus == "Reject" || listing.ApprovalStatus == "Expired" ? "opacity: 0.5; pointer-events: none;" : "")">
                                         <input type="checkbox"
                                                checked="@listing.IsAvailable"
-                                               disabled="@(listing.ApprovalStatus == "Pending")"
+                                               disabled="@(listing.ApprovalStatus == "Pending" || listing.ApprovalStatus == "Draft" || listing.ApprovalStatus == "Rejected" || listing.ApprovalStatus == "Reject" || listing.ApprovalStatus == "Expired")"
                                                @onchange="() => ToggleVisibility(listing.ListingId)" />
                                         <span class="slider"></span>
                                     </label>
@@ -156,7 +199,7 @@
                 }
             </tbody>
         </table>
-        
+
         <div class="table-footer">
             <div class="extension-tools">
                 <span>EXTENSION TOOLS:</span>
@@ -166,23 +209,24 @@
             </div>
             <div class="pagination">
                 <span class="prev"
-                    @onclick="PrevPage"
-                    style="cursor:pointer">
+                      @onclick="PrevPage"
+                      style="cursor:pointer">
                     Previous
                 </span>
 
                 @for (int i = 1; i <= TotalPages; i++)
                 {
-                    <span class="page-num @(currentPage == i ? "active" : "")"
-                        @onclick="(() => GoToPage(i))"
-                        style="cursor:pointer">
-                        @i
+                    int pageNum = i;
+                    <span class="page-num @(currentPage == pageNum ? "active" : "")"
+                          @onclick="(() => GoToPage(pageNum))"
+                          style="cursor:pointer">
+                        @pageNum
                     </span>
                 }
 
                 <span class="next"
-                    @onclick="NextPage"
-                    style="cursor:pointer">
+                      @onclick="NextPage"
+                      style="cursor:pointer">
                     Next
                 </span>
 
@@ -213,8 +257,8 @@
         </div>
     </div>
     <UniNestFE.Layout.ScrollButton />
-    </div>
-    
+</div>
+
 
 
 
@@ -223,42 +267,99 @@
     public class MyListingDto
     {
         public int ListingId { get; set; }
-        public string Title { get; set; }
+        public string? Title { get; set; }
         public decimal Price { get; set; }
         public double AreaSquareMeters { get; set; }
         public bool IsAvailable { get; set; }
-        public string ApprovalStatus { get; set; }
+        public string? ApprovalStatus { get; set; }
         public DateTime ExpireAt { get; set; }
 
-        public string FullAddress { get; set; }
-        public string City { get; set; }
-        public string District { get; set; }
+        public string? FullAddress { get; set; }
+        public string? City { get; set; }
+        public string? District { get; set; }
 
-        public string PrimaryImageUrl { get; set; }
+        public string? PrimaryImageUrl { get; set; }
 
-        
+
     }
     List<MyListingDto> listings;
 
     int currentPage = 1;
     int pageSize = 10;
-    int TotalPages => listings == null ? 1 : (int)Math.Ceiling((double)listings.Count / pageSize);
+
+    string currentFilter = "All";
+
+    void SetFilter(string filter)
+    {
+        currentFilter = filter;
+        currentPage = 1;
+    }
+
+    IEnumerable<MyListingDto> FilteredListings
+    {
+        get
+        {
+            if (listings == null) return Enumerable.Empty<MyListingDto>();
+
+            var query = listings.AsEnumerable();
+
+            switch (currentFilter)
+            {
+                case "Published":
+                    query = query.Where(l => l.ApprovalStatus == "Published" && l.IsAvailable && l.ExpireAt >= DateTime.Now);
+                    break;
+                case "Pending":
+                    query = query.Where(l => l.ApprovalStatus == "Pending");
+                    break;
+                case "Not Approved":
+                    query = query.Where(l => l.ApprovalStatus == "Rejected" || l.ApprovalStatus == "Reject");
+                    break;
+                case "Expired":
+                    query = query.Where(l => l.ApprovalStatus == "Expired" || (l.ExpireAt < DateTime.Now && l.ApprovalStatus != "Draft" && l.ApprovalStatus != "Reject" && l.ApprovalStatus != "Rejected" && l.ApprovalStatus != "Pending"));
+                    break;
+                case "Hidden":
+                    query = query.Where(l => l.ApprovalStatus == "Hidden" || (l.ApprovalStatus == "Published" && !l.IsAvailable && l.ExpireAt >= DateTime.Now));
+                    break;
+                case "Draft":
+                    query = query.Where(l => l.ApprovalStatus == "Draft");
+                    break;
+            }
+            return query.ToList();
+        }
+    }
+
+    int TotalPages
+    {
+        get
+        {
+            var count = FilteredListings.Count();
+            if (count == 0) return 1;
+            return (int)Math.Ceiling((double)count / pageSize);
+        }
+    }
 
     public void GoToPage(int page)
     {
         currentPage = page;
+        StateHasChanged();
     }
 
     public void NextPage()
     {
         if (currentPage < TotalPages)
+        {
             currentPage++;
+            StateHasChanged();
+        }
     }
 
     public void PrevPage()
     {
         if (currentPage > 1)
+        {
             currentPage--;
+            StateHasChanged();
+        }
     }
     protected override async Task OnInitializedAsync()
     {
@@ -293,18 +394,28 @@
     }
     async Task ToggleVisibility(int id)
     {
-        var response = await Http.PatchAsync(
-            $"https://localhost:7045/api/MyListings/toggle-visibility/{id}",
-            null
-        );
-
-        if (response.IsSuccessStatusCode)
+        try
         {
-            var listing = listings.FirstOrDefault(l => l.ListingId == id);
-            if (listing != null)
+            var content = new StringContent("", System.Text.Encoding.UTF8, "application/json");
+            var response = await Http.PatchAsync(
+                $"https://localhost:7045/api/MyListings/toggle-visibility/{id}",
+                content
+            );
+
+            if (response.IsSuccessStatusCode)
             {
-                listing.IsAvailable = !listing.IsAvailable;
+                var listing = listings.FirstOrDefault(l => l.ListingId == id);
+                if (listing != null)
+                {
+                    listing.IsAvailable = !listing.IsAvailable;
+                    listing.ApprovalStatus = listing.IsAvailable ? "Published" : "Hidden";
+                    StateHasChanged();
+                }
             }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
         }
     }
     async Task ExtendListing(int id)

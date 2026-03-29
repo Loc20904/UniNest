@@ -2,9 +2,11 @@
 @inject HttpClient Http
 @inject IJSRuntime JS
 
+<link href="css/AdminLifestyleHabits.css" rel="stylesheet" />
+
 <div class="admin-container">
     <h2 class="admin-title">Manage Lifestyle Habits (Admin Master Data)</h2>
-    
+
     <div class="add-form">
         <div class="form-group-admin">
             <label>Habit Name (e.g. Non-smoker, Pet friendly)</label>
@@ -18,19 +20,21 @@
     <table class="amenity-table">
         <thead>
             <tr>
-                <th style="width: 80px">ID</th>
+                <th class="th-id">ID</th>
                 <th>Name</th>
-                <th style="text-align: right">Actions</th>
+                <th class="th-actions">Actions</th>
             </tr>
         </thead>
         <tbody>
-            @{ int index = 1; }
-            @foreach(var habit in habits)
+            @{
+                int index = 1;
+            }
+            @foreach (var habit in habits)
             {
                 <tr>
                     <td>#@index</td>
-                    <td style="font-weight: 500;">@habit.Name</td>
-                    <td style="text-align: right">
+                    <td class="font-medium-name">@habit.Name</td>
+                    <td class="td-actions">
                         <button class="btn-delete" @onclick="() => DeleteHabit(habit)">
                             Delete
                         </button>
@@ -38,10 +42,10 @@
                 </tr>
                 index++;
             }
-            @if(habits.Count == 0)
+            @if (habits.Count == 0)
             {
                 <tr>
-                    <td colspan="3" style="text-align: center; padding: 40px; color: #666;">
+                    <td colspan="3" class="empty-state-text">
                         No lifestyle habits found in database.
                     </td>
                 </tr>
@@ -50,9 +54,9 @@
     </table>
     <UniNestFE.Layout.ScrollButton />
 </div>
-
+<link href="css/AdminLifestyleHabits.css" rel="stylesheet" />
 @code {
-    public class LifestyleHabitDto { public int LifestyleHabitId { get; set;} public string Name { get; set; } }
+    public class LifestyleHabitDto { public int LifestyleHabitId { get; set; } public string Name { get; set; } }
     List<LifestyleHabitDto> habits = new();
     LifestyleHabitDto newHabit = new();
 
@@ -85,7 +89,7 @@
 
         await AttachTokenAsync();
         var response = await Http.PostAsJsonAsync("https://localhost:7045/api/LifestyleHabits", newHabit);
-        
+
         if (response.IsSuccessStatusCode)
         {
             var added = await response.Content.ReadFromJsonAsync<LifestyleHabitDto>();
@@ -101,7 +105,7 @@
     {
         await AttachTokenAsync();
         var response = await Http.DeleteAsync($"https://localhost:7045/api/LifestyleHabits/{habit.LifestyleHabitId}");
-        
+
         if (response.IsSuccessStatusCode)
         {
             habits.Remove(habit);

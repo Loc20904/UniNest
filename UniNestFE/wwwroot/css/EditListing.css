@@ -5,8 +5,7 @@
     padding: 16px;
     font-family: 'Inter', sans-serif;
     background-color: #fcfcfc;
-    min-height: 100vh;
-    overflow-y: auto;
+    min-height: calc(100vh - 64px);
 }
 
 @media (min-width: 768px) {
@@ -252,6 +251,7 @@
     transition: border-color 0.2s;
     background: transparent;
     box-sizing: border-box;
+    appearance: none; /* ẩn mũi tên mặc định */
 }
 
 .form-input:focus {
@@ -262,7 +262,16 @@
 .form-input::placeholder {
     color: #94A3B8;
 }
-
+.form-input option {
+  padding: 12px;
+  font-size: 14px;
+  color: #334155;
+  background-color: #fff;
+}
+.form-input option:hover {
+  background-color: #F1F5F9;
+  color: #0F172A;
+}
 .form-select {
     appearance: none;
     cursor: pointer;
@@ -713,4 +722,152 @@
 
 .habit-item:hover {
     background-color: #F8FAFC;
+}
+
+/* ---------------------------------
+   DARK MODE OVERRIDES
+-----------------------------------*/
+html.dark .edit-listing-container, .dark .edit-listing-container {
+    background-color: transparent !important;
+}
+html.dark .header-title { color: #f8fafc; }
+html.dark .header-desc { color: #94a3b8; }
+html.dark .section-card { background: #1e293b; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3); border: 1px solid #334155; }
+html.dark .section-header h2 { color: #f8fafc; }
+html.dark .form-label { color: #cbd5e1; }
+html.dark .form-input, html.dark .form-textarea { 
+    background: #0f172a; border-color: #334155; color: #f8fafc; 
+}
+html.dark .form-input:focus, html.dark .form-textarea:focus { border-color: #00BAF2; }
+html.dark .form-input-container { background: #0f172a; border-color: #334155; }
+html.dark .form-input-container:focus-within { border-color: #00BAF2; }
+html.dark .form-input-container input { background: transparent; color: #f8fafc; border: none; }
+html.dark .form-input-suffix { background: #1e293b; color: #94a3b8; border-left-color: #334155; }
+html.dark .amenity-card { border-color: #334155; background: #0f172a; color: #cbd5e1; }
+html.dark .amenity-card:hover { border-color: #475569; background: #1e293b; }
+html.dark .amenity-card.checked { border-color: #00BAF2; background: rgba(0, 186, 242, 0.1); color: #00BAF2; }
+html.dark .amenity-name { color: #f8fafc; }
+html.dark .amenity-icon { color: #94a3b8; }
+html.dark .amenity-card.checked .amenity-name { color: #00BAF2; }
+html.dark .amenity-card.checked .amenity-icon { color: #00BAF2; }
+
+html.dark .segmented-btn { background: #0f172a; border-color: #334155; color: #cbd5e1; }
+html.dark .segmented-btn.active { background: #00BAF2; color: #fff; border-color: #00BAF2; }
+html.dark .upload-zone { border-color: #334155; background: #0f172a; }
+html.dark .upload-zone:hover { border-color: #00BAF2; background: rgba(0, 186, 242, 0.05); }
+html.dark .upload-title { color: #cbd5e1; }
+html.dark .upload-desc { color: #64748b; }
+html.dark .footer-actions { background: #1e293b; border-top-color: #334155; }
+html.dark .btn-prev { color: #94a3b8; }
+html.dark .btn-prev:hover { background: #334155; color: #f8fafc; }
+
+html.dark .habit-item { background: #0f172a; color: #cbd5e1; border: 1px solid #334155; }
+html.dark .habit-item:hover { border-color: #475569; background: #1e293b; }
+html.dark .habit-item.checked { background: rgba(0, 186, 242, 0.1); border-color: #00BAF2; color: #00BAF2; }
+html.dark .habit-name { color: #cbd5e1; }
+html.dark .habit-item.checked .habit-name { color: #00BAF2; }
+html.dark .checkbox-box { background-color: #0f172a; border-color: #475569; }
+html.dark .habit-item.checked .checkbox-box, 
+html.dark .amenity-card.checked .checkbox-box { background-color: #00BAF2; border-color: #00BAF2; }
+/* Property Type Grid Premium Styles */
+.property-type-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin-top: 8px;
+}
+
+@media (min-width: 768px) {
+    .property-type-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+.type-card {
+    position: relative;
+    background: #ffffff;
+    border: 2px solid #F1F5F9;
+    border-radius: 16px;
+    padding: 24px 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.type-card:hover {
+    border-color: #00BAF2;
+    transform: translateY(-4px);
+    box-shadow: 0 10px 15px -3px rgba(0, 186, 242, 0.1);
+}
+
+.type-card.active {
+    border-color: #00BAF2;
+    background: rgba(0, 186, 242, 0.03);
+}
+
+.type-icon-circle {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    background: #F8FAFC;
+    color: #64748B;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.type-card.active .type-icon-circle {
+    background: #00BAF2;
+    color: #ffffff;
+    box-shadow: 0 4px 10px rgba(0, 186, 242, 0.3);
+}
+
+.type-name {
+    font-size: 13px;
+    font-weight: 700;
+    color: #334155;
+    text-align: center;
+}
+
+.type-card.active .type-name {
+    color: #00BAF2;
+}
+
+.active-badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    color: #00BAF2;
+}
+
+.active-badge i {
+    font-size: 18px;
+}
+
+/* Dark Mode support for Property Type cards */
+html.dark .type-card {
+    background: #0f172a;
+    border-color: #334155;
+}
+
+html.dark .type-icon-circle {
+    background: #1e293b;
+    color: #94a3b8;
+}
+
+html.dark .type-name {
+    color: #f8fafc;
+}
+
+html.dark .type-card:hover {
+    border-color: #00BAF2;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+}
+
+html.dark .type-card.active {
+    background: rgba(0, 186, 242, 0.1);
 }
