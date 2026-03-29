@@ -17,12 +17,11 @@ public class UniNestDbContext : DbContext
     public DbSet<University> Universities { get; set; }
     public DbSet<Favorite> Favorites { get; set; }
     public DbSet<Request> Requests { get; set; }
-<<<<<<< HEAD
     public DbSet<Amenity> Amenities { get; set; }
     public DbSet<LifestyleHabit> LifestyleHabits { get; set; }
-=======
     public DbSet<StudentVerificationRequest> StudentVerificationRequests { get; set; }
->>>>>>> 31228cb (Update register, demo admin dashboard)
+    public DbSet<PropertyType> PropertyTypes { get; set; }
+
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

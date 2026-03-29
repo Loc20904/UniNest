@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace UniNestBE.Migrations
 {
     [DbContext(typeof(UniNestDbContext))]
-    partial class UniNestDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260329043032_AddPropertyType")]
+    partial class AddPropertyType
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -251,21 +254,6 @@ namespace UniNestBE.Migrations
                         });
                 });
 
-            modelBuilder.Entity("LifestyleHabitLifestyleProfile", b =>
-                {
-                    b.Property<int>("LifestyleHabitsLifestyleHabitId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("LifestyleProfilesProfileId")
-                        .HasColumnType("int");
-
-                    b.HasKey("LifestyleHabitsLifestyleHabitId", "LifestyleProfilesProfileId");
-
-                    b.HasIndex("LifestyleProfilesProfileId");
-
-                    b.ToTable("LifestyleHabitLifestyleProfile");
-                });
-
             modelBuilder.Entity("LifestyleHabitListing", b =>
                 {
                     b.Property<int>("LifestyleHabitsLifestyleHabitId")
@@ -394,8 +382,8 @@ namespace UniNestBE.Migrations
                             AddressId = 0,
                             ApprovalStatus = "Pending",
                             AreaSquareMeters = 20.0,
-                            CreatedAt = new DateTime(2026, 3, 29, 14, 50, 40, 180, DateTimeKind.Local).AddTicks(7646),
-                            ExpireAt = new DateTime(2026, 4, 28, 14, 50, 40, 180, DateTimeKind.Local).AddTicks(7655),
+                            CreatedAt = new DateTime(2026, 3, 29, 11, 30, 29, 663, DateTimeKind.Local).AddTicks(7700),
+                            ExpireAt = new DateTime(2026, 4, 28, 11, 30, 29, 663, DateTimeKind.Local).AddTicks(7709),
                             GenderPreference = "Any",
                             IsAvailable = true,
                             OwnerId = 1,
@@ -408,8 +396,8 @@ namespace UniNestBE.Migrations
                             AddressId = 0,
                             ApprovalStatus = "Pending",
                             AreaSquareMeters = 40.0,
-                            CreatedAt = new DateTime(2026, 3, 29, 14, 50, 40, 180, DateTimeKind.Local).AddTicks(7662),
-                            ExpireAt = new DateTime(2026, 4, 28, 14, 50, 40, 180, DateTimeKind.Local).AddTicks(7662),
+                            CreatedAt = new DateTime(2026, 3, 29, 11, 30, 29, 663, DateTimeKind.Local).AddTicks(7715),
+                            ExpireAt = new DateTime(2026, 4, 28, 11, 30, 29, 663, DateTimeKind.Local).AddTicks(7715),
                             GenderPreference = "Any",
                             IsAvailable = true,
                             OwnerId = 1,
@@ -843,21 +831,6 @@ namespace UniNestBE.Migrations
                     b.Navigation("Listing");
 
                     b.Navigation("User");
-                });
-
-            modelBuilder.Entity("LifestyleHabitLifestyleProfile", b =>
-                {
-                    b.HasOne("LifestyleHabit", null)
-                        .WithMany()
-                        .HasForeignKey("LifestyleHabitsLifestyleHabitId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("LifestyleProfile", null)
-                        .WithMany()
-                        .HasForeignKey("LifestyleProfilesProfileId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
                 });
 
             modelBuilder.Entity("LifestyleHabitListing", b =>

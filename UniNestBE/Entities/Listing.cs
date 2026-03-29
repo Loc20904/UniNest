@@ -40,6 +40,10 @@ public class Listing
     public int AddressId { get; set; }
     public virtual Address? Address { get; set; }
 
+    public int? PropertyTypeId { get; set; }
+    [ForeignKey("PropertyTypeId")]
+    public PropertyType? PropertyType { get; set; }
+
     public ICollection<ListingImage>? Images { get; set; }
 
 }
