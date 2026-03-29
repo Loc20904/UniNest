@@ -2,9 +2,11 @@
 @inject HttpClient Http
 @inject IJSRuntime JS
 
+<link href="css/AdminAmenities.css" rel="stylesheet" />
+
 <div class="admin-container">
     <h2 class="admin-title">Manage Amenities (Admin Master Data)</h2>
-    
+
     <div class="add-form">
         <div class="form-group-admin">
             <label>Amenity Name (e.g. Balcony, Gym)</label>
@@ -22,16 +24,18 @@
     <table class="amenity-table">
         <thead>
             <tr>
-                <th style="width: 80px">ID</th>
-                <th style="width: 100px">Icon</th>
+                <th class="th-id">ID</th>
+                <th class="th-icon">Icon</th>
                 <th>Name</th>
                 <th>Icon Code</th>
-                <th style="text-align: right">Actions</th>
+                <th class="th-actions">Actions</th>
             </tr>
         </thead>
         <tbody>
-            @{ int index = 1; }
-            @foreach(var amenity in amenities)
+            @{
+                int index = 1;
+            }
+            @foreach (var amenity in amenities)
             {
                 <tr>
                     <td>#@index</td>
@@ -40,9 +44,9 @@
                             <i class="material-symbols-outlined">@amenity.Icon</i>
                         </div>
                     </td>
-                    <td style="font-weight: 500;">@amenity.Name</td>
-                    <td style="color: #666">@amenity.Icon</td>
-                    <td style="text-align: right">
+                    <td class="font-medium-name">@amenity.Name</td>
+                    <td class="text-icon-code">@amenity.Icon</td>
+                    <td class="td-actions">
                         <button class="btn-delete" @onclick="() => DeleteAmenity(amenity)">
                             Delete
                         </button>
@@ -50,10 +54,10 @@
                 </tr>
                 index++;
             }
-            @if(amenities.Count == 0)
+            @if (amenities.Count == 0)
             {
                 <tr>
-                    <td colspan="5" style="text-align: center; padding: 40px; color: #666;">
+                    <td colspan="5" class="empty-state-text">
                         No amenities found in database.
                     </td>
                 </tr>
@@ -62,9 +66,9 @@
     </table>
     <UniNestFE.Layout.ScrollButton />
 </div>
-
+<link href="css/AdminAmenities.css" rel="stylesheet" />
 @code {
-    public class AmenityDto { public int AmenityId { get; set;} public string Name { get; set; } public string Icon { get; set; } }
+    public class AmenityDto { public int AmenityId { get; set; } public string Name { get; set; } public string Icon { get; set; } }
     List<AmenityDto> amenities = new();
     AmenityDto newAmenity = new();
 
@@ -97,7 +101,7 @@
 
         await AttachTokenAsync();
         var response = await Http.PostAsJsonAsync("https://localhost:7045/api/Amenities", newAmenity);
-        
+
         if (response.IsSuccessStatusCode)
         {
             var added = await response.Content.ReadFromJsonAsync<AmenityDto>();
@@ -113,7 +117,7 @@
     {
         await AttachTokenAsync();
         var response = await Http.DeleteAsync($"https://localhost:7045/api/Amenities/{amenity.AmenityId}");
-        
+
         if (response.IsSuccessStatusCode)
         {
             amenities.Remove(amenity);

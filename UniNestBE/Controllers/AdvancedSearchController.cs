@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 using UniNestBE.DTOs;
-
+using UniNestBE.Entities;
 namespace UniNestBE.Controllers
 {
     [Route("api/[controller]")]

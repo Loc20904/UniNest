@@ -24,7 +24,6 @@ public class UniNestDbContext : DbContext
 
     public DbSet<PropertyType> PropertyTypes { get; set; }
 
-
     public DbSet<AllowedEmailDomain> AllowedEmailDomains { get; set; }
 
 

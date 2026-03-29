@@ -25,7 +25,7 @@ namespace UniNestBE.Controllers
             var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);//B4.1: đọc token rồi chuyển về int để lấy ID //User là một object kiểu ClaimsPrincipal.//Nó đại diện cho người dùng đang đăng nhập vào hệ thống.//Ví dụ khi user login thành công, hệ thống sẽ tạo Claims lưu trong token hoặc cookie.//FindFirstValue(...)lấy giá trị của một Claim.
             var listings = await _context.Listings
                 .Where(l => l.OwnerId == userId)// lọc DB
-                .Select(l => new MyListingDto 
+                .Select(l => new MyListingDto
                 {
                     ListingId = l.ListingId,
                     Title = l.Title,
@@ -34,13 +34,14 @@ namespace UniNestBE.Controllers
                     AreaSquareMeters = l.AreaSquareMeters,
                     IsAvailable = l.IsAvailable,
                     ApprovalStatus = l.ApprovalStatus,
+                    PropertyTypeId = l.PropertyTypeId,
                     GenderPreference = l.GenderPreference,
                     CreatedAt = l.CreatedAt,
                     ExpireAt = l.ExpireAt,
                     FullAddress = _context.Addresses
                         .Where(a => a.AddressId == l.AddressId)
                         .Select(a => a.FullAddress)
-                        .FirstOrDefault()??"",
+                        .FirstOrDefault() ?? "",
 
                     City = _context.Addresses
                         .Where(a => a.AddressId == l.AddressId)
@@ -53,14 +54,14 @@ namespace UniNestBE.Controllers
                         .FirstOrDefault() ?? "",
 
                     Amenities = l.Amenities.Select(am => new AmenityDto { AmenityId = am.AmenityId, Name = am.Name, Icon = am.Icon }).ToList(),
-                    
+
                     LifestyleHabits = l.LifestyleHabits.Select(h => new LifestyleHabitDto { LifestyleHabitId = h.LifestyleHabitId, Name = h.Name }).ToList(),
 
                     PrimaryImageUrl = _context.ListingImages
                         .Where(i => i.ListingId == l.ListingId && i.IsPrimary)
                         .Select(i => i.ImageUrl)
                         .FirstOrDefault() ?? "",
-                        
+
                     Images = _context.ListingImages
                         .Where(i => i.ListingId == l.ListingId)
                         .Select(i => new ListingImageDto { ImageId = i.ImageId, ImageUrl = i.ImageUrl, IsPrimary = i.IsPrimary })
@@ -102,18 +103,19 @@ namespace UniNestBE.Controllers
                 Price = dto.Price,
                 AreaSquareMeters = dto.AreaSquareMeters,
                 IsAvailable = dto.IsAvailable,
-                ApprovalStatus = "Pending",
+                ApprovalStatus = !string.IsNullOrEmpty(dto.ApprovalStatus) ? dto.ApprovalStatus : "Pending",
                 GenderPreference = dto.GenderPreference,
                 Amenities = dbAmenities,
                 LifestyleHabits = dbHabits,
                 CreatedAt = DateTime.Now,
                 ExpireAt = DateTime.Now.AddDays(30),
-                AddressId = address.AddressId // Foreign Key!
+                AddressId = address.AddressId, // Foreign Key!
+                PropertyTypeId = dto.PropertyTypeId
             };
 
             _context.Listings.Add(listing);
             await _context.SaveChangesAsync();
-            
+
             // 3. Update lại tham chiếu vòng nếu cần (Tùy chọn)
             address.ListingId = listing.ListingId;
             await _context.SaveChangesAsync();
@@ -142,6 +144,11 @@ namespace UniNestBE.Controllers
             listing.AreaSquareMeters = dto.AreaSquareMeters;
             listing.IsAvailable = dto.IsAvailable;
             listing.GenderPreference = dto.GenderPreference;
+            listing.PropertyTypeId = dto.PropertyTypeId;
+            if (!string.IsNullOrEmpty(dto.ApprovalStatus))
+            {
+                listing.ApprovalStatus = dto.ApprovalStatus;
+            }
 
             // Update Amenities Many-to-Many
             listing.Amenities ??= new List<Amenity>();
@@ -205,7 +212,8 @@ namespace UniNestBE.Controllers
                 }
 
                 bool isThisPrimary = (!hasPrimary) || (file.FileName == primaryFileName);
-                if (isThisPrimary) {
+                if (isThisPrimary)
+                {
                     // Xóa primary cũ nếu có
                     var oldPrimary = await _context.ListingImages.FirstOrDefaultAsync(i => i.ListingId == id && i.IsPrimary);
                     if (oldPrimary != null) oldPrimary.IsPrimary = false;
@@ -218,10 +226,10 @@ namespace UniNestBE.Controllers
                     IsPrimary = isThisPrimary
                 };
                 if (isThisPrimary) hasPrimary = true;
-                
+
                 _context.ListingImages.Add(img);
                 await _context.SaveChangesAsync();
-                
+
                 uploadedImages.Add(new ListingImageDto { ImageId = img.ImageId, ImageUrl = img.ImageUrl, IsPrimary = img.IsPrimary });
             }
 
@@ -311,12 +319,22 @@ namespace UniNestBE.Controllers
 
             listing.IsAvailable = !listing.IsAvailable;
 
+            if (!listing.IsAvailable)
+            {
+                listing.ApprovalStatus = "Hidden";
+            }
+            else
+            {
+                listing.ApprovalStatus = "Published";
+            }
+
             await _context.SaveChangesAsync();
 
             return Ok(new
             {
                 message = "Listing visibility updated",
-                isAvailable = listing.IsAvailable
+                isAvailable = listing.IsAvailable,
+                approvalStatus = listing.ApprovalStatus
             });
         }
 
@@ -367,6 +385,7 @@ namespace UniNestBE.Controllers
                     AreaSquareMeters = l.AreaSquareMeters,
                     IsAvailable = l.IsAvailable,
                     ApprovalStatus = l.ApprovalStatus,
+                    PropertyTypeId = l.PropertyTypeId,
                     GenderPreference = l.GenderPreference,
                     Amenities = l.Amenities.Select(am => new AmenityDto { AmenityId = am.AmenityId, Name = am.Name, Icon = am.Icon }).ToList(),
                     LifestyleHabits = l.LifestyleHabits.Select(h => new LifestyleHabitDto { LifestyleHabitId = h.LifestyleHabitId, Name = h.Name }).ToList(),

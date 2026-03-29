@@ -369,11 +369,11 @@ window.uniNestMap = {
     }
 };
 // ------------------------------------------------
-//Dùng cho Editlisting.razor (chọn vị trí trên map để lấy lat/lng)
+//Dùng cho CreateListing.razor, Editlisting.razor, ListingDetail.razor (chọn vị trí trên map để lấy lat/lng)
 window.mapInterop = {
     initMap: function (dotNetHelper, elementId, initialLat, initialLng) {
         var id = elementId || 'map';
-        
+
         // Cleanup existing map if it exists
         if (this.maps[id]) {
             this.maps[id].remove();
@@ -387,10 +387,10 @@ window.mapInterop = {
         }
 
         console.log("Map initialized on " + id + " with:", initialLat, initialLng);
-        
+
         var startLat = (initialLat && initialLat !== 0) ? initialLat : 16.0544;
         var startLng = (initialLng && initialLng !== 0) ? initialLng : 108.2022;
-        
+
         var map = L.map(id).setView([startLat, startLng], 14);
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -398,9 +398,9 @@ window.mapInterop = {
         }).addTo(map);
 
         var marker;
-        
-        // Add initial marker if coordinates exist
-        if (startLat !== 16.0544 || startLng !== 108.2022) {
+
+        // Add initial marker if coordinates are provided
+        if (initialLat !== 0 || initialLng !== 0) {
             marker = L.marker([startLat, startLng]).addTo(map);
         }
 
@@ -424,7 +424,7 @@ window.mapInterop = {
         this.maps[id] = map;
 
         // Force resize for modals
-        setTimeout(function() {
+        setTimeout(function () {
             map.invalidateSize();
         }, 400);
     },
@@ -434,7 +434,7 @@ window.mapInterop = {
 
     initReadOnlyMap: function (elementId, lat, lng) {
         var id = elementId || 'map';
-        
+
         // Cleanup existing map if it exists
         if (this.maps[id]) {
             this.maps[id].remove();
@@ -449,7 +449,7 @@ window.mapInterop = {
 
         var startLat = (lat && lat !== 0) ? lat : 16.0544;
         var startLng = (lng && lng !== 0) ? lng : 108.2022;
-        
+
         var map = L.map(id).setView([startLat, startLng], 14);
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -461,9 +461,9 @@ window.mapInterop = {
         }
 
         this.maps[id] = map;
-        
+
         // Force resize after short delay to handle modal rendering
-        setTimeout(function() {
+        setTimeout(function () {
             map.invalidateSize();
         }, 400);
     }
