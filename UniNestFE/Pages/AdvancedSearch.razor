@@ -1,0 +1,736 @@
+@page "/advanced-search"
+@using System.Text.Json
+@using Microsoft.AspNetCore.Components.Authorization
+@inject HttpClient Http
+
+<div class="w-full min-h-[calc(100vh-70px)] bg-transparent pb-24 relative font-sans text-slate-800 dark:text-slate-200">
+    
+    <!-- Header Section -->
+    <div class="px-6 md:px-12 lg:px-24 pt-12">
+        <h1 class="text-3xl font-bold bg-clip-text text-black dark:text-white mb-8">
+            Find your urban sanctuary
+        </h1>
+
+        <!-- Search Input & Filters Button -->
+        <div class="flex items-center gap-4 mb-4">
+            <div class="relative flex-1 bg-white dark:bg-[#1e293b] rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 flex items-center p-1.5 focus-within:ring-2 focus-within:ring-[#3ba8d7]/50 transition-all h-14">
+                <button @onclick="FetchResults" class="material-icons-round text-slate-400 dark:text-slate-500 ml-4 mr-2 hover:text-[#3ba8d7] transition-colors focus:outline-none">search</button>
+                <input type="text" placeholder="Search parameters via Filter or type here..." 
+                       class="flex-1 bg-transparent outline-none text-[15px] text-slate-700 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 w-full" 
+                       @bind="searchQuery" @bind:event="oninput" @onkeyup="HandleSearchEnter" />
+            </div>
+            
+            <button @onclick="OpenFilterModal" class="h-14 px-6 bg-[#f4f6f8] dark:bg-[#334155] text-slate-800 dark:text-white font-semibold rounded-xl flex items-center gap-2 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors shrink-0 shadow-sm border border-transparent dark:border-slate-700">
+                <span class="material-icons-round text-[20px]">tune</span> Filters
+            </button>
+
+            <AuthorizeView>
+                <Authorized Context="authContext">
+                    <div class="h-14 px-6 bg-white dark:bg-[#1e293b] rounded-xl flex items-center gap-3 shadow-sm border border-slate-100 dark:border-slate-800 shrink-0">
+                        <span class="material-icons-round text-[#3ba8d7] text-[20px]">psychology</span>
+                        <span class="text-[13px] font-bold text-slate-700 dark:text-slate-300">AI Auto-Match</span>
+                        <div class="relative inline-block w-10 ml-2 align-middle select-none transition duration-200 ease-in cursor-pointer" @onclick="ToggleAutoMatch">
+                            <input type="checkbox" checked="@isAutoMatchActive" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer border-[#e2e8f0] dark:border-slate-600 transition-transform duration-300 ease-in-out z-10 top-0.5 left-0.5 @(isAutoMatchActive ? "translate-x-4 !border-[#4ebdea]" : "")" />
+                            <label class="toggle-label block overflow-hidden h-6 rounded-full bg-[#f1f5f9] dark:bg-slate-700 cursor-pointer @(isAutoMatchActive ? "!bg-[#ebf8fd] dark:!bg-[#3ba8d7]/20" : "")"></label>
+                        </div>
+                    </div>
+                </Authorized>
+            </AuthorizeView>
+        </div>
+
+        <!-- Property Type Pills (Top Filter) -->
+        <div class="flex items-center gap-3 overflow-x-auto pb-4 hide-scrollbar">
+            <button class="px-5 auto-cols-auto h-9 rounded-full @(selectedPropertyTypes.Count == 0 ? "bg-[#e1f5fe] dark:bg-[rgba(59,168,215,0.15)] text-[#3ba8d7] font-bold" : "bg-slate-100 dark:bg-[#334155] text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 font-semibold") text-[11px] tracking-wider uppercase whitespace-nowrap transition-colors" @onclick="ClearPropertyTypesAndApply">
+                ALL ROOMS
+            </button>
+            @foreach (var pt in propertyTypesList)
+            {
+                bool isSelected = selectedPropertyTypes.Contains(pt.Id);
+                <button class="px-5 h-9 rounded-full @(isSelected ? "bg-[#e1f5fe] dark:bg-[rgba(59,168,215,0.15)] text-[#3ba8d7] font-bold" : "bg-slate-100 dark:bg-[#334155] text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 font-semibold") text-[11px] tracking-wider uppercase whitespace-nowrap transition-colors" @onclick="() => TogglePropertyTypeAndApply(pt.Id)">
+                    @pt.Name
+                </button>
+            }
+        </div>
+    </div>
+
+    <!-- Listings Grid -->
+    <div class="w-full px-6 md:px-12 lg:px-24 mt-6 pointer-events-auto">
+        
+        @if (isLoading)
+        {
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                @for(int i = 0; i < 6; i++)
+                {
+                    <div class="bg-white dark:bg-[#1e293b] rounded-2xl p-4 shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col h-full min-h-[440px]">
+                        <div class="w-full h-52 rounded-xl bg-[#e2e8f0] dark:bg-slate-700 animate-pulse mb-5 shrink-0"></div>
+                        <div class="flex-1 flex flex-col justify-between">
+                            <div>
+                                <div class="h-6 w-1/2 bg-[#e2e8f0] dark:bg-slate-700 animate-pulse rounded-full mb-3"></div>
+                                <div class="h-4 w-3/4 bg-[#e2e8f0] dark:bg-slate-700 animate-pulse rounded-full mb-5"></div>
+                                <div class="flex gap-2 mb-6">
+                                    <div class="h-6 w-16 bg-[#e2e8f0] dark:bg-slate-700 animate-pulse rounded-full"></div>
+                                    <div class="h-6 w-20 bg-[#e2e8f0] dark:bg-slate-700 animate-pulse rounded-full"></div>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-3 mt-auto">
+                                <div class="h-11 bg-[#e2e8f0] dark:bg-slate-700 animate-pulse rounded-xl"></div>
+                                <div class="h-11 bg-[#e2e8f0] dark:bg-slate-700 animate-pulse rounded-xl"></div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else if (results.Count == 0)
+        {
+            <div class="w-full max-w-3xl mx-auto bg-white dark:bg-[#1e293b] rounded-3xl p-16 text-center shadow-sm border border-slate-100 dark:border-slate-800 mt-12">
+                <div class="w-20 h-20 bg-[#ebf8fd] dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <span class="material-icons-round text-[#3ba8d7] text-4xl">search_off</span>
+                </div>
+                <h3 class="text-2xl font-bold text-slate-800 dark:text-white mb-2">No listings found</h3>
+                <p class="text-slate-500 dark:text-slate-400">Try adjusting your filters or typing different keywords to see more results.</p>
+            </div>
+        }
+        else
+        {
+            <!-- Min-height container to stop pagination bottom-bar jumping -->
+            <div class="min-h-[1000px]">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 content-start">
+                    @foreach (var listing in PagedResults)
+                    {
+                        <div class="bg-white dark:bg-[#1e293b] rounded-2xl p-4 shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col h-full min-h-[440px] hover:shadow-lg transition-transform hover:-translate-y-1 relative @(openDropdownId == listing.ListingId ? "z-50" : "z-10")">
+                            <!-- Image Area -->
+                            <div class="relative w-full h-52 rounded-xl overflow-hidden mb-5 bg-slate-200 dark:bg-slate-700 shrink-0">
+                                <!-- In real scenario, image URL should have host prepended if relative -->
+                                <img src="@(listing.PrimaryImageUrl.StartsWith("http") ? listing.PrimaryImageUrl : "https://localhost:7045" + listing.PrimaryImageUrl)" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="" onerror="this.onerror=null; this.src='https://placehold.co/600x400/e2e8f0/94a3b8?text=No+Photo';" />
+                                
+                                @if (isAutoMatchActive && listing.MatchPercent > 0)
+                                {
+                                    <div class="absolute top-4 left-4 bg-[#3ba8d7] text-white text-[10px] font-bold px-3 py-1.5 rounded-full uppercase tracking-wider shadow-sm">
+                                        @listing.MatchPercent% MATCH
+                                    </div>
+                                }
+                                <button class="absolute top-4 right-4 text-white focus:outline-none bg-black/20 backdrop-blur-md p-2 rounded-full hover:bg-white hover:text-red-500 transition-colors shadow-sm">
+                                    <span class="material-icons-round text-lg leading-none">favorite</span>
+                                </button>
+                                <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-5 pt-16">
+                                    <h3 class="text-white font-bold text-xl leading-tight mb-1 truncate">@listing.Title</h3>
+                                    <div class="flex items-center gap-1.5 text-slate-200 text-[13px] font-medium">
+                                        <span class="material-icons-round text-[16px]">location_on</span>
+                                        <span class="truncate">@listing.District</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Details Area -->
+                            <div class="flex-1 flex flex-col justify-between overflow-hidden">
+                                <div>
+                                    <div class="mb-3 whitespace-nowrap">
+                                        <span class="text-[22px] font-extrabold text-[#3ba8d7] tracking-tight">@listing.Price.ToString("N0") VND</span>
+                                        <span class="text-xs text-slate-500 dark:text-slate-400 font-bold ml-1">/mo</span>
+                                    </div>
+                                    
+                                    <div class="flex items-center justify-between text-slate-500 dark:text-slate-400 text-[13px] font-medium mb-4 relative h-[25px]">
+                                        <div class="flex items-center gap-2 truncate pr-2">
+                                            <span class="material-icons-round text-[18px] text-slate-400 dark:text-slate-500 shrink-0">school</span>
+                                            <div class="truncate">
+                                                @if(listing.CustomUniversityId.HasValue && universitiesList.Any(u => u.Id == listing.CustomUniversityId.Value))
+                                                {
+                                                    <span>@listing.CustomDistanceKm km to @universitiesList.First(u => u.Id == listing.CustomUniversityId.Value).Name</span>
+                                                }
+                                                else if(selectedUniversityId > 0 && universitiesList.Any(u => u.Id == selectedUniversityId))
+                                                {
+                                                    <span>@listing.DistanceKm km to @universitiesList.First(u => u.Id == selectedUniversityId).Name</span>
+                                                }
+                                                else
+                                                {
+                                                    <span>??? km to your School</span>
+                                                }
+                                            </div>
+                                        </div>
+                                        <button @onclick="() => ToggleSchoolDropdown(listing.ListingId)" @onclick:stopPropagation class="text-slate-400 dark:text-slate-500 hover:text-[#3ba8d7] dark:hover:text-[#3ba8d7] transition-colors p-1.5 rounded-full hover:bg-slate-50 dark:hover:bg-slate-700 -mr-1 shrink-0">
+                                            <span class="material-icons-round text-[18px]">account_balance</span>
+                                        </button>
+                                        
+                                        @if (openDropdownId == listing.ListingId)
+                                        {
+                                            <div class="absolute right-0 top-full mt-1 w-64 bg-white dark:bg-[#1e293b] rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 z-50 overflow-hidden animate-fade-in origin-top-right">
+                                                <div class="max-h-56 overflow-y-auto custom-scrollbar p-1">
+                                                    @foreach (var school in universitiesList)
+                                                    {
+                                                        <button @onclick="() => SelectSchool(listing.ListingId, school.Id)" class="w-full text-left px-3 py-2 text-[13px] text-slate-700 dark:text-slate-300 hover:bg-[#ebf8fd] dark:hover:bg-[#334155] hover:text-[#3ba8d7] dark:hover:text-white rounded-lg transition-colors font-semibold">
+                                                            @school.Name
+                                                        </button>
+                                                    }
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+
+                                    <div class="flex flex-wrap gap-2 mb-4 h-auto">
+                                        @{
+                                            bool isExpanded = expandedAmenitiesCardIds.Contains(listing.ListingId);
+                                            var displayAmenities = isExpanded ? listing.Amenities : listing.Amenities.Take(2).ToList();
+                                        }
+                                        @foreach (var amenity in displayAmenities)
+                                        {
+                                            <span class="flex items-center gap-1.5 px-2.5 py-1 bg-[#f4f6f8] dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg text-[10px] uppercase font-bold tracking-wider transition-all">
+                                                <span class="material-icons-round text-[12px]">@GetAmenityIcon(amenity)</span> <span class="truncate max-w-[100px]">@amenity</span>
+                                            </span>
+                                        }
+                                        @if (!isExpanded && listing.Amenities.Count > 2)
+                                        {
+                                            <button @onclick="() => expandedAmenitiesCardIds.Add(listing.ListingId)" @onclick:preventDefault @onclick:stopPropagation class="flex items-center justify-center px-2.5 py-1 bg-[#e1f5fe] dark:bg-[#334155] text-[#3ba8d7] dark:text-white hover:bg-[#3ba8d7] hover:text-white dark:hover:bg-[#4ebdea] rounded-lg text-[10px] font-bold transition-colors shadow-sm cursor-pointer">
+                                                +@(listing.Amenities.Count - 2)
+                                            </button>
+                                        }
+                                        else if (isExpanded)
+                                        {
+                                            <button @onclick="() => expandedAmenitiesCardIds.Remove(listing.ListingId)" @onclick:preventDefault @onclick:stopPropagation class="flex items-center justify-center px-2 py-1 bg-[#f4f6f8] dark:bg-slate-700 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white rounded-lg text-[10px] transition-colors cursor-pointer">
+                                                <span class="material-icons-round text-[14px] leading-none">expand_less</span>
+                                            </button>
+                                        }
+                                    </div>
+                                </div>
+
+                                <!-- Buttons -->
+                                <div class="grid grid-cols-2 gap-3 mt-auto pt-2">
+                                    <button class="bg-[#4ebdea] hover:bg-[#3ba8d7] text-white h-[44px] rounded-xl text-sm font-bold transition-colors shadow-sm shadow-[#4ebdea]/20">
+                                        View Details
+                                    </button>
+                                    <button class="bg-slate-100 dark:bg-slate-700 hover:bg-[#ebf8fd] dark:hover:bg-slate-600 text-[#3ba8d7] dark:text-white h-[44px] rounded-xl text-sm font-bold transition-colors shadow-sm flex items-center justify-center gap-1.5 border border-transparent dark:border-slate-600">
+                                        <span class="material-icons-round text-[18px]">chat</span> Contact
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+            
+            <!-- Pagination -->
+            @if (TotalPages > 1)
+            {
+                <div class="flex items-center justify-center gap-2 mt-8 mb-8 pb-12">
+                    @if (currentPage > 1)
+                    {
+                        <button @onclick="PrevPage" class="w-10 h-10 rounded-xl bg-white dark:bg-[#1e293b] border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-300 flex items-center justify-center hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors font-bold shadow-sm">
+                            <span class="material-icons-round text-sm">chevron_left</span>
+                        </button>
+                    }
+                    
+                    @for (int i = 1; i <= TotalPages; i++)
+                    {
+                        int pageNum = i;
+                        <button @onclick="() => GoToPage(pageNum)" class="w-10 h-10 rounded-xl font-bold shadow-sm transition-colors text-sm @(currentPage == pageNum ? "bg-[#4ebdea] text-white shadow-[#4ebdea]/30 border border-transparent" : "bg-white dark:bg-[#1e293b] border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800")">
+                            @pageNum
+                        </button>
+                    }
+
+                    @if (currentPage < TotalPages)
+                    {
+                        <button @onclick="NextPage" class="w-10 h-10 rounded-xl bg-white dark:bg-[#1e293b] border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-300 flex items-center justify-center hover:bg-slate-50 dark:hover:bg-slate-700 font-bold shadow-sm">
+                            <span class="material-icons-round text-sm">chevron_right</span>
+                        </button>
+                    }
+                </div>
+            }
+        }
+    </div>
+
+    <!-- Filter Modal -->
+    @if (isFilterModalOpen)
+    {
+        <div class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 sm:p-6 animate-fade-in" @onclick="CloseFilterModal">
+            
+            <div class="bg-white dark:bg-[#1e293b] rounded-[24px] w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh]" @onclick:stopPropagation style="animation: drop-in 0.3s cubic-bezier(0.16, 1, 0.3, 1);">
+                <!-- Modal Header -->
+                <div class="px-6 py-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between sticky top-0 bg-white dark:bg-[#1e293b] z-10 shrink-0">
+                    <h2 class="text-lg font-extrabold text-slate-900 dark:text-white">Filter Results</h2>
+                    <button @onclick="CloseFilterModal" class="text-slate-400 hover:text-slate-600 dark:hover:text-white rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 p-1.5 transition-colors">
+                        <span class="material-icons-round">close</span>
+                    </button>
+                </div>
+                
+                <!-- Modal Body (Scrollable) -->
+                <div class="p-6 md:p-8 overflow-y-auto custom-scrollbar flex-1 relative bg-white dark:bg-[#1e293b]">
+                    
+                    <!-- Select University -->
+                    <div class="mb-8">
+                        <label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Select University</label>
+                        <div class="relative">
+                            <select @bind="selectedUniversityId" class="w-full bg-[#f8f9fc] dark:bg-slate-800 text-slate-700 dark:text-white rounded-xl px-4 py-3.5 appearance-none font-medium text-sm outline-none border border-transparent focus:border-slate-300 dark:focus:border-slate-600 transition-colors shadow-sm custom-select-arrow">
+                                <option value="0">--- Select your University ---</option>
+                                @foreach(var uni in universitiesList)
+                                {
+                                    <option value="@uni.Id">@uni.Name</option>
+                                }
+                            </select>
+                            <span class="material-icons-round absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 pointer-events-none text-[20px]">expand_more</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Distance Range -->
+                    <div class="mb-10">
+                        <div class="flex items-center justify-between mb-5">
+                            <label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Distance Range</label>
+                            <span class="text-[#3ba8d7] text-[13px] font-bold">Up to @maxDistanceKm km</span>
+                        </div>
+                        <div class="relative h-1.5 bg-[#f0f2f5] dark:bg-slate-700 rounded-full mx-2">
+                            <div class="absolute left-0 top-0 h-full bg-[#4ebdea] rounded-full" style="width: @((maxDistanceKm / 50.0) * 100)%"></div>
+                            <input type="range" class="absolute w-full appearance-none bg-transparent dual-slider-input native-range -top-1.5"
+                                   min="0" max="50" step="1" @bind="maxDistanceKm" @bind:event="oninput" />
+                        </div>
+                        <div class="flex justify-between mt-4 text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest pl-2 pr-2">
+                            <span>0 km</span>
+                            <span>10</span>
+                            <span>20</span>
+                            <span>30</span>
+                            <span>40</span>
+                            <span>50 km</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Monthly Budget -->
+                    <div class="mb-10 border-t border-slate-100 dark:border-slate-800 pt-7">
+                        <div class="flex items-center justify-between mb-5">
+                            <label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Monthly Budget</label>
+                        </div>
+                        <!-- Dual Slider -->
+                        <div class="relative h-1.5 bg-[#f0f2f5] dark:bg-slate-700 rounded-full mx-2 mb-8">
+                            <div class="absolute h-full bg-[#4ebdea] rounded-full" style="left: @((budgetMin / 50000000m) * 100)%; right: @(100 - (budgetMax / 50000000m) * 100)%;"></div>
+                            <!-- Min Thumb -->
+                            <input type="range" class="absolute w-full appearance-none bg-transparent dual-slider-input native-range -top-1.5" style="z-index: 3"
+                                   min="0" max="50000000" step="50000" @bind="budgetMinProxy" @bind:event="oninput" />
+                            <!-- Max Thumb -->
+                            <input type="range" class="absolute w-full appearance-none bg-transparent dual-slider-input native-range -top-1.5" style="z-index: 4"
+                                   min="0" max="50000000" step="50000" @bind="budgetMaxProxy" @bind:event="oninput" />
+                        </div>
+                        <!-- Min Max Input -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-[#f8f9fc] dark:bg-slate-800 rounded-xl p-3 border border-transparent focus-within:border-[#3ba8d7]/30 transition-colors shadow-sm">
+                                <span class="text-[10px] text-slate-400 font-extrabold tracking-widest uppercase mb-1 block">Min (VND)</span>
+                                <input type="number" @bind="budgetMinProxy" @bind:event="oninput" min="0" max="49500000" step="50000" class="w-full bg-transparent outline-none font-bold text-slate-900 dark:text-white text-lg" />
+                            </div>
+                            <div class="bg-[#f8f9fc] dark:bg-slate-800 rounded-xl p-3 border border-transparent focus-within:border-[#3ba8d7]/30 transition-colors shadow-sm">
+                                <span class="text-[10px] text-slate-400 font-extrabold tracking-widest uppercase mb-1 block">Max (VND)</span>
+                                <input type="number" @bind="budgetMaxProxy" @bind:event="oninput" min="500000" max="50000000" step="50000" class="w-full bg-transparent outline-none font-bold text-slate-900 dark:text-white text-lg" />
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Property Type -->
+                    <div class="mb-10 border-t border-slate-100 dark:border-slate-800 pt-7">
+                        <label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-4">Property Type</label>
+                        <div class="flex flex-wrap gap-2.5">
+                            @foreach(var pt in propertyTypesList)
+                            {
+                                bool isSelected = selectedPropertyTypes.Contains(pt.Id);
+                                <button class="px-5 py-2.5 rounded-full border-2 text-[13px] font-medium transition-colors shadow-sm 
+                                    @(isSelected ? "border-[#3ba8d7] text-[#3ba8d7] bg-[#ebf8fd] dark:bg-[rgba(59,168,215,0.15)] font-bold" : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600 bg-white dark:bg-slate-800")"
+                                    @onclick="() => TogglePropertyType(pt.Id)">
+                                    @pt.Name
+                                </button>
+                            }
+                        </div>
+                    </div>
+                    
+                    <!-- Essential Amenities -->
+                    <div class="mb-10 border-t border-slate-100 dark:border-slate-800 pt-7">
+                        <label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-4">Essential Amenities</label>
+                        <div class="grid grid-cols-2 gap-3">
+                            @foreach(var am in amenitiesList)
+                            {
+                                bool isSelected = selectedAmenities.Contains(am.Id);
+                                <div @onclick="() => ToggleAmenity(am.Id)" class="flex items-center gap-3 p-3.5 rounded-xl bg-white dark:bg-slate-800 cursor-pointer transition-colors shadow-sm border-2 @(isSelected ? "border-[#3ba8d7] bg-[#ebf8fd] dark:bg-[rgba(59,168,215,0.1)]" : "border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600")">
+                                    <div class="w-5 h-5 rounded border-2 flex shrink-0 items-center justify-center transition-colors @(isSelected ? "bg-[#3ba8d7] border-[#3ba8d7]" : "border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700")">
+                                        @if(isSelected) {
+                                            <span class="material-icons-round text-white text-[14px] font-bold">check</span>
+                                        }
+                                    </div>
+                                    <span class="material-icons-round @(isSelected ? "text-slate-800 dark:text-white" : "text-slate-600 dark:text-slate-400") text-[20px]">@am.Icon</span>
+                                    <span class="text-sm tracking-tight @(isSelected ? "font-bold text-slate-800 dark:text-white" : "font-medium text-slate-600 dark:text-slate-300")">@am.Name</span>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                    
+                    <!-- Life Style Habit -->
+                    <div class="mb-4 border-t border-slate-100 dark:border-slate-800 pt-7">
+                        <label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-4">Life Style Habit</label>
+                        <div class="grid grid-cols-2 gap-3">
+                            @foreach(var hb in habitsList)
+                            {
+                                bool isSelected = selectedHabits.Contains(hb.Id);
+                                <div @onclick="() => ToggleHabit(hb.Id)" class="flex items-center gap-3 p-3.5 rounded-xl bg-white dark:bg-slate-800 cursor-pointer transition-colors shadow-sm border-2 @(isSelected ? "border-[#3ba8d7] bg-[#ebf8fd] dark:bg-[rgba(59,168,215,0.1)]" : "border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600")">
+                                    <div class="w-5 h-5 rounded border-2 flex shrink-0 items-center justify-center transition-colors @(isSelected ? "bg-[#3ba8d7] border-[#3ba8d7]" : "border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700")">
+                                        @if(isSelected) {
+                                            <span class="material-icons-round text-white text-[14px] font-bold">check</span>
+                                        }
+                                    </div>
+                                    <span class="material-icons-round @(isSelected ? "text-slate-800 dark:text-white" : "text-slate-600 dark:text-slate-400") text-[20px]">check_circle_outline</span>
+                                    <span class="text-sm tracking-tight @(isSelected ? "font-bold text-slate-800 dark:text-white" : "font-medium text-slate-600 dark:text-slate-300")">@hb.Name</span>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Modal Footer -->
+                <div class="px-6 py-5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-[#1e293b] shrink-0">
+                    <button @onclick="ClearAllFilters" class="text-[13px] font-bold text-slate-500 dark:text-slate-400 underline underline-offset-2 hover:text-slate-800 dark:hover:text-white transition-colors ml-2">Clear All</button>
+                    <button @onclick="ApplyFilters" class="bg-[#4ebdea] hover:bg-[#3ba8d7] text-white h-12 px-8 rounded-xl text-sm font-extrabold shadow-md shadow-[#4ebdea]/30 transition-transform active:scale-95 tracking-wide">
+                        Apply Filters
+                    </button>
+                </div>
+            </div>
+            
+        </div>
+    }
+
+</div>
+
+<style>
+    .custom-scrollbar::-webkit-scrollbar { width: 8px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 20px; border: 2px solid transparent; background-clip: content-box; }
+    .dark .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #475569; }
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    
+    @@keyframes drop-in { 0% { transform: scale(0.95) translateY(-10px); opacity: 0; } 100% { transform: scale(1) translateY(0); opacity: 1; } }
+    @@keyframes fade-in { 0% { opacity: 0; } 100% { opacity: 1; } }
+    .animate-fade-in { animation: fade-in 0.2s ease-out; }
+    
+    /* Dual Slider Styles */
+    .native-range::-webkit-slider-thumb {
+        pointer-events: auto;
+        appearance: none;
+        -webkit-appearance: none;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #4ebdea;
+        border: 4px solid white;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        cursor: pointer;
+        transition: transform 0.1s;
+    }
+    .dark .native-range::-webkit-slider-thumb { border-color: #1e293b; }
+    .native-range::-moz-range-thumb {
+        pointer-events: auto;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #4ebdea;
+        border: 4px solid white;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        cursor: pointer;
+    }
+    .dark .native-range::-moz-range-thumb { border-color: #1e293b; }
+    .native-range::-webkit-slider-thumb:hover { transform: scale(1.15); }
+    .dual-slider-input { pointer-events: none; }
+</style>
+
+@code {
+    private bool isFilterModalOpen = false;
+    private bool isLoading = true;
+
+    // Filter Options Data
+    private List<FilterItem> universitiesList = new();
+    private List<FilterItem> propertyTypesList = new();
+    private List<FilterItem> amenitiesList = new();
+    private List<FilterItem> habitsList = new();
+
+    // Active Selection State
+    private string searchQuery = "";
+    private int selectedUniversityId = 0;
+    private double maxDistanceKm = 10;
+    
+    private decimal budgetMin = 0;
+    private decimal budgetMax = 20000000;
+
+    // UC-16 State
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
+    
+    private bool isAutoMatchActive = false;
+    private bool isLoggedIn = false;
+    private int currentUserId = 0;
+    
+    // Using simple proxy properties to enforce spacing constraints on Dual Slider
+    public decimal budgetMinProxy
+    {
+        get => budgetMin;
+        set {
+            if (value > budgetMax - 500000m) value = budgetMax - 500000m;
+            budgetMin = value;
+        }
+    }
+    
+    public decimal budgetMaxProxy
+    {
+        get => budgetMax;
+        set {
+            if (value < budgetMin + 500000m) value = budgetMin + 500000m;
+            budgetMax = value;
+        }
+    }
+
+    private HashSet<int> selectedPropertyTypes = new();
+    private HashSet<int> selectedAmenities = new();
+    private HashSet<int> selectedHabits = new();
+
+    // Results
+    private List<ResultListing> results = new();
+
+    // Pagination State
+    private int currentPage = 1;
+    private int pageSize = 9;
+    
+    private List<ResultListing> PagedResults => results.Skip((currentPage - 1) * pageSize).Take(pageSize).ToList();
+    private int TotalPages => (int)Math.Ceiling(results.Count / (double)pageSize);
+
+    // Card Dropdown State
+    private int? openDropdownId = null;
+    private HashSet<int> expandedAmenitiesCardIds = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (authenticationStateTask != null)
+        {
+            var authState = await authenticationStateTask;
+            var user = authState.User;
+            isLoggedIn = user.Identity?.IsAuthenticated ?? false;
+
+            if (isLoggedIn)
+            {
+                var userIdClaim = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier) ??
+                                  user.FindFirst("UserId") ??
+                                  user.FindFirst("nameid");
+                
+                if (userIdClaim != null && int.TryParse(userIdClaim.Value, out int uid))
+                {
+                    currentUserId = uid;
+                }
+            }
+        }
+
+        await LoadFilterOptions();
+        await FetchResults(); 
+    }
+
+    private async Task LoadFilterOptions()
+    {
+        try
+        {
+            var url = "api/AdvancedSearch/filters";
+            // Prepend base URL in real app if required, assuming Blazor automatically handles relative path or configured HttpClient
+            var res = await Http.GetFromJsonAsync<JsonElement>(url); // Need to parse dynamic JSON mapping to simplify
+            if (res.ValueKind != JsonValueKind.Undefined)
+            {
+                universitiesList = ParseItems(res, "universities", "uniId", "uniName");
+                propertyTypesList = ParseItems(res, "propertyTypes", "propertyTypeId", "name");
+                amenitiesList = ParseItems(res, "amenities", "amenityId", "name", "icon");
+                habitsList = ParseItems(res, "lifestyleHabits", "lifestyleHabitId", "name");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error loading filters: " + ex.Message);
+        }
+    }
+
+    private List<FilterItem> ParseItems(JsonElement root, string propName, string idName, string textName, string iconName = null)
+    {
+        var list = new List<FilterItem>();
+        if (root.TryGetProperty(propName, out var array) && array.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var item in array.EnumerateArray())
+            {
+                var f = new FilterItem
+                {
+                    Id = item.GetProperty(idName).GetInt32(),
+                    Name = item.GetProperty(textName).GetString(),
+                    Icon = iconName != null && item.TryGetProperty(iconName, out var ic) && ic.ValueKind != JsonValueKind.Null ? ic.GetString() : "check"
+                };
+                list.Add(f);
+            }
+        }
+        return list;
+    }
+
+    private async Task FetchResults()
+    {
+        isLoading = true;
+        currentPage = 1; // Reset to first page heavily on new search
+        try
+        {
+            var pIds = string.Join(",", selectedPropertyTypes);
+            var aIds = string.Join(",", selectedAmenities);
+            var hIds = string.Join(",", selectedHabits);
+            
+            int sendUniId = selectedUniversityId;
+
+            var qs = $"?universityId={sendUniId}&maxDistanceKm={maxDistanceKm}&minPrice={budgetMin}&maxPrice={budgetMax}" +
+                     (string.IsNullOrEmpty(pIds) ? "" : $"&propertyTypeIds={pIds}") +
+                     (string.IsNullOrEmpty(aIds) ? "" : $"&amenityIds={aIds}") +
+                     (string.IsNullOrEmpty(hIds) ? "" : $"&habitIds={hIds}") +
+                     (string.IsNullOrWhiteSpace(searchQuery) ? "" : $"&queryStr={Uri.EscapeDataString(searchQuery)}") +
+                     (isAutoMatchActive && isLoggedIn ? $"&autoMatch=true&autoMatchUserId={currentUserId}" : "");
+
+            var url = "api/AdvancedSearch" + qs;
+            results = await Http.GetFromJsonAsync<List<ResultListing>>(url) ?? new List<ResultListing>();
+        }
+        catch(Exception e)
+        {
+            Console.WriteLine(e);
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    // Handlers
+    private void NextPage() 
+    {
+        if (currentPage < TotalPages) currentPage++;
+    }
+
+    private void PrevPage() 
+    {
+        if (currentPage > 1) currentPage--;
+    }
+
+    private void GoToPage(int page) 
+    {
+        if (page >= 1 && page <= TotalPages) currentPage = page;
+    }
+
+    private async Task HandleSearchEnter(Microsoft.AspNetCore.Components.Web.KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await FetchResults();
+        }
+    }
+
+    private async Task ToggleAutoMatch()
+    {
+        isAutoMatchActive = !isAutoMatchActive;
+        if (isAutoMatchActive)
+        {
+            // Clear manual filters intuitively
+            selectedPropertyTypes.Clear();
+            selectedAmenities.Clear();
+            selectedHabits.Clear();
+        }
+        await FetchResults();
+    }
+
+    private void OpenFilterModal() => isFilterModalOpen = true;
+    private void CloseFilterModal() => isFilterModalOpen = false;
+
+    private async Task ApplyFilters()
+    {
+        isFilterModalOpen = false;
+        await FetchResults();
+    }
+
+    private void ClearAllFilters()
+    {
+        selectedUniversityId = 0;
+        maxDistanceKm = 10;
+        budgetMin = 0;
+        budgetMax = 20000000;
+        selectedPropertyTypes.Clear();
+        selectedAmenities.Clear();
+        selectedHabits.Clear();
+        // Do NOT fetch results yet, wait for user to hit "Apply Filters"
+    }
+
+    private async Task ClearPropertyTypesAndApply()
+    {
+        selectedPropertyTypes.Clear();
+        await FetchResults();
+    }
+
+    private async Task TogglePropertyTypeAndApply(int id)
+    {
+        TogglePropertyType(id);
+        await FetchResults();
+    }
+
+    private void TogglePropertyType(int id)
+    {
+        if (selectedPropertyTypes.Contains(id)) selectedPropertyTypes.Remove(id);
+        else selectedPropertyTypes.Add(id);
+    }
+
+    private void ToggleAmenity(int id)
+    {
+        if (selectedAmenities.Contains(id)) selectedAmenities.Remove(id);
+        else selectedAmenities.Add(id);
+    }
+
+    private void ToggleHabit(int id)
+    {
+        if (selectedHabits.Contains(id)) selectedHabits.Remove(id);
+        else selectedHabits.Add(id);
+    }
+
+    private void ToggleSchoolDropdown(int listingId)
+    {
+        openDropdownId = openDropdownId == listingId ? null : listingId;
+    }
+
+    private async Task SelectSchool(int listingId, int uniId)
+    {
+        openDropdownId = null;
+        var listing = results.FirstOrDefault(r => r.ListingId == listingId);
+        if (listing != null)
+        {
+            listing.CustomUniversityId = uniId;
+            try 
+            {
+                var res = await Http.GetFromJsonAsync<JsonElement>($"api/AdvancedSearch/distance?listingId={listingId}&universityId={uniId}");
+                if (res.TryGetProperty("distanceKm", out var dKm))
+                {
+                    listing.CustomDistanceKm = dKm.GetDouble();
+                }
+            } 
+            catch { }
+        }
+    }
+
+    private string GetAmenityIcon(string amenityName)
+    {
+        var match = amenitiesList.FirstOrDefault(a => a.Name.Contains(amenityName, StringComparison.OrdinalIgnoreCase));
+        if (match != null && !string.IsNullOrEmpty(match.Icon)) return match.Icon;
+        return "check";
+    }
+
+    public class FilterItem
+    {
+        public int Id { get; set; }
+        public string Name { get; set; }
+        public string Icon { get; set; }
+    }
+
+    public class ResultListing
+    {
+        public int ListingId { get; set; }
+        public string Title { get; set; }
+        public decimal Price { get; set; }
+        public double AreaSquareMeters { get; set; }
+        public string District { get; set; }
+        public double DistanceKm { get; set; }
+        public int? CustomUniversityId { get; set; }
+        public double? CustomDistanceKm { get; set; }
+        public int MatchPercent { get; set; }
+        public string PrimaryImageUrl { get; set; }
+        public List<string> Amenities { get; set; }
+        public DateTime CreatedAt { get; set; }
+    }
+}

@@ -15,13 +15,20 @@
 
     <div class="flex items-center gap-8">
         <nav class="hidden md:flex items-center gap-8">
+            <NavLink href="advanced-search" class="text-slate-500 hover:text-primary transition-transform hover:scale-110 flex items-center gap-1" title="Advanced Search">
+                <span class="material-icons-round text-xl">search</span>
+            </NavLink>
             <NavLink href="" Match="NavLinkMatch.All" class="text-sm font-semibold hover:text-primary transition-colors">
                 Explore
             </NavLink>
-            <NavLink href="ai-matching" class="text-sm font-semibold hover:text-primary transition-colors flex items-center gap-1">
-                AI Matching
-                <span class="text-[10px] bg-primary/20 text-primary px-1.5 py-0.5 rounded-full uppercase tracking-widest">New</span>
-            </NavLink>
+            <AuthorizeView>
+                <Authorized>
+                    <NavLink href="ai-matching" class="text-sm font-semibold hover:text-primary transition-colors flex items-center gap-1">
+                        AI Matching
+                        <span class="text-[10px] bg-primary/20 text-primary px-1.5 py-0.5 rounded-full uppercase tracking-widest">New</span>
+                    </NavLink>
+                </Authorized>
+            </AuthorizeView>
             <NavLink href="chat" class="text-sm font-semibold hover:text-primary transition-colors flex items-center gap-1">
                 Messages
             </NavLink>

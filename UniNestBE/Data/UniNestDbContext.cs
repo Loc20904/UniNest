@@ -21,7 +21,12 @@ public class UniNestDbContext : DbContext
     public DbSet<Amenity> Amenities { get; set; }
     public DbSet<LifestyleHabit> LifestyleHabits { get; set; }
     public DbSet<StudentVerificationRequest> StudentVerificationRequests { get; set; }
+
+    public DbSet<PropertyType> PropertyTypes { get; set; }
+
+
     public DbSet<AllowedEmailDomain> AllowedEmailDomains { get; set; }
+
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
