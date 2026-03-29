@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using UniNestBE.Entities;
 
 public class UniNestDbContext : DbContext
 {
@@ -19,6 +20,13 @@ public class UniNestDbContext : DbContext
     public DbSet<Request> Requests { get; set; }
     public DbSet<Amenity> Amenities { get; set; }
     public DbSet<LifestyleHabit> LifestyleHabits { get; set; }
+    public DbSet<StudentVerificationRequest> StudentVerificationRequests { get; set; }
+
+    public DbSet<PropertyType> PropertyTypes { get; set; }
+
+
+    public DbSet<AllowedEmailDomain> AllowedEmailDomains { get; set; }
+
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -64,6 +72,11 @@ public class UniNestDbContext : DbContext
             new LifestyleHabit { LifestyleHabitId = 1, Name = "Non-smoker only" },
             new LifestyleHabit { LifestyleHabitId = 2, Name = "Pet friendly" },
             new LifestyleHabit { LifestyleHabitId = 3, Name = "Late-night studying" }
+        );
+
+        // Khởi tạo tên miền hợp lệ mặc định (Seed data cho AllowedEmailDomains)
+        modelBuilder.Entity<AllowedEmailDomain>().HasData(
+            new AllowedEmailDomain { DomainId = 1, DomainName = "edu.vn", Description = "Email Sinh viên Toàn quốc" }
         );
 
         modelBuilder.Entity<Conversation>()
@@ -186,5 +199,18 @@ public class UniNestDbContext : DbContext
             .WithOne(a => a.Listing)
             .HasForeignKey<Address>(a => a.ListingId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // --- 9. Cấu hình StudentVerificationRequest ---
+        modelBuilder.Entity<StudentVerificationRequest>()
+            .HasOne(svr => svr.User)
+            .WithMany(u => u.VerificationRequestsAsUser)
+            .HasForeignKey(svr => svr.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<StudentVerificationRequest>()
+            .HasOne(svr => svr.Admin)
+            .WithMany(u => u.VerificationRequestsReviewed)
+            .HasForeignKey(svr => svr.ReviewedByAdminId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

@@ -3,6 +3,7 @@
 @inject IJSRuntime JSRuntime
 @inject NavigationManager NavManager
 @using UniNestFE.DTOs
+@using UniNestFE.Services
 @using System.Net.Http.Headers
 @using Microsoft.AspNetCore.Authorization
 
@@ -11,6 +12,31 @@
 <style>
     .scam-glow { box-shadow: 0 0 20px rgba(230, 38, 38, 0.15); }
     .chat-container { height: 100%; width: 100%; display: flex; overflow: hidden; }
+    
+    .safety-alert-card {
+        border: 2px solid #ef4444;
+        border-radius: 16px;
+        background: linear-gradient(135deg, #fef2f2, #fff5f5);
+        padding: 16px;
+        max-width: 420px;
+        animation: alertSlideIn 0.3s ease-out;
+    }
+    .dark .safety-alert-card {
+        background: linear-gradient(135deg, #451a1a, #3b1111);
+        border-color: #dc2626;
+    }
+    .flagged-message {
+        background: #fca5a5 !important;
+        color: #7f1d1d !important;
+    }
+    .dark .flagged-message {
+        background: #991b1b !important;
+        color: #fecaca !important;
+    }
+    @@keyframes alertSlideIn {
+        from { opacity: 0; transform: translateY(-8px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
 </style>
 
 <div class="chat-container max-w-[1500px] mx-auto w-full">
@@ -106,7 +132,7 @@
                         <span class="text-[12px] font-bold text-[#121716] dark:text-white uppercase tracking-wider">Protected</span>
                     </div>
                 
-                    @if (!SelectedConversation.IsBlocked)
+                    @if (!SelectedConversation.IsBlockedByMe && !SelectedConversation.IsBlockedByThem)
                     {
                         <button @onclick="BlockUser" class="p-2 text-slate-400 hover:text-red-500 transition-colors bg-slate-50 dark:bg-[#2a2d32] rounded-full" title="Block User">
                             <span class="material-icons-round">block</span>
@@ -146,11 +172,37 @@
                             }
                             else
                             {
-                                <div class="max-w-[400px] px-4 py-3 text-sm shadow-sm @(msg.SenderId == CurrentUserId ? "bg-primary text-[#121716] rounded-2xl rounded-tr-none font-medium" : "bg-white dark:bg-[#2a2d32] text-[#121716] dark:text-white rounded-2xl rounded-tl-none")">
+                                <div class="max-w-[400px] px-4 py-3 text-sm shadow-sm @(msg.SenderId == CurrentUserId ? "bg-primary text-[#121716] rounded-2xl rounded-tr-none font-medium" : "bg-white dark:bg-[#2a2d32] text-[#121716] dark:text-white rounded-2xl rounded-tl-none") @(msg.SafetyAlert != null && !msg.SafetyAlert.IsDismissed ? "flagged-message" : "")">
                                     @msg.Content
                                 </div>
                             }
                             <span class="text-[10px] text-slate-400">@msg.SentAt.ToString("HH:mm")</span>
+                            
+                            @* === SAFETY ALERT CARD === *@
+                            @if (msg.SafetyAlert != null && !msg.SafetyAlert.IsDismissed)
+                            {
+                                <div class="safety-alert-card mt-2 scam-glow">
+                                    <div class="flex items-center gap-2 mb-2">
+                                        <span class="material-icons-round text-red-500 text-xl">warning</span>
+                                        <span class="font-extrabold text-red-600 dark:text-red-400 text-sm tracking-wide">AI SAFETY ALERT : @msg.SafetyAlert.AlertType</span>
+                                    </div>
+                                    <p class="text-[13px] text-slate-700 dark:text-slate-300 mb-2 leading-relaxed">
+                                        @msg.SafetyAlert.Reason
+                                        @if (!string.IsNullOrEmpty(msg.SafetyAlert.Advice))
+                                        {
+                                            <span>. </span><strong class="underline">@msg.SafetyAlert.Advice</strong>
+                                        }
+                                    </p>
+                                    <div class="flex items-center gap-4 mt-3">
+                                        <button @onclick="() => ReportUserFromAlert(msg)" class="text-red-500 hover:text-red-700 font-bold text-xs transition-colors">
+                                            Report User
+                                        </button>
+                                        <button @onclick="() => DismissAlert(msg)" class="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 font-medium text-xs transition-colors">
+                                            I understand
+                                        </button>
+                                    </div>
+                                </div>
+                            }
                         </div>
                          @if(msg.SenderId == CurrentUserId) {
                              <div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-8 shrink-0" 
@@ -166,13 +218,22 @@
             </div>
 
             <!-- Input Area -->
-            @if (SelectedConversation.IsBlocked)
+            @if (SelectedConversation.IsBlockedByMe)
             {
                 <div class="p-6 bg-slate-50 dark:bg-slate-800/50 border-t border-[#e5e7eb] dark:border-[#333] flex items-center justify-center">
                     <div class="flex items-center gap-2 text-slate-500 dark:text-slate-400">
                         <span class="material-icons-round">block</span>
                         <span class="font-bold text-sm">You have blocked this user.</span>
                         <button @onclick="UnblockUser" class="text-primary hover:underline text-sm ml-2">Unblock</button>
+                    </div>
+                </div>
+            }
+            else if (SelectedConversation.IsBlockedByThem)
+            {
+                <div class="p-6 bg-slate-50 dark:bg-slate-800/50 border-t border-[#e5e7eb] dark:border-[#333] flex items-center justify-center">
+                    <div class="flex items-center gap-2 text-slate-500 dark:text-slate-400">
+                        <span class="material-icons-round">block</span>
+                        <span class="font-bold text-sm">This conversation is blocked.</span>
                     </div>
                 </div>
             }
@@ -334,6 +395,9 @@
     private bool IsLoadingHistory = false;
     private int CurrentUserId = 0;
     
+    // Content Moderation
+    private readonly ChatContentModerationService _moderationService = new();
+    
     // SIGNALR
     private HubConnection? hubConnection;
 
@@ -400,6 +464,16 @@
             {
                 await InvokeAsync(async () =>
                 {
+                    // Block check: ignore messages from blocked users
+                    var blockedConv = Conversations.FirstOrDefault(c => c.PartnerId == message.SenderId);
+                    if (blockedConv != null && (blockedConv.IsBlockedByMe || blockedConv.IsBlockedByThem))
+                    {
+                        return; // Silently drop messages from blocked users
+                    }
+                    
+                    // Scan all messages for safety threats
+                    message.SafetyAlert = _moderationService.ScanMessage(message.Content);
+                    
                     if (SelectedConversation != null && 
                        (message.SenderId == SelectedConversation.PartnerId || message.SenderId == CurrentUserId)) 
                     {
@@ -425,6 +499,45 @@
                         conv.LastMessageAt = message.SentAt;
                         StateHasChanged();
                     }
+                });
+            });
+            
+            hubConnection.On<int, bool, bool>("UpdateBlockStatus", async (partnerId, isBlocked, isBlockedByMe) =>
+            {
+                await InvokeAsync(() =>
+                {
+                    // Update conversation list
+                    var conv = Conversations.FirstOrDefault(c => c.PartnerId == partnerId);
+                    if (conv != null)
+                    {
+                        if (isBlocked)
+                        {
+                            conv.IsBlockedByMe = isBlockedByMe;
+                            conv.IsBlockedByThem = !isBlockedByMe;
+                        }
+                        else
+                        {
+                            conv.IsBlockedByMe = false;
+                            conv.IsBlockedByThem = false;
+                        }
+                    }
+
+                    // Update selected conversation if it matches
+                    if (SelectedConversation != null && SelectedConversation.PartnerId == partnerId)
+                    {
+                        if (isBlocked)
+                        {
+                            SelectedConversation.IsBlockedByMe = isBlockedByMe;
+                            SelectedConversation.IsBlockedByThem = !isBlockedByMe;
+                        }
+                        else
+                        {
+                            SelectedConversation.IsBlockedByMe = false;
+                            SelectedConversation.IsBlockedByThem = false;
+                        }
+                    }
+                    
+                    StateHasChanged();
                 });
             });
             
@@ -526,13 +639,16 @@
              {
                  ChatHistory = await response.Content.ReadFromJsonAsync<List<MessageDto>>() ?? new();
                  
-                 // Mock fallback
+                 // Mock fallback with scam demo messages
                  if (ChatHistory.Count == 0 && conv.ConversationId == 1) 
                  {
-                     ChatHistory.Add(new MessageDto { MessageId = 1, SenderId = conv.PartnerId, Content = "Chào bạn, bạn cần tìm phòng à?", SentAt = DateTime.Now.AddMinutes(-10) });
-                     ChatHistory.Add(new MessageDto { MessageId = 2, SenderId = CurrentUserId, Content = "Dạ vâng, phòng còn không ạ?", SentAt = DateTime.Now.AddMinutes(-9) });
-                     ChatHistory.Add(new MessageDto { MessageId = 3, SenderId = conv.PartnerId, Content = "Phòng vẫn còn bạn nhé. Bạn qua xem lúc nào?", SentAt = DateTime.Now.AddMinutes(-5) });
+                     ChatHistory.Add(new MessageDto { MessageId = 1, SenderId = conv.PartnerId, Content = "Chào bạn, phòng vẫn còn nhé. Khu vực Ngũ Hành Sơn rất tiện đi lại cho sinh viên Kinh Tế.", SentAt = DateTime.Now.AddMinutes(-10) });
+                     ChatHistory.Add(new MessageDto { MessageId = 2, SenderId = CurrentUserId, Content = "Dạ vâng, mình muốn qua xem phòng vào chiều nay được không ạ?", SentAt = DateTime.Now.AddMinutes(-9) });
+                     ChatHistory.Add(new MessageDto { MessageId = 3, SenderId = conv.PartnerId, Content = "Bạn chuyển khoản cọc gấp để mình giữ phòng nhé, đang có nhiều người hỏi lắm.", SentAt = DateTime.Now.AddMinutes(-5) });
                  }
+                 
+                 // Scan all loaded messages from partner for safety threats
+                 ScanChatHistory();
                  
                  await ScrollToBottom();
              }
@@ -563,6 +679,10 @@
             SentAt = DateTime.Now,
             MessageId = 0 // Pending
         };
+        
+        // Scan outgoing message for safety threats
+        tempMsg.SafetyAlert = _moderationService.ScanMessage(content);
+        
         ChatHistory.Add(tempMsg);
         await ScrollToBottom();
         StateHasChanged(); // Force refresh
@@ -704,10 +824,14 @@
             try 
             {
                  // Call API to block
-                 var response = await Http.PostAsync($"api/User/block/{SelectedConversation.PartnerId}", null);
+                 var token = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "authToken");
+                 var request = new HttpRequestMessage(HttpMethod.Post, $"api/Chat/block/{SelectedConversation.PartnerId}");
+                 request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
                  
-                 // For demo purposes, we'll assume success or mock it if API fails
-                 SelectedConversation.IsBlocked = true;
+                 var response = await Http.SendAsync(request);
+                 
+                 // Update local state
+                 SelectedConversation.IsBlockedByMe = true;
                  StateHasChanged();
                  
                  // Reuse info modal for success optional or just close
@@ -716,7 +840,7 @@
             {
                  Console.WriteLine("Block Error: " + ex.Message);
                  // Mock success
-                 SelectedConversation.IsBlocked = true;
+                 SelectedConversation.IsBlockedByMe = true;
                  StateHasChanged();
             }
         });
@@ -728,15 +852,19 @@
         
         try 
         {
-             var response = await Http.PostAsync($"api/User/unblock/{SelectedConversation.PartnerId}", null);
+             var token = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "authToken");
+             var request = new HttpRequestMessage(HttpMethod.Post, $"api/Chat/unblock/{SelectedConversation.PartnerId}");
+             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
              
-             SelectedConversation.IsBlocked = false;
+             var response = await Http.SendAsync(request);
+             
+             SelectedConversation.IsBlockedByMe = false;
              StateHasChanged();
         }
         catch 
         {
              // Mock
-             SelectedConversation.IsBlocked = false;
+             SelectedConversation.IsBlockedByMe = false;
              StateHasChanged();
         }
     }
@@ -744,6 +872,55 @@
     public class UploadResponseDto
     {
         public string Url { get; set; } = string.Empty;
+    }
+    
+    // === CONTENT MODERATION METHODS ===
+    
+    private void ScanChatHistory()
+    {
+        foreach (var msg in ChatHistory)
+        {
+            if (msg.SafetyAlert == null)
+            {
+                msg.SafetyAlert = _moderationService.ScanMessage(msg.Content);
+            }
+        }
+    }
+    
+    private void DismissAlert(MessageDto msg)
+    {
+        if (msg.SafetyAlert != null)
+        {
+            msg.SafetyAlert.IsDismissed = true;
+            StateHasChanged();
+        }
+    }
+    
+    private void ReportUserFromAlert(MessageDto msg)
+    {
+        if (SelectedConversation == null) return;
+        
+        ShowModal(
+            "Report User", 
+            $"Report {SelectedConversation.PartnerName} for suspicious activity? This message was flagged: \"{msg.Content}\"", 
+            "Confirm", 
+            async () =>
+            {
+                try
+                {
+                    var token = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "authToken");
+                    var request = new HttpRequestMessage(HttpMethod.Post, $"api/Chat/report/{SelectedConversation.PartnerId}");
+                    request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                    await Http.SendAsync(request);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("Report Error: " + ex.Message);
+                }
+                
+                ShowModal("Report Submitted", $"Thank you for reporting. Our team will review this conversation.");
+            }
+        );
     }
     
     private async Task ScrollToBottom()

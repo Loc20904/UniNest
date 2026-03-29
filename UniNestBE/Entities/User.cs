@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 public class User
@@ -14,6 +14,8 @@ public class User
     [EmailAddress]
     public string? Email { get; set; }
     public string? PasswordHash { get; set; }
+    public string? ResetPasswordToken { get; set; }
+    public DateTime? ResetPasswordTokenExpiry { get; set; }
     public string? PhoneNumber { get; set; }
     public string? StudentAvatar { get; set; }
     public bool IsVerified { get; set; } = false;
@@ -71,4 +73,11 @@ public class User
 
     [InverseProperty("ParticipantTwo")]
     public virtual ICollection<Conversation>? ConversationsAsUser2 { get; set; }
+
+    // 8. StudentVerificationReview (Xác minh sinh viên)
+    [InverseProperty("User")]
+    public virtual ICollection<StudentVerificationRequest>? VerificationRequestsAsUser { get; set; }
+
+    [InverseProperty("Admin")]
+    public virtual ICollection<StudentVerificationRequest>? VerificationRequestsReviewed { get; set; }
 }

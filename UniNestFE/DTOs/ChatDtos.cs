@@ -1,3 +1,5 @@
+using UniNestFE.Services;
+
 namespace UniNestFE.DTOs
 {
     public class ConversationDto
@@ -18,7 +20,8 @@ namespace UniNestFE.DTOs
         public string? ListingAddress { get; set; }
         public string? ListingImage { get; set; }
         public bool IsVerifiedHost { get; set; }
-        public bool IsBlocked { get; set; }
+        public bool IsBlockedByMe { get; set; }
+        public bool IsBlockedByThem { get; set; }
     }
 
     public class MessageDto
@@ -30,6 +33,9 @@ namespace UniNestFE.DTOs
         public string MediaUrl { get; set; } = string.Empty;
         public DateTime SentAt { get; set; }
         public bool IsRead { get; set; }
+        
+        // Content Moderation
+        public ScamAlertInfo? SafetyAlert { get; set; }
     }
     
     public class SendMessageRequest

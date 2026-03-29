@@ -9,6 +9,8 @@ public class ConversationDto
     public string LastMessage { get; set; }
     public DateTime LastMessageAt { get; set; }
     public bool HasUnread { get; set; }
+    public bool IsBlockedByMe { get; set; }
+    public bool IsBlockedByThem { get; set; }
 }
 
 public class MessageDto

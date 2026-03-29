@@ -1,0 +1,514 @@
+@page "/admin/dashboard"
+@using System.Net.Http.Json
+@using UniNestFE.DTOs
+@inject HttpClient Http
+@layout Layout.AdminLayout
+
+<PageTitle>UniNest DashBoard</PageTitle>
+
+<!-- Welcome Header -->
+<section class="flex justify-between items-end">
+    <div>
+        <p class="text-xs font-bold tracking-widest text-[#004ac6] uppercase mb-1">UniNest Analytics</p>
+        <h2 class="text-4xl font-extrabold tracking-tight text-[#171c1f]">Chào mừng trở lại, Admin.</h2>
+    </div>
+    <div class="flex items-center space-x-3 text-[#515f74] text-sm">
+        <span class="material-symbols-outlined text-sm" data-icon="calendar_today">calendar_today</span>
+        <span>@DateTime.Now.ToString("dd MMMM, yyyy")</span>
+    </div>
+</section>
+
+<!-- Metric Bento Grid -->
+<section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-6">
+    <div class="bg-white p-8 rounded-xl transition-all hover:shadow-xl hover:shadow-[#171c1f]/5 border border-slate-100">
+        <div class="flex justify-between items-start mb-4">
+            <span class="text-[11px] font-bold tracking-wider text-[#434655] uppercase">Tổng tài khoản</span>
+            <div class="p-2 bg-[#dbe1ff] rounded-lg">
+                <span class="material-symbols-outlined text-[#004ac6] text-md" data-icon="groups">groups</span>
+            </div>
+        </div>
+        <div class="text-[2.5rem] font-extrabold text-[#171c1f] leading-tight -ml-1">@(stats?.TotalAccounts.ToString("N0") ?? "...")</div>
+        <div class="mt-4 flex items-center text-[#006242] text-xs font-bold">
+            <span class="material-symbols-outlined text-xs mr-1" data-icon="trending_up">trending_up</span>
+            <span>+15% so với tháng trước</span>
+        </div>
+    </div>
+
+    <div class="bg-white p-8 rounded-xl transition-all hover:shadow-xl hover:shadow-[#171c1f]/5 border border-slate-100 relative overflow-hidden">
+        <div class="flex justify-between items-start mb-4">
+            <span class="text-[11px] font-bold tracking-wider text-[#434655] uppercase">Xác minh sinh viên</span>
+            <div class="p-2 bg-[#ffeed2] rounded-lg">
+                <span class="material-symbols-outlined text-[#d97706]" data-icon="badge">badge</span>
+            </div>
+        </div>
+        <div class="text-[2.5rem] font-extrabold text-[#171c1f] leading-tight -ml-1">@(stats?.PendingStudentVerifications.ToString("N0") ?? "...")</div>
+        <div class="mt-4 flex items-center text-[#515f74] text-xs font-medium">
+            <span class="w-2 h-2 rounded-full bg-amber-500 mr-2"></span> Đang chờ duyệt thẻ sinh viên
+        </div>
+    </div>
+
+    <div class="bg-white p-8 rounded-xl transition-all hover:shadow-xl hover:shadow-[#171c1f]/5 border border-slate-100">
+        <div class="flex justify-between items-start mb-4">
+            <span class="text-[11px] font-bold tracking-wider text-[#434655] uppercase">Duyệt bài đăng</span>
+            <div class="p-2 bg-[#e0f2fe] rounded-lg">
+                <span class="material-symbols-outlined text-[#0284c7]" data-icon="fact_check">fact_check</span>
+            </div>
+        </div>
+        <div class="text-[2.5rem] font-extrabold text-[#171c1f] leading-tight -ml-1">@(stats?.PendingListings.ToString("N0") ?? "...")</div>
+        <div class="mt-4 h-8 w-full">
+            <div class="w-full h-1.5 bg-[#eaeef2] rounded-full overflow-hidden">
+                <div class="bg-[#0284c7] h-full w-[40%]"></div>
+            </div>
+            <div class="flex justify-between mt-2 text-[10px] font-bold uppercase text-[#515f74]">
+                <span>Tỉ lệ duyệt: 40%</span>
+                <span>(Hôm nay)</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white p-8 rounded-xl transition-all hover:shadow-xl hover:shadow-[#171c1f]/5 border border-slate-100 relative">
+        <div class="absolute top-0 right-0 w-24 h-24 bg-[#006242]/5 rounded-bl-full pointer-events-none"></div>
+        <div class="flex justify-between items-start mb-4">
+            <span class="text-[11px] font-bold tracking-wider text-[#434655] uppercase">Tổng doanh thu</span>
+            <div class="p-2 bg-[#d1fae5] rounded-lg">
+                <span class="material-symbols-outlined text-[#059669]" data-icon="payments">payments</span>
+            </div>
+        </div>
+        <div class="text-[2rem] font-extrabold text-[#171c1f] leading-tight -ml-1 mt-2">@(stats != null ? (stats.TotalRevenue / 1000000).ToString("0.##") + "M ₫" : "...")</div>
+        <div class="mt-4 flex items-center text-[#059669] text-xs font-bold">
+            <span class="material-symbols-outlined text-xs mr-1" data-icon="arrow_upward">arrow_upward</span>
+            <span>Doanh thu phí dịch vụ tháng này</span>
+        </div>
+    </div>
+</section>
+
+<!-- Main Visualization & Activity -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-10 mt-10">
+    <!-- Performance Chart -->
+    <section class="lg:col-span-2 space-y-6">
+        <div class="bg-white rounded-xl p-8 border border-slate-100 shadow-sm">
+            <div class="flex justify-between items-center mb-10">
+                <div>
+                    <h3 class="text-lg font-extrabold text-[#171c1f]">Tăng trưởng doanh thu & Bài đăng</h3>
+                    <p class="text-sm text-[#515f74]">Biểu đồ 30 ngày qua</p>
+                </div>
+                <div class="flex space-x-4">
+                    <div class="flex items-center space-x-2 text-[10px] font-bold uppercase">
+                        <span class="w-2.5 h-2.5 rounded-full bg-[#004ac6]"></span>
+                        <span>Bài đăng mới</span>
+                    </div>
+                    <div class="flex items-center space-x-2 text-[10px] font-bold uppercase">
+                        <span class="w-2.5 h-2.5 rounded-full bg-[#059669]"></span>
+                        <span>Doanh thu (Triệu)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SVG Chart Mockup -->
+            <div class="w-full h-64 relative">
+                <svg class="w-full h-full" preserveAspectRatio="none" viewBox="0 0 1000 200">
+                    <defs>
+                        <linearGradient id="gradPrimary" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" style="stop-color:#004ac6;stop-opacity:0.2"></stop>
+                            <stop offset="100%" style="stop-color:#004ac6;stop-opacity:0"></stop>
+                        </linearGradient>
+                    </defs>
+                    <!-- Grid lines -->
+                    <line x1="0" y1="40" x2="1000" y2="40" stroke="#dfe3e7" stroke-width="1" stroke-dasharray="4"></line>
+                    <line x1="0" y1="100" x2="1000" y2="100" stroke="#dfe3e7" stroke-width="1" stroke-dasharray="4"></line>
+                    <line x1="0" y1="160" x2="1000" y2="160" stroke="#dfe3e7" stroke-width="1" stroke-dasharray="4"></line>
+                    
+                    <!-- Posts Area/Line Chart -->
+                    <path d="M0,180 L100,140 L200,160 L300,90 L400,110 L500,60 L600,80 L700,40 L800,55 L900,20 L1000,45" fill="none" stroke="#004ac6" stroke-width="3" stroke-linecap="round"></path>
+                    <path d="M0,180 L100,140 L200,160 L300,90 L400,110 L500,60 L600,80 L700,40 L800,55 L900,20 L1000,45 V200 H0 Z" fill="url(#gradPrimary)"></path>
+                    
+                    <!-- Revenue Line -->
+                    <path d="M0,190 L100,180 L200,175 L300,170 L400,150 L500,145 L600,130 L700,115 L800,90 L900,85 L1000,50" fill="none" stroke="#059669" stroke-width="3" stroke-linecap="round" stroke-dasharray="6,4"></path>
+                </svg>
+            </div>
+            <div class="flex justify-between mt-4 text-[10px] font-bold text-[#515f74] uppercase tracking-widest">
+                <span>1 Tháng trước</span>
+                <span>Tuần 2</span>
+                <span>Tuần 3</span>
+                <span>Hôm nay</span>
+            </div>
+        </div>
+
+        <!-- Yêu cầu xác minh & duyệt bài mới -->
+        <div class="bg-white rounded-xl overflow-hidden shadow-sm border border-slate-100">
+            <div class="px-8 py-5 border-b border-slate-100 flex justify-between items-center">
+                <h3 class="text-lg font-extrabold text-[#171c1f]">Yêu cầu xác minh thẻ sinh viên</h3>
+                <button class="text-[#004ac6] text-xs font-bold uppercase tracking-widest hover:underline transition-all">Xem tất cả</button>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-[#f0f4f8]/50">
+                            <th class="px-8 py-4 text-[10px] font-extrabold uppercase tracking-widest text-[#434655]">Sinh viên</th>
+                            <th class="px-8 py-4 text-[10px] font-extrabold uppercase tracking-widest text-[#434655]">Trường đại học</th>
+                            <th class="px-8 py-4 text-[10px] font-extrabold uppercase tracking-widest text-[#434655]">Tài liệu đính kèm</th>
+                            <th class="px-8 py-4 text-[10px] font-extrabold uppercase tracking-widest text-[#434655]">Tình trạng</th>
+                            <th class="px-8 py-4 text-[10px] font-extrabold uppercase tracking-widest text-[#434655] text-right">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y border-t-0 divide-slate-100">
+                        @if (stats?.RecentVerifications != null && stats.RecentVerifications.Any())
+                        {
+                            foreach (var req in stats.RecentVerifications)
+                            {
+                                <tr class="hover:bg-[#f0f4f8]/50 transition-colors group">
+                                    <td class="px-8 py-4">
+                                        <div class="flex items-center space-x-3">
+                                            <img src="https://ui-avatars.com/api/?name=@Uri.EscapeDataString(req.StudentName)&background=random" class="w-8 h-8 rounded-full" />
+                                            <div>
+                                                <div class="text-sm font-semibold text-[#171c1f]">@req.StudentName</div>
+                                                <div class="text-[10px] text-[#515f74]">@GetTimeAgo(req.SubmittedAt)</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-8 py-4 text-sm text-[#515f74]">@req.UniversityName</td>
+                                    <td class="px-8 py-4 text-sm">
+                                        <div class="flex items-center text-[#0284c7] hover:underline cursor-pointer">
+                                            <span class="material-symbols-outlined text-xs mr-1" data-icon="image">image</span>
+                                            ID Document
+                                        </div>
+                                    </td>
+                                    <td class="px-8 py-4">
+                                        <span class="px-3 py-1 bg-[#ffeed2] text-[#d97706] text-[10px] font-bold uppercase rounded-full">Chờ duyệt</span>
+                                    </td>
+                                    <td class="px-8 py-4 text-right">
+                                        <button @onclick="() => OpenVerifyModal(req)" class="bg-[#004ac6] text-white px-3 py-1.5 rounded text-xs font-semibold hover:bg-blue-700 transition">Kiểm duyệt</button>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else if (isLoading)
+                        {
+                            <tr>
+                                <td colspan="5" class="px-8 py-8 text-center text-sm text-[#515f74]">Đang tải...</td>
+                            </tr>
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="5" class="px-8 py-8 text-center text-sm text-[#515f74]">Không có yêu cầu xác minh mới.</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- Sidebar Panel: Safety Alerts & Quick Actions -->
+    <aside class="space-y-8">
+        
+        <!-- Yêu cầu duyệt bài đăng (New) -->
+        <div class="bg-white p-6 rounded-xl border border-slate-100 shadow-sm relative">
+            <h3 class="text-sm font-extrabold text-[#434655] uppercase tracking-widest mb-4">Bài đăng cần duyệt (@(stats?.PendingListings ?? 0))</h3>
+            <p class="text-[11px] text-[#515f74] mb-4">Kiểm tra thông tin phòng trọ trước khi hiển thị lên bảng tin sinh viên.</p>
+            
+            <div class="space-y-4">
+                @if (stats?.RecentListings != null && stats.RecentListings.Any())
+                {
+                    foreach (var listing in stats.RecentListings)
+                    {
+                        var bgImage = string.IsNullOrEmpty(listing.ImageUrl) ? "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267" : $"http://localhost:5222{listing.ImageUrl}";
+                        
+                        <div class="border border-slate-100 rounded-lg p-3 hover:border-[#004ac6] transition-colors cursor-pointer group">
+                            <div class="flex gap-3">
+                                <div class="w-12 h-12 bg-slate-200 rounded object-cover flex-shrink-0" style="background-image: url('@bgImage'); background-size: cover; background-position: center;"></div>
+                                <div class="flex-grow">
+                                    <h4 class="text-xs font-bold text-[#171c1f] group-hover:text-[#004ac6] line-clamp-1">@listing.Title</h4>
+                                    <div class="flex items-center text-[10px] text-[#515f74] mt-1 space-x-2">
+                                        <span class="text-amber-500 font-semibold">@listing.Price.ToString("N0") đ</span>
+                                        <span>•</span>
+                                        <span>Chủ trọ: @listing.OwnerName</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+                else if (isLoading)
+                {
+                    <div class="text-center text-sm text-[#515f74] py-4">Đang tải...</div>
+                }
+                else
+                {
+                    <div class="text-center text-sm text-[#515f74] py-4">Không có bài đăng mới.</div>
+                }
+            </div>
+            
+            <button class="w-full mt-4 bg-slate-100 text-[#004ac6] hover:bg-blue-50 py-2.5 rounded text-xs font-bold uppercase tracking-widest transition-colors">
+                Trang quản lý bài đăng
+            </button>
+        </div>
+
+        <!-- AI Safety Alerts -->
+        <div class="bg-[#171c1f] p-6 rounded-xl text-white relative overflow-hidden group">
+            <div class="absolute -top-10 -right-10 w-32 h-32 bg-[#004ac6]/20 rounded-full blur-3xl group-hover:bg-[#004ac6]/40 transition-all"></div>
+            
+            <div class="relative z-10">
+                <div class="flex items-center space-x-3 mb-4">
+                    <span class="material-symbols-outlined text-[#b4c5ff]" data-icon="admin_panel_settings">admin_panel_settings</span>
+                    <h3 class="text-xs font-extrabold uppercase tracking-widest text-[#b4c5ff]">Hệ thống bảo mật</h3>
+                </div>
+                
+                <div class="space-y-3">
+                    <div class="bg-white/5 backdrop-blur-md p-3 rounded-lg border-l-2 border-[#ba1a1a]">
+                        <div class="flex justify-between items-start mb-1">
+                            <span class="text-[10px] font-black uppercase text-[#ffdad6]">Nghi ngờ lừa đảo</span>
+                            <span class="text-[9px] text-white/50">2 phút trước</span>
+                        </div>
+                        <p class="text-[11px] text-white/80 leading-relaxed">Tài khoản "Nhà trọ giá siêu rẻ" yêu cầu cọc trước 100%. Đã tự động ẩn tin.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </aside>
+</div>
+
+<!-- Verification Modal -->
+@if (showVerifyModal && selectedRequest != null)
+{
+    <div class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in">
+        <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-scale-up border border-slate-100 dark:border-slate-800 flex flex-col max-h-[90vh]">
+            
+            <!-- Header -->
+            <div class="px-8 py-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/50">
+                <div>
+                    <h3 class="text-xl font-black text-[#171c1f] dark:text-white">Kiểm duyệt thẻ sinh viên</h3>
+                    <p class="text-xs text-[#515f74] dark:text-slate-400 mt-1">Yêu cầu được gửi lúc @selectedRequest.SubmittedAt.ToString("HH:mm dd/MM/yyyy")</p>
+                </div>
+                <button @onclick="CloseModal" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 transition-colors">
+                    <span class="material-symbols-outlined text-[20px]">close</span>
+                </button>
+            </div>
+
+            <!-- Content -->
+            <div class="p-8 overflow-y-auto flex-grow space-y-8">
+                
+                <!-- Info Section -->
+                <div class="grid grid-cols-2 gap-6 bg-slate-50 dark:bg-slate-800/30 p-6 rounded-xl border border-slate-100 dark:border-slate-800">
+                    <div>
+                        <span class="text-[10px] font-bold uppercase tracking-widest text-[#515f74] dark:text-slate-400">Họ và tên</span>
+                        <p class="text-sm font-bold text-[#171c1f] dark:text-white mt-1">@selectedRequest.StudentName</p>
+                    </div>
+                    <div>
+                        <span class="text-[10px] font-bold uppercase tracking-widest text-[#515f74] dark:text-slate-400">Trường đại học</span>
+                        <p class="text-sm font-bold text-[#171c1f] dark:text-white mt-1">@selectedRequest.UniversityName</p>
+                    </div>
+                    <div>
+                        <span class="text-[10px] font-bold uppercase tracking-widest text-[#515f74] dark:text-slate-400">Email</span>
+                        <p class="text-sm font-bold text-[#171c1f] dark:text-white mt-1">@selectedRequest.Email</p>
+                    </div>
+                    <div>
+                        <span class="text-[10px] font-bold uppercase tracking-widest text-[#515f74] dark:text-slate-400">Học kỳ hiện tại</span>
+                        <p class="text-sm font-bold text-[#171c1f] dark:text-white mt-1">@selectedRequest.CurrentSemester</p>
+                    </div>
+                </div>
+
+                <!-- Images Section -->
+                <div class="space-y-4">
+                    <h4 class="text-xs font-bold uppercase tracking-widest text-[#171c1f] dark:text-white border-b border-slate-100 dark:border-slate-800 pb-2">Hồ sơ đính kèm</h4>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="space-y-2">
+                            <span class="text-[10px] text-[#515f74] font-semibold">Mặt trước thẻ SV</span>
+                            <div class="bg-slate-100 dark:bg-slate-800 h-40 rounded-lg flex items-center justify-center overflow-hidden border border-slate-200 dark:border-slate-700 group cursor-pointer relative">
+                                @if (!string.IsNullOrEmpty(selectedRequest.FrontIdImageUrl))
+                                {
+                                    <img src="@($"http://localhost:5249{selectedRequest.FrontIdImageUrl}")" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                    <div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                                        <span class="material-symbols-outlined text-white opacity-0 group-hover:opacity-100 transition-opacity">zoom_in</span>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span class="text-xs text-slate-400">Không có ảnh</span>
+                                }
+                            </div>
+                        </div>
+                        <div class="space-y-2">
+                            <span class="text-[10px] text-[#515f74] font-semibold">Mặt sau thẻ SV</span>
+                            <div class="bg-slate-100 dark:bg-slate-800 h-40 rounded-lg flex items-center justify-center overflow-hidden border border-slate-200 dark:border-slate-700 group cursor-pointer relative">
+                                @if (!string.IsNullOrEmpty(selectedRequest.BackIdImageUrl))
+                                {
+                                    <img src="@($"http://localhost:5249{selectedRequest.BackIdImageUrl}")" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                    <div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                                        <span class="material-symbols-outlined text-white opacity-0 group-hover:opacity-100 transition-opacity">zoom_in</span>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span class="text-xs text-slate-400">Không có ảnh</span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Reject Reason Form -->
+                @if (showRejectReason)
+                {
+                    <div class="animate-fade-in-up mt-4 bg-red-50 dark:bg-red-900/10 p-5 rounded-xl border border-red-100 dark:border-red-900/30">
+                        <label class="block text-[11px] font-bold uppercase tracking-widest text-red-600 dark:text-red-400 mb-2">Lý do từ chối (Gửi qua Email)</label>
+                        <textarea @bind="rejectReason" rows="3" class="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-red-200 dark:border-red-800 rounded-lg outline-none focus:ring-2 focus:ring-red-500 text-sm resize-none" placeholder="Ví dụ: Thẻ sinh viên bị mờ, không rõ học kỳ..."></textarea>
+                    </div>
+                }
+            </div>
+
+            <!-- Footer Actions -->
+            <div class="px-8 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-end gap-3">
+                @if (showRejectReason)
+                {
+                    <button @onclick="() => showRejectReason = false" disabled="@isProcessing" class="px-5 py-2.5 rounded-lg text-sm font-bold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 transition-colors disabled:opacity-50">Hủy bỏ</button>
+                    <button @onclick="ConfirmReject" disabled="@isProcessing" class="px-6 py-2.5 rounded-lg text-sm font-bold text-white bg-red-600 hover:bg-red-700 shadow-lg shadow-red-600/20 transition-all flex items-center gap-2 disabled:opacity-50">
+                        @if (isProcessing) { <span class="material-symbols-outlined text-sm animate-spin">progress_activity</span> }
+                        Xác nhận từ chối
+                    </button>
+                }
+                else
+                {
+                    <button @onclick="RejectRequest" disabled="@isProcessing" class="px-6 py-2.5 rounded-lg text-sm font-bold text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50">Từ chối</button>
+                    <button @onclick="ApproveRequest" disabled="@isProcessing" class="px-8 py-2.5 rounded-lg text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-600/20 transition-all flex items-center gap-2 disabled:opacity-50">
+                        @if (isProcessing) { <span class="material-symbols-outlined text-sm animate-spin">progress_activity</span> }
+                        Phê duyệt
+                    </button>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+<style>
+    .animate-scale-up { animation: scaleUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    .animate-fade-in { animation: fadeIn 0.2s ease-out forwards; }
+    .animate-fade-in-up { animation: fadeInUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    
+    @@keyframes scaleUp {
+        0% { opacity: 0; transform: scale(0.95) translateY(10px); }
+        100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    @@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @@keyframes fadeInUp {
+        0% { opacity: 0; transform: translateY(10px); }
+        100% { opacity: 1; transform: translateY(0); }
+    }
+</style>
+
+@code {
+    private DashboardStatsDto? stats;
+    private bool isLoading = true;
+
+    // Modal State
+    private DashboardVerificationRequestDto? selectedRequest;
+    private bool showVerifyModal = false;
+    private bool showRejectReason = false;
+    private string rejectReason = "";
+    private bool isProcessing = false;
+
+    public class VerifyRequestDto
+    {
+        public int RequestId { get; set; }
+        public bool IsApproved { get; set; }
+        public string? RejectReason { get; set; }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadStats();
+    }
+
+    private async Task LoadStats()
+    {
+        try
+        {
+            isLoading = true;
+            stats = await Http.GetFromJsonAsync<DashboardStatsDto>("api/admin/dashboard-stats");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error fetching dashboard stats: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void OpenVerifyModal(DashboardVerificationRequestDto request)
+    {
+        selectedRequest = request;
+        showVerifyModal = true;
+        showRejectReason = false;
+        rejectReason = "";
+    }
+
+    private void CloseModal()
+    {
+        if (isProcessing) return;
+        showVerifyModal = false;
+        selectedRequest = null;
+    }
+
+    private async Task ApproveRequest()
+    {
+        if (selectedRequest == null) return;
+        isProcessing = true;
+        try
+        {
+            var reqConfig = new VerifyRequestDto { RequestId = selectedRequest.RequestId, IsApproved = true };
+            var response = await Http.PostAsJsonAsync("api/Admin/verify-student", reqConfig);
+            if (response.IsSuccessStatusCode)
+            {
+                stats?.RecentVerifications.Remove(selectedRequest);
+                if (stats != null) stats.PendingStudentVerifications = Math.Max(0, stats.PendingStudentVerifications - 1);
+                CloseModal();
+            }
+        }
+        catch (Exception ex) { Console.WriteLine(ex.Message); }
+        finally { isProcessing = false; }
+    }
+
+    private void RejectRequest()
+    {
+        showRejectReason = true;
+    }
+
+    private async Task ConfirmReject()
+    {
+        if (selectedRequest == null) return;
+        if (string.IsNullOrWhiteSpace(rejectReason))
+        {
+            // You can add a quick toast here if you want
+            return;
+        }
+
+        isProcessing = true;
+        try
+        {
+            var reqConfig = new VerifyRequestDto { RequestId = selectedRequest.RequestId, IsApproved = false, RejectReason = rejectReason };
+            var response = await Http.PostAsJsonAsync("api/Admin/verify-student", reqConfig);
+            if (response.IsSuccessStatusCode)
+            {
+                stats?.RecentVerifications.Remove(selectedRequest);
+                if (stats != null) stats.PendingStudentVerifications = Math.Max(0, stats.PendingStudentVerifications - 1);
+                CloseModal();
+            }
+        }
+        catch (Exception ex) { Console.WriteLine(ex.Message); }
+        finally { isProcessing = false; }
+    }
+
+    private string GetTimeAgo(DateTime dateTime)
+    {
+        var timeSpan = DateTime.UtcNow - dateTime;
+        if (timeSpan <= TimeSpan.FromSeconds(60)) return $"{Math.Max(0, timeSpan.Seconds)} giây trước";
+        if (timeSpan <= TimeSpan.FromMinutes(60)) return $"{timeSpan.Minutes} phút trước";
+        if (timeSpan <= TimeSpan.FromHours(24)) return $"{timeSpan.Hours} giờ trước";
+        if (timeSpan <= TimeSpan.FromDays(30)) return $"{timeSpan.Days} ngày trước";
+        return dateTime.ToString("dd/MM/yyyy");
+    }
+}
