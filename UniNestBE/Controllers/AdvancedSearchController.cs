@@ -37,7 +37,7 @@ namespace UniNestBE.Controllers
                 .ToListAsync();
 
             var lifestyleHabits = await _context.LifestyleHabits
-                .Select(h => new { h.LifestyleHabitId, h.Name })
+                .Select(h => new { h.LifestyleHabitId, h.Name, h.Icon })
                 .ToListAsync();
 
             return Ok(new

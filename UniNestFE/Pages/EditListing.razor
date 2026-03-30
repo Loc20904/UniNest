@@ -38,19 +38,7 @@
                 </div>
 
                 <div class="form-group-space">
-                    <div class="form-group mb-4">
-                        <label class="form-label">Property Type <span class="text-red-500 text-lg" title="Information must be entered">*</span></label>
-                        <div class="property-type-grid">
-                            @foreach (var type in propertyTypes)
-                            {
-                                <div class="type-card @(listing.PropertyTypeId == type.PropertyTypeId ? "active" : "")" 
-                                     @onclick="() => listing.PropertyTypeId = type.PropertyTypeId">
-                                    <span class="type-name">@type.Name</span>
-                                </div>
-                            }
-                        </div>
-                    </div>
-
+                   
                     <div class="form-group">
                         <label class="form-label">Listing Title <span class="text-red-500 text-lg" title="Information must be entered">*</span></label>
                         <input type="text" @bind="listing.Title" class="form-input" placeholder="e.g. Modern Studio near Duy Tan University" />
@@ -74,8 +62,20 @@
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">Description <span class="text-red-500 text-lg" title="Information must be entered">*</span></label>
+                        <label class="form-label">Description </label>
                         <textarea @bind="listing.Description" rows="4" class="form-textarea" placeholder="Describe the room, furniture, and surroundings..."></textarea>
+                    </div>
+                    <div class="form-group mb-4">
+                        <label class="form-label">Property Type</label>
+                        <div class="property-type-grid">
+                            @foreach (var type in propertyTypes)
+                            {
+                                <div class="type-card @(listing.PropertyTypeId == type.PropertyTypeId ? "active" : "")" 
+                                     @onclick="() => listing.PropertyTypeId = type.PropertyTypeId">
+                                    <span class="type-name">@type.Name</span>
+                                </div>
+                            }
+                        </div>
                     </div>
                 </div>
             </div>
@@ -132,7 +132,7 @@
                 </div>
 
                 <div class="relative group">
-                    <!-- 🔥 MAP REAL -->
+                    <!-- MAP REAL -->
                     <div id="map" style="height: 350px; border-radius: 12px; border: 1px solid #e2e8f0;"></div>
                     
                     @if (!showLargeMap)
@@ -197,7 +197,13 @@
                         {
                             var isChecked = listing.LifestyleHabits.Any(a => a.LifestyleHabitId == habit.LifestyleHabitId);
                             <label class="habit-item @(isChecked ? "checked" : "")" @onclick="() => ToggleHabit(habit)">
-                                <span class="habit-name">@habit.Name</span>
+                                <div class="flex items-center gap-3">
+                                    @if (!string.IsNullOrEmpty(habit.Icon))
+                                    {
+                                        <i class="material-icons-round @(isChecked ? "text-[#00BAF2]" : "text-slate-400")" style="font-size: 20px;">@habit.Icon</i>
+                                    }
+                                    <span class="habit-name">@habit.Name</span>
+                                </div>
                                 <div class="checkbox-box"><i class="material-icons">check</i></div>
                             </label>
                         }
@@ -384,7 +390,7 @@
     public class AmenityItem { public int AmenityId { get; set; } public string Name { get; set; } public string Icon { get; set; } }
     List<AmenityItem> AvailableAmenities = new();
     
-    public class HabitItem { public int LifestyleHabitId { get; set; } public string Name { get; set; } }
+    public class HabitItem { public int LifestyleHabitId { get; set; } public string Name { get; set; } public string? Icon { get; set; } }
     public class PropertyType { public int PropertyTypeId { get; set; } public string Name { get; set; } }
     List<HabitItem> AvailableHabits = new();
     List<PropertyType> propertyTypes = new();
@@ -796,7 +802,7 @@
 
             if (result != null)
             {
-                // 🔥 full address
+                // full address
                 string rawDistrict = result.address?.city_district ?? result.address?.suburb ?? result.address?.city ?? "Unknown";
                 listing.District = rawDistrict.Replace(" Ward", "").Trim();
 

@@ -185,7 +185,13 @@
                     {
                         var isChecked = listing.LifestyleHabitIds.Contains(habit.LifestyleHabitId);
                         <label class="habit-item @(isChecked ? "checked" : "")" @onclick="() => ToggleHabit(habit.LifestyleHabitId)">
-                            <span class="habit-name">@habit.Name</span>
+                            <div class="flex items-center gap-3">
+                                @if (!string.IsNullOrEmpty(habit.Icon))
+                                {
+                                    <i class="material-icons-round @(isChecked ? "text-[#00BAF2]" : "text-slate-400")" style="font-size: 20px;">@habit.Icon</i>
+                                }
+                                <span class="habit-name">@habit.Name</span>
+                            </div>
                             <div class="checkbox-box"><i class="material-icons">check</i></div>
                         </label>
                     }
@@ -327,7 +333,7 @@
     public class AmenityItem { public int AmenityId { get; set; } public string Name { get; set; } public string Icon { get; set; } }
     List<AmenityItem> AvailableAmenities = new();
 
-    public class HabitItem { public int LifestyleHabitId { get; set; } public string Name { get; set; } }
+    public class HabitItem { public int LifestyleHabitId { get; set; } public string Name { get; set; } public string? Icon { get; set; } }
 
     public class PropertyType { public int PropertyTypeId { get; set; } public string Name { get; set; } }
     List<HabitItem> AvailableHabits = new();

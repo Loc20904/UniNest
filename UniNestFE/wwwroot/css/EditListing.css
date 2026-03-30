@@ -1,4 +1,4 @@
-﻿.edit-listing-container {
+.edit-listing-container {
     max-width: none !important;
     width: 100% !important;
     margin: 0 auto;
@@ -254,6 +254,19 @@
     appearance: none; /* ẩn mũi tên mặc định */
 }
 
+/* Hide number input spinners for Chrome, Safari, Edge, Opera */
+.form-input::-webkit-outer-spin-button,
+.form-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    appearance: none;
+    margin: 0;
+}
+
+/* Hide number input spinners for Firefox */
+.form-input[type=number] {
+    -moz-appearance: textfield;
+}
+
 .form-input:focus {
     border-color: #00BAF2;
     box-shadow: 0 0 0 1px #00BAF2;
@@ -284,6 +297,11 @@
     font-weight: 500;
     color: #94A3B8;
     pointer-events: none;
+    z-index: 5;
+}
+
+.form-input-container .form-input {
+    padding-right: 60px;
 }
 
 .form-textarea {
@@ -742,7 +760,7 @@ html.dark .form-input:focus, html.dark .form-textarea:focus { border-color: #00B
 html.dark .form-input-container { background: #0f172a; border-color: #334155; }
 html.dark .form-input-container:focus-within { border-color: #00BAF2; }
 html.dark .form-input-container input { background: transparent; color: #f8fafc; border: none; }
-html.dark .form-input-suffix { background: #1e293b; color: #94a3b8; border-left-color: #334155; }
+html.dark .form-input-suffix { background: transparent; color: #94a3b8; }
 html.dark .amenity-card { border-color: #334155; background: #0f172a; color: #cbd5e1; }
 html.dark .amenity-card:hover { border-color: #475569; background: #1e293b; }
 html.dark .amenity-card.checked { border-color: #00BAF2; background: rgba(0, 186, 242, 0.1); color: #00BAF2; }

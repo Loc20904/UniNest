@@ -1,10 +1,17 @@
 @page "/advanced-search"
 @using System.Text.Json
+@using UniNestFE.DTOs
 @inject HttpClient Http
 @inject NavigationManager NavManager
 @inject IJSRuntime JSRuntime
 
 <div class="w-full min-h-[calc(100vh-70px)] bg-transparent pb-24 relative font-sans text-slate-800 dark:text-slate-200">
+    @if (showMessage)
+    {
+        <div class="fixed top-5 right-5 z-50 px-6 py-3 rounded-xl shadow-lg text-white animate-fade-in @(messageType == "success" ? "bg-green-500" : "bg-red-500")">
+            @message
+        </div>
+    }
     
     <!-- Header Section -->
     <div class="px-6 md:px-12 lg:px-24 pt-12">
@@ -110,7 +117,7 @@
                                         @listing.MatchPercent% MATCH
                                     </div>
                                 }
-                                <button class="absolute top-4 right-4 text-white focus:outline-none bg-black/20 backdrop-blur-md p-2 rounded-full hover:bg-white hover:text-red-500 transition-colors shadow-sm">
+                                <button @onclick="() => ToggleSave(listing.ListingId)" @onclick:preventDefault @onclick:stopPropagation class="absolute top-4 right-4 focus:outline-none backdrop-blur-md p-2 rounded-full transition-colors shadow-sm @(savedListingIds.Contains(listing.ListingId) ? "text-red-500 bg-white" : "text-white bg-black/20 hover:bg-white hover:text-red-500")">
                                     <span class="material-icons-round text-lg leading-none">favorite</span>
                                 </button>
                                 <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-5 pt-16">
@@ -368,7 +375,7 @@
                                             <span class="material-icons-round text-white text-[14px] font-bold">check</span>
                                         }
                                     </div>
-                                    <span class="material-icons-round @(isSelected ? "text-slate-800 dark:text-white" : "text-slate-600 dark:text-slate-400") text-[20px]">check_circle_outline</span>
+                                    <span class="material-icons-round @(isSelected ? "text-slate-800 dark:text-white" : "text-slate-600 dark:text-slate-400") text-[20px]">@hb.Icon</span>
                                     <span class="text-sm tracking-tight @(isSelected ? "font-bold text-slate-800 dark:text-white" : "font-medium text-slate-600 dark:text-slate-300")">@hb.Name</span>
                                 </div>
                             }
@@ -459,6 +466,69 @@
     private bool showProfileRequiredModal = false;
     private bool isLoading = true;
 
+    // Favorites
+    private HashSet<int> savedListingIds = new();
+    private string? message;
+    private string messageType = "success"; 
+    private bool showMessage = false;
+
+    private async void ShowMessage(string msg, string type)
+    {
+        message = msg;
+        messageType = type;
+        showMessage = true;
+        StateHasChanged();
+        await Task.Delay(2500);
+        showMessage = false;
+        StateHasChanged();
+    }
+
+    private async Task ToggleSave(int listingId)
+    {
+        if (!isLoggedIn)
+        {
+            ShowMessage("Please sign in to save listings.", "error");
+            return;
+        }
+
+        try
+        {
+            var token = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "authToken");
+            Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            if (savedListingIds.Contains(listingId))
+            {
+                var res = await Http.DeleteAsync($"api/favorites/{listingId}");
+                if (res.IsSuccessStatusCode)
+                {
+                    savedListingIds.Remove(listingId);
+                    ShowMessage("Removed from favorites", "success");
+                }
+                else
+                {
+                    ShowMessage("Failed to remove. Please try again.", "error");
+                }
+            }
+            else
+            {
+                var res = await Http.PostAsync($"api/favorites/{listingId}", null);
+                if (res.IsSuccessStatusCode)
+                {
+                    savedListingIds.Add(listingId);
+                    ShowMessage("Saved successfully", "success");
+                }
+                else
+                {
+                    ShowMessage("Could not save. Please login again.", "error");
+                }
+            }
+        }
+        catch
+        {
+            ShowMessage("Network error. Please check your connection.", "error");
+        }
+    }
+
     // Filter Options Data
     private List<FilterItem> universitiesList = new();
     private List<FilterItem> propertyTypesList = new();
@@ -533,7 +603,7 @@
                 universitiesList = ParseItems(res, "universities", "uniId", "uniName");
                 propertyTypesList = ParseItems(res, "propertyTypes", "propertyTypeId", "name");
                 amenitiesList = ParseItems(res, "amenities", "amenityId", "name", "icon");
-                habitsList = ParseItems(res, "lifestyleHabits", "lifestyleHabitId", "name");
+                habitsList = ParseItems(res, "lifestyleHabits", "lifestyleHabitId", "name", "icon");
             }
         }
         catch (Exception ex)
@@ -780,6 +850,18 @@
              }
              
              isLoggedIn = true;
+            //favorite
+             try 
+             {
+                 Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+                 var savedList = await Http.GetFromJsonAsync<List<SavedListingDto>>("api/favorites");
+                 if (savedList != null)
+                 {
+                     savedListingIds = new HashSet<int>(savedList.Select(x => x.Id));
+                 }
+             }
+             catch { }
+            //end favorite
              var payload = token.Split('.')[1];
              switch (payload.Length % 4)
              {
