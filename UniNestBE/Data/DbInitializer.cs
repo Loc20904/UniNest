@@ -164,6 +164,17 @@ namespace UniNestBE.Data
                         context.SaveChanges();
                     }
                 }
+
+                // Auto-approve first 10 listings for Demo purposes
+                var drafts = context.Listings.Where(l => l.ApprovalStatus == "Pending" || l.ApprovalStatus == "Draft").Take(10).ToList();
+                if (drafts.Any())
+                {
+                    foreach (var l in drafts)
+                    {
+                        l.ApprovalStatus = "Approved";
+                    }
+                    context.SaveChanges();
+                }
             }
         }
     }

@@ -92,7 +92,7 @@ namespace UniNestBE.Controllers
                 .Include(l => l.Images)
                 .Include(l => l.Amenities)
                 .Include(l => l.LifestyleHabits)
-                .Where(l => l.IsAvailable && l.Address != null);
+                .Where(l => l.IsAvailable && l.Address != null && (l.ApprovalStatus == "Approved" || l.ApprovalStatus == "Published") && l.ExpireAt >= DateTime.Now);
 
             // Filter by Query text
             if (!string.IsNullOrWhiteSpace(queryStr))
