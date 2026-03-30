@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace UniNestBE.Migrations
 {
     [DbContext(typeof(UniNestDbContext))]
-    partial class UniNestDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260329170308_AddEnrollmentStatusUser")]
+    partial class AddEnrollmentStatusUser
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -224,10 +227,6 @@ namespace UniNestBE.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("LifestyleHabitId"));
 
-                    b.Property<string>("Icon")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -307,18 +306,10 @@ namespace UniNestBE.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
-                    b.Property<string>("GuestFrequency")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
                     b.Property<bool>("HasPet")
                         .HasColumnType("bit");
 
                     b.Property<string>("PersonalityTraits")
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
-
-                    b.Property<string>("PreferredDistricts")
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
 
@@ -406,8 +397,8 @@ namespace UniNestBE.Migrations
                             AddressId = 0,
                             ApprovalStatus = "Pending",
                             AreaSquareMeters = 20.0,
-                            CreatedAt = new DateTime(2026, 3, 30, 13, 4, 33, 722, DateTimeKind.Local).AddTicks(3242),
-                            ExpireAt = new DateTime(2026, 4, 29, 13, 4, 33, 722, DateTimeKind.Local).AddTicks(3249),
+                            CreatedAt = new DateTime(2026, 3, 30, 0, 3, 7, 949, DateTimeKind.Local).AddTicks(4182),
+                            ExpireAt = new DateTime(2026, 4, 29, 0, 3, 7, 949, DateTimeKind.Local).AddTicks(4193),
                             GenderPreference = "Any",
                             IsAvailable = true,
                             OwnerId = 1,
@@ -420,8 +411,8 @@ namespace UniNestBE.Migrations
                             AddressId = 0,
                             ApprovalStatus = "Pending",
                             AreaSquareMeters = 40.0,
-                            CreatedAt = new DateTime(2026, 3, 30, 13, 4, 33, 722, DateTimeKind.Local).AddTicks(3257),
-                            ExpireAt = new DateTime(2026, 4, 29, 13, 4, 33, 722, DateTimeKind.Local).AddTicks(3257),
+                            CreatedAt = new DateTime(2026, 3, 30, 0, 3, 7, 949, DateTimeKind.Local).AddTicks(4209),
+                            ExpireAt = new DateTime(2026, 4, 29, 0, 3, 7, 949, DateTimeKind.Local).AddTicks(4209),
                             GenderPreference = "Any",
                             IsAvailable = true,
                             OwnerId = 1,
