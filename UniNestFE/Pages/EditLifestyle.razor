@@ -295,8 +295,8 @@
                     <div class="tag-grid">
                         @foreach (var tag in AvailableTags)
                         {
-                            bool isActive = SelectedTags.Contains(tag.Name);
-                            <div class="tag-btn @(isActive ? "active" : "")" @onclick="() => ToggleTag(tag.Name)">
+                            bool isActive = SelectedHabitIds.Contains(tag.LifestyleHabitId);
+                            <div class="tag-btn @(isActive ? "active" : "")" @onclick="() => ToggleTag(tag.LifestyleHabitId)">
                                 <span class="material-icons-round text-[20px]">@tag.Icon</span>
                                 @tag.Name
                             </div>
@@ -345,23 +345,8 @@
     private bool IsSaving = false;
     private string AuthToken = "";
 
-    private List<string> SelectedTags = new List<string>();
-
-    private List<TagItem> AvailableTags = new List<TagItem>
-    {
-        new TagItem { Name = "Quiet", Icon = "volume_off" },
-        new TagItem { Name = "Social", Icon = "people" },
-        new TagItem { Name = "Gamer", Icon = "sports_esports" },
-        new TagItem { Name = "Music Lover", Icon = "music_note" },
-        new TagItem { Name = "Bookworm", Icon = "menu_book" },
-        new TagItem { Name = "Fitness", Icon = "fitness_center" },
-        new TagItem { Name = "Foodie", Icon = "restaurant" },
-        new TagItem { Name = "Cinephile", Icon = "movie" },
-        new TagItem { Name = "Artist", Icon = "palette" },
-        new TagItem { Name = "Introvert", Icon = "self_improvement" },
-        new TagItem { Name = "Extrovert", Icon = "celebration" },
-        new TagItem { Name = "Tidy", Icon = "cleaning_services" }
-    };
+    private List<int> SelectedHabitIds = new List<int>();
+    private List<HabitItem> AvailableTags = new List<HabitItem>();
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -369,6 +354,9 @@
         {
             try
             {
+                // Fetch dynamic tags from Admin's LifestyleHabits table
+                AvailableTags = await Http.GetFromJsonAsync<List<HabitItem>>("https://localhost:7045/api/LifestyleHabits") ?? new List<HabitItem>();
+
                 AuthToken = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "authToken");
                 if (!string.IsNullOrEmpty(AuthToken))
                 {
@@ -381,13 +369,10 @@
                         if (dto != null)
                         {
                             Model = dto;
-                            // Need to parse traits into list format for UI
-                            if (!string.IsNullOrEmpty(Model.PersonalityTraits))
+                            // Retrieve dynamic tags from DB
+                            if (Model.LifestyleHabitIds != null)
                             {
-                                SelectedTags = Model.PersonalityTraits
-                                    .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
-                                    .Select(t => t.Trim())
-                                    .ToList();
+                                SelectedHabitIds = Model.LifestyleHabitIds;
                             }
                             
                             // Initialize default budget max if 0
@@ -405,15 +390,15 @@
         }
     }
 
-    private void ToggleTag(string tagName)
+    private void ToggleTag(int habitId)
     {
-        if (SelectedTags.Contains(tagName))
+        if (SelectedHabitIds.Contains(habitId))
         {
-            SelectedTags.Remove(tagName);
+            SelectedHabitIds.Remove(habitId);
         }
         else
         {
-            SelectedTags.Add(tagName);
+            SelectedHabitIds.Add(habitId);
         }
     }
 
@@ -426,8 +411,8 @@
 
         try
         {
-            // Sync tags back to text
-            Model.PersonalityTraits = string.Join(",", SelectedTags);
+            // Sync dynamic array
+            Model.LifestyleHabitIds = SelectedHabitIds;
 
             var request = new HttpRequestMessage(HttpMethod.Put, "api/profile/lifestyle");
             request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", AuthToken);
@@ -464,10 +449,12 @@
         public string? PersonalityTraits { get; set; } = "";
         public decimal BudgetMin { get; set; } = 0;
         public decimal BudgetMax { get; set; } = 3000000;
+        public List<int> LifestyleHabitIds { get; set; } = new List<int>();
     }
 
-    public class TagItem
+    public class HabitItem
     {
+        public int LifestyleHabitId { get; set; }
         public string Name { get; set; } = "";
         public string Icon { get; set; } = "";
     }

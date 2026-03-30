@@ -44,7 +44,7 @@
         <div class="card active @(currentFilter == "Published" ? "selected" : "")" @onclick='() => SetFilter("Published")' style="cursor: pointer;">
             <div class="card-info">
                 <span>Published</span>
-                <span class="count">@(listings?.Count(l => l.ApprovalStatus == "Approved" && l.ExpireAt >= DateTime.Now && l.IsAvailable) ?? 0)</span>
+                <span class="count">@(listings?.Count(l => (l.ApprovalStatus == "Approved" || l.ApprovalStatus == "Published") && l.ExpireAt >= DateTime.Now && l.IsAvailable) ?? 0)</span>
             </div>
             <i class="fas fa-check-circle"></i>
         </div>
@@ -58,7 +58,7 @@
         <div class="card hidden-card @(currentFilter == "Hidden" ? "selected" : "")" @onclick='() => SetFilter("Hidden")' style="cursor: pointer;">
             <div class="card-info">
                 <span>Hidden</span>
-                <span class="count">@(listings?.Count(l => l.ApprovalStatus == "Hidden" || (l.ApprovalStatus == "Published" && l.ExpireAt >= DateTime.Now && !l.IsAvailable)) ?? 0)</span>
+                <span class="count">@(listings?.Count(l => l.ApprovalStatus == "Hidden" || ((l.ApprovalStatus == "Published" || l.ApprovalStatus == "Approved") && l.ExpireAt >= DateTime.Now && !l.IsAvailable)) ?? 0)</span>
             </div>
             <i class="fas fa-eye-slash"></i>
         </div>
@@ -306,7 +306,7 @@
             switch (currentFilter)
             {
                 case "Published":
-                    query = query.Where(l => l.ApprovalStatus == "Published" && l.IsAvailable && l.ExpireAt >= DateTime.Now);
+                    query = query.Where(l => (l.ApprovalStatus == "Published" || l.ApprovalStatus == "Approved") && l.IsAvailable && l.ExpireAt >= DateTime.Now);
                     break;
                 case "Pending":
                     query = query.Where(l => l.ApprovalStatus == "Pending");
@@ -318,7 +318,7 @@
                     query = query.Where(l => l.ApprovalStatus == "Expired" || (l.ExpireAt < DateTime.Now && l.ApprovalStatus != "Draft" && l.ApprovalStatus != "Reject" && l.ApprovalStatus != "Rejected" && l.ApprovalStatus != "Pending"));
                     break;
                 case "Hidden":
-                    query = query.Where(l => l.ApprovalStatus == "Hidden" || (l.ApprovalStatus == "Published" && !l.IsAvailable && l.ExpireAt >= DateTime.Now));
+                    query = query.Where(l => l.ApprovalStatus == "Hidden" || ((l.ApprovalStatus == "Published" || l.ApprovalStatus == "Approved") && !l.IsAvailable && l.ExpireAt >= DateTime.Now));
                     break;
                 case "Draft":
                     query = query.Where(l => l.ApprovalStatus == "Draft");

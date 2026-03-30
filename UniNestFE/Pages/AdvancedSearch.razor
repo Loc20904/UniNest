@@ -1,7 +1,8 @@
-﻿@page "/advanced-search"
+@page "/advanced-search"
 @using System.Text.Json
-@using Microsoft.AspNetCore.Components.Authorization
 @inject HttpClient Http
+@inject NavigationManager NavManager
+@inject IJSRuntime JSRuntime
 
 <div class="w-full min-h-[calc(100vh-70px)] bg-transparent pb-24 relative font-sans text-slate-800 dark:text-slate-200">
     
@@ -24,18 +25,17 @@
                 <span class="material-icons-round text-[20px]">tune</span> Filters
             </button>
 
-            <AuthorizeView>
-                <Authorized Context="authContext">
-                    <div class="h-14 px-6 bg-white dark:bg-[#1e293b] rounded-xl flex items-center gap-3 shadow-sm border border-slate-100 dark:border-slate-800 shrink-0">
-                        <span class="material-icons-round text-[#3ba8d7] text-[20px]">psychology</span>
-                        <span class="text-[13px] font-bold text-slate-700 dark:text-slate-300">AI Auto-Match</span>
-                        <div class="relative inline-block w-10 ml-2 align-middle select-none transition duration-200 ease-in cursor-pointer" @onclick="ToggleAutoMatch">
-                            <input type="checkbox" checked="@isAutoMatchActive" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer border-[#e2e8f0] dark:border-slate-600 transition-transform duration-300 ease-in-out z-10 top-0.5 left-0.5 @(isAutoMatchActive ? "translate-x-4 !border-[#4ebdea]" : "")" />
-                            <label class="toggle-label block overflow-hidden h-6 rounded-full bg-[#f1f5f9] dark:bg-slate-700 cursor-pointer @(isAutoMatchActive ? "!bg-[#ebf8fd] dark:!bg-[#3ba8d7]/20" : "")"></label>
-                        </div>
+            @if (isLoggedIn)
+            {
+                <div class="h-14 px-6 bg-white dark:bg-[#1e293b] rounded-xl flex items-center gap-3 shadow-sm border border-slate-100 dark:border-slate-800 shrink-0">
+                    <span class="material-icons-round text-[#3ba8d7] text-[20px]">psychology</span>
+                    <span class="text-[13px] font-bold text-slate-700 dark:text-slate-300">AI Auto-Match</span>
+                    <div class="relative inline-block w-10 ml-2 align-middle select-none transition duration-200 ease-in cursor-pointer" @onclick="ToggleAutoMatch">
+                        <input type="checkbox" checked="@isAutoMatchActive" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer border-[#e2e8f0] dark:border-slate-600 transition-transform duration-300 ease-in-out z-10 top-0.5 left-0.5 @(isAutoMatchActive ? "translate-x-4 !border-[#4ebdea]" : "")" />
+                        <label class="toggle-label block overflow-hidden h-6 rounded-full bg-[#f1f5f9] dark:bg-slate-700 cursor-pointer @(isAutoMatchActive ? "!bg-[#ebf8fd] dark:!bg-[#3ba8d7]/20" : "")"></label>
                     </div>
-                </Authorized>
-            </AuthorizeView>
+                </div>
+            }
         </div>
 
         <!-- Property Type Pills (Top Filter) -->
@@ -195,12 +195,10 @@
 
                                 <!-- Buttons -->
                                 <div class="grid grid-cols-2 gap-3 mt-auto pt-2">
-                                    <button onclick="window.location.href='/listing/@listing.ListingId'" 
-                                            class="bg-[#4ebdea] hover:bg-[#3ba8d7] text-white h-[44px] rounded-xl text-sm font-bold transition-colors shadow-sm shadow-[#4ebdea]/20">
-                                            View Details
+                                    <button @onclick='() => NavManager.NavigateTo($"/listing/{listing.ListingId}")' class="bg-[#4ebdea] hover:bg-[#3ba8d7] text-white h-[44px] rounded-xl text-sm font-bold transition-colors shadow-sm shadow-[#4ebdea]/20">
+                                        View Details
                                     </button>
-
-                                    <button class="bg-slate-100 dark:bg-slate-700 hover:bg-[#ebf8fd] dark:hover:bg-slate-600 text-[#3ba8d7] dark:text-white h-[44px] rounded-xl text-sm font-bold transition-colors shadow-sm flex items-center justify-center gap-1.5 border border-transparent dark:border-slate-600">
+                                    <button @onclick='() => NavManager.NavigateTo($"/chat?partnerId={listing.OwnerId}&listingId={listing.ListingId}")' class="bg-slate-100 dark:bg-slate-700 hover:bg-[#ebf8fd] dark:hover:bg-slate-600 text-[#3ba8d7] dark:text-white h-[44px] rounded-xl text-sm font-bold transition-colors shadow-sm flex items-center justify-center gap-1.5 border border-transparent dark:border-slate-600">
                                         <span class="material-icons-round text-[18px]">chat</span> Contact
                                     </button>
                                 </div>
@@ -390,6 +388,28 @@
         </div>
     }
 
+    <!-- Profile Required Modal -->
+    @if (showProfileRequiredModal)
+    {
+        <div class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 sm:p-6 animate-fade-in" @onclick="() => showProfileRequiredModal = false">
+            <div class="bg-white dark:bg-[#1e293b] rounded-[24px] w-full max-w-sm shadow-2xl p-8 text-center transform transition-all animate-bounce-in border border-slate-100 dark:border-slate-700" @onclick:stopPropagation>
+                <div class="size-20 mx-auto bg-amber-100 dark:bg-amber-900/30 text-amber-500 rounded-full flex items-center justify-center mb-5">
+                    <span class="material-icons-round text-4xl">psychology_alt</span>
+                </div>
+                <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-3">Build Your AI Profile!</h3>
+                <p class="text-slate-500 dark:text-slate-400 text-[14px] mb-8 leading-relaxed">
+                    We need to know your preferences and habits before the AI can find your perfect matching room. Let's set it up quickly!
+                </p>
+                <button @onclick='() => NavManager.NavigateTo("/profile/lifestyle/edit")' class="w-full bg-[#4ebdea] hover:bg-[#3ba8d7] text-white font-bold h-12 rounded-xl transition-transform active:scale-95 shadow-md shadow-[#4ebdea]/30 mb-3">
+                    Start Setup Now
+                </button>
+                <button @onclick="() => { showProfileRequiredModal = false; isAutoMatchActive = false; _ = FetchResults(); }" class="text-sm font-semibold text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
+                    Maybe later
+                </button>
+            </div>
+        </div>
+    }
+
 </div>
 
 <style>
@@ -436,6 +456,7 @@
 
 @code {
     private bool isFilterModalOpen = false;
+    private bool showProfileRequiredModal = false;
     private bool isLoading = true;
 
     // Filter Options Data
@@ -448,18 +469,15 @@
     private string searchQuery = "";
     private int selectedUniversityId = 0;
     private double maxDistanceKm = 10;
-
+    
     private decimal budgetMin = 0;
     private decimal budgetMax = 20000000;
 
     // UC-16 State
-    [CascadingParameter]
-    private Task<AuthenticationState> authenticationStateTask { get; set; }
-
     private bool isAutoMatchActive = false;
-    private bool isLoggedIn = false;
-    private int currentUserId = 0;
-
+    private bool isLoggedIn = true;
+    private int currentUserId = 1; // Admin Demo ID
+    
     // Using simple proxy properties to enforce spacing constraints on Dual Slider
     public decimal budgetMinProxy
     {
@@ -469,7 +487,7 @@
             budgetMin = value;
         }
     }
-
+    
     public decimal budgetMaxProxy
     {
         get => budgetMax;
@@ -489,7 +507,7 @@
     // Pagination State
     private int currentPage = 1;
     private int pageSize = 9;
-
+    
     private List<ResultListing> PagedResults => results.Skip((currentPage - 1) * pageSize).Take(pageSize).ToList();
     private int TotalPages => (int)Math.Ceiling(results.Count / (double)pageSize);
 
@@ -499,25 +517,6 @@
 
     protected override async Task OnInitializedAsync()
     {
-        if (authenticationStateTask != null)
-        {
-            var authState = await authenticationStateTask;
-            var user = authState.User;
-            isLoggedIn = user.Identity?.IsAuthenticated ?? false;
-
-            if (isLoggedIn)
-            {
-                var userIdClaim = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier) ??
-                                  user.FindFirst("UserId") ??
-                                  user.FindFirst("nameid");
-
-                if (userIdClaim != null && int.TryParse(userIdClaim.Value, out int uid))
-                {
-                    currentUserId = uid;
-                }
-            }
-        }
-
         await LoadFilterOptions();
         await FetchResults(); 
     }
@@ -571,7 +570,7 @@
             var pIds = string.Join(",", selectedPropertyTypes);
             var aIds = string.Join(",", selectedAmenities);
             var hIds = string.Join(",", selectedHabits);
-
+            
             int sendUniId = selectedUniversityId;
 
             var qs = $"?universityId={sendUniId}&maxDistanceKm={maxDistanceKm}&minPrice={budgetMin}&maxPrice={budgetMax}" +
@@ -582,7 +581,23 @@
                      (isAutoMatchActive && isLoggedIn ? $"&autoMatch=true&autoMatchUserId={currentUserId}" : "");
 
             var url = "api/AdvancedSearch" + qs;
-            results = await Http.GetFromJsonAsync<List<ResultListing>>(url) ?? new List<ResultListing>();
+            var response = await Http.GetAsync(url);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                results = await response.Content.ReadFromJsonAsync<List<ResultListing>>() ?? new List<ResultListing>();
+            }
+            else
+            {
+                var errorText = await response.Content.ReadAsStringAsync();
+                if (errorText.Contains("PROFILE_REQUIRED"))
+                {
+                    showProfileRequiredModal = true;
+                    isAutoMatchActive = false; // Turn toggle back off
+                    // Optionally keep current results instead of clearing, but clearing gets their attention:
+                    // results = new List<ResultListing>();
+                }
+            }
         }
         catch(Exception e)
         {
@@ -623,6 +638,12 @@
         isAutoMatchActive = !isAutoMatchActive;
         if (isAutoMatchActive)
         {
+            if (currentUserId <= 0)
+            {
+                NavManager.NavigateTo("/login");
+                return;
+            }
+            
             // Clear manual filters intuitively
             selectedPropertyTypes.Clear();
             selectedAmenities.Clear();
@@ -734,7 +755,53 @@
         public string PrimaryImageUrl { get; set; }
         public List<string> Amenities { get; set; }
         public DateTime CreatedAt { get; set; }
+        public int OwnerId { get; set; }
     }
 
-    
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await LoadCurrentUser();
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadCurrentUser()
+    {
+        try 
+        {
+             var token = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "authToken");
+             if (string.IsNullOrEmpty(token)) 
+             { 
+                 isLoggedIn = false; 
+                 currentUserId = 0;
+                 return; 
+             }
+             
+             isLoggedIn = true;
+             var payload = token.Split('.')[1];
+             switch (payload.Length % 4)
+             {
+                case 2: payload += "=="; break;
+                case 3: payload += "="; break;
+             }
+             var jsonBytes = Convert.FromBase64String(payload);
+             var json = System.Text.Encoding.UTF8.GetString(jsonBytes);
+             var claims = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(json);
+             
+             if (claims != null)
+             {
+                 if (claims.TryGetValue("nameid", out var idObj) && int.TryParse(idObj?.ToString(), out int id))
+                     currentUserId = id;
+                 else if (claims.TryGetValue("sub", out var subObj) && int.TryParse(subObj?.ToString(), out int subId))
+                     currentUserId = subId;
+             }
+        } 
+        catch 
+        { 
+            isLoggedIn = false; 
+            currentUserId = 0;
+        }
+    }
 }
