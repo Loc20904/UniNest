@@ -399,13 +399,23 @@
                     </div>
 
                     <div class="border-t border-slate-200 dark:border-slate-700 pt-5">
-                        <p class="text-slate-500 text-xs uppercase font-semibold tracking-wider mb-3">Personality & Social Matrix</p>
+                        <p class="text-slate-500 text-xs uppercase font-semibold tracking-wider mb-3">Personality & Hobbies</p>
                         <div class="flex flex-wrap gap-2 text-slate-800">
-                            @if (!string.IsNullOrEmpty(LifestyleProfile.PersonalityTraits))
+                            @if (LifestyleProfile.LifestyleHabitIds != null && LifestyleProfile.LifestyleHabitIds.Any())
                             {
-                                foreach (var trait in LifestyleProfile.PersonalityTraits.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+                                foreach (var habitId in LifestyleProfile.LifestyleHabitIds)
                                 {
-                                    <span class="lifestyle-badge chip bg-slate-100 border-transparent dark:bg-slate-800">#@trait.Trim()</span>
+                                    var tag = AvailableTags.FirstOrDefault(h => h.LifestyleHabitId == habitId);
+                                    if(tag != null)
+                                    {
+                                        <span class="lifestyle-badge chip bg-slate-100 border-transparent dark:bg-slate-800 shadow-sm flex items-center gap-1 font-medium">
+                                            @if(!string.IsNullOrEmpty(tag.Icon))
+                                            {
+                                                <span class="material-icons-round text-[16px] text-[#38bdf8]">@tag.Icon</span>
+                                            }
+                                            @tag.Name
+                                        </span>
+                                    }
                                 }
                             }
                             else
@@ -429,6 +439,9 @@
         {
             try
             {
+                // Fetch dictionary of all available habits to match against IDs
+                AvailableTags = await Http.GetFromJsonAsync<List<HabitItem>>("https://localhost:7045/api/LifestyleHabits") ?? new List<HabitItem>();
+
                 var token = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "authToken");
                 if (!string.IsNullOrEmpty(token))
                 {
@@ -509,5 +522,15 @@
         public decimal BudgetMin { get; set; }
         public decimal BudgetMax { get; set; }
         public bool IsComplete { get; set; } = false;
+        public List<int> LifestyleHabitIds { get; set; } = new List<int>();
+    }
+
+    private List<HabitItem> AvailableTags = new List<HabitItem>();
+
+    public class HabitItem
+    {
+        public int LifestyleHabitId { get; set; }
+        public string Name { get; set; } = "";
+        public string? Icon { get; set; }
     }
 }

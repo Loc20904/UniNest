@@ -386,6 +386,12 @@
     private List<MessageDto> ChatHistory = new();
     private ConversationDto? SelectedConversation;
     
+    [SupplyParameterFromQuery]
+    public int? partnerId { get; set; }
+
+    [SupplyParameterFromQuery]
+    public int? listingId { get; set; }
+    
     private bool IsEmojiPickerOpen = false;
     private List<string> Emojis = new() { "😀", "😂", "🥰", "😍", "😘", "😜", "😇", "😎", "🤩", "🥳", "😡", "😭", "👍", "👎", "❤️", "💔", "🔥", "✨", "🎉", "💩" };
 
@@ -441,6 +447,23 @@
         {
             await InitSignalR();
             await LoadConversations();
+            
+            if (partnerId.HasValue && partnerId.Value != CurrentUserId && CurrentUserId > 0)
+            {
+                var target = Conversations.FirstOrDefault(c => c.PartnerId == partnerId.Value);
+                if (target == null)
+                {
+                    target = new ConversationDto 
+                    { 
+                        PartnerId = partnerId.Value, 
+                        PartnerName = "Listing Owner", 
+                        LastMessage = "Start chatting now..." 
+                    };
+                    Conversations.Insert(0, target);
+                }
+                
+                await SelectConversation(target);
+            }
             StateHasChanged();
         }
     }

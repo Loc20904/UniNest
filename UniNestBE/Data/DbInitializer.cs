@@ -165,16 +165,7 @@ namespace UniNestBE.Data
                     }
                 }
 
-                // Auto-approve first 10 listings for Demo purposes
-                var drafts = context.Listings.Where(l => l.ApprovalStatus == "Pending" || l.ApprovalStatus == "Draft").Take(10).ToList();
-                if (drafts.Any())
-                {
-                    foreach (var l in drafts)
-                    {
-                        l.ApprovalStatus = "Approved";
-                    }
-                    context.SaveChanges();
-                }
+                // Removed auto-approve for the first 10 listings so that user's pending items aren't accidentally mutated.
             }
         }
     }

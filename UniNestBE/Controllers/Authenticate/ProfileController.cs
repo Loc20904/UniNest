@@ -92,7 +92,9 @@ namespace UniNestBE.Controllers.Authenticate
             var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (!int.TryParse(userIdString, out int userId)) return Unauthorized();
 
-            var lifestyle = await _context.LifestyleProfiles.FirstOrDefaultAsync(l => l.UserId == userId);
+            var lifestyle = await _context.LifestyleProfiles
+                .Include(l => l.LifestyleHabits)
+                .FirstOrDefaultAsync(l => l.UserId == userId);
             
             if (lifestyle == null)
             {
@@ -112,7 +114,8 @@ namespace UniNestBE.Controllers.Authenticate
                 PersonalityTraits = lifestyle.PersonalityTraits,
                 BudgetMin = lifestyle.BudgetMin,
                 BudgetMax = lifestyle.BudgetMax,
-                IsComplete = true
+                IsComplete = true,
+                LifestyleHabitIds = lifestyle.LifestyleHabits.Select(h => h.LifestyleHabitId).ToList()
             };
 
             return Ok(dto);
@@ -124,7 +127,9 @@ namespace UniNestBE.Controllers.Authenticate
             var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (!int.TryParse(userIdString, out int userId)) return Unauthorized();
 
-            var lifestyle = await _context.LifestyleProfiles.FirstOrDefaultAsync(l => l.UserId == userId);
+            var lifestyle = await _context.LifestyleProfiles
+                .Include(l => l.LifestyleHabits)
+                .FirstOrDefaultAsync(l => l.UserId == userId);
             if (lifestyle == null)
             {
                 lifestyle = new LifestyleProfile { UserId = userId };
@@ -141,6 +146,17 @@ namespace UniNestBE.Controllers.Authenticate
             lifestyle.PersonalityTraits = dto.PersonalityTraits;
             lifestyle.BudgetMin = dto.BudgetMin;
             lifestyle.BudgetMax = dto.BudgetMax;
+
+            lifestyle.LifestyleHabits ??= new List<LifestyleHabit>();
+            lifestyle.LifestyleHabits.Clear();
+
+            if (dto.LifestyleHabitIds != null && dto.LifestyleHabitIds.Any())
+            {
+                var dbHabits = await _context.LifestyleHabits
+                    .Where(h => dto.LifestyleHabitIds.Contains(h.LifestyleHabitId))
+                    .ToListAsync();
+                lifestyle.LifestyleHabits = dbHabits;
+            }
 
             await _context.SaveChangesAsync();
             return Ok(new { message = "Lifestyle profile updated successfully." });

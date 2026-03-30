@@ -13,5 +13,6 @@ namespace UniNestBE.DTOs
         public decimal BudgetMin { get; set; }
         public decimal BudgetMax { get; set; }
         public bool IsComplete { get; set; } = false;
+        public List<int> LifestyleHabitIds { get; set; } = new List<int>();
     }
 }
