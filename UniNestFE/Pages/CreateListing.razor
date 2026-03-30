@@ -439,11 +439,12 @@
         }
     }
 
-    async Task SubmitListing(string status = "Pending")
+    async Task SubmitListing(string targetStatus = "Pending")
     {
-        listing.ApprovalStatus = status;
-
-        if (status != "Draft")
+        uploadErrorMessage = "";
+        
+        // Validation check based on the target status
+        if (targetStatus != "Draft")
         {
             if (string.IsNullOrWhiteSpace(listing.Title) ||
                 listing.Price <= 0 ||
@@ -462,6 +463,9 @@
                 return;
             }
         }
+
+        // Committing the status only after validation or if validation is not required
+        listing.ApprovalStatus = targetStatus;
 
         try
         {
