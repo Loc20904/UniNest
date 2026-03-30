@@ -164,6 +164,8 @@ namespace UniNestBE.Data
                         context.SaveChanges();
                     }
                 }
+
+                // Removed auto-approve for the first 10 listings so that user's pending items aren't accidentally mutated.
             }
         }
     }

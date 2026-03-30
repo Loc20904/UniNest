@@ -22,6 +22,12 @@ public class LifestyleProfile
     [MaxLength(50)]
     public string CookingHabit { get; set; } // Often, Sometimes, Never
 
+    [MaxLength(50)]
+    public string? GuestFrequency { get; set; } // Often, Occasional, Rarely
+
+    [MaxLength(255)]
+    public string? PreferredDistricts { get; set; } // Comma separated districts
+
     [MaxLength(255)]
     public string? PersonalityTraits { get; set; } // Tags: Introvert, Extrovert, Quiet...
 

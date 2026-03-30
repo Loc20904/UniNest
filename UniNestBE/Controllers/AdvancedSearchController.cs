@@ -85,6 +85,10 @@ namespace UniNestBE.Controllers
                     hasProfile = true;
                     if (userProfile.User != null) { isMale = userProfile.User.Gender; }
                 }
+                else
+                {
+                    return BadRequest("PROFILE_REQUIRED");
+                }
             }
 
             var query = _context.Listings
@@ -92,7 +96,7 @@ namespace UniNestBE.Controllers
                 .Include(l => l.Images)
                 .Include(l => l.Amenities)
                 .Include(l => l.LifestyleHabits)
-                .Where(l => l.IsAvailable && l.Address != null);
+                .Where(l => l.IsAvailable && l.Address != null && (l.ApprovalStatus == "Approved" || l.ApprovalStatus == "Published") && l.ExpireAt >= DateTime.Now);
 
             // Filter by Query text
             if (!string.IsNullOrWhiteSpace(queryStr))
@@ -206,8 +210,8 @@ namespace UniNestBE.Controllers
                         matchPercent = 85; // Hai bên đều không yêu cầu gì -> Khá hợp nhau
                     }
 
-                    // Yêu cầu của bạn: CHỈ list ra những phòng đạt TỪ 70% TRỞ LÊN
-                    if (matchPercent < 70) 
+                    // Tạm thời hạ mức lọc xuống 50% thay vì 70% để các phòng cơ sở (55%) vẫn hiện ra
+                    if (matchPercent < 50) 
                     {
                         continue; 
                     }
@@ -228,7 +232,8 @@ namespace UniNestBE.Controllers
                     MatchPercent = matchPercent,
                     PrimaryImageUrl = listing.Images?.Where(i => i.IsPrimary).Select(i => i.ImageUrl).FirstOrDefault() ?? "/images/default.jpg",
                     Amenities = listing.Amenities.Select(a => a.Name).ToList(),
-                    CreatedAt = listing.CreatedAt
+                    CreatedAt = listing.CreatedAt,
+                    OwnerId = listing.OwnerId
                 });
             }
 

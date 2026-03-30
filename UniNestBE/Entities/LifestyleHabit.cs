@@ -10,6 +10,9 @@ public class LifestyleHabit
     [MaxLength(100)]
     public string Name { get; set; }
 
+    [MaxLength(50)]
+    public string? Icon { get; set; }
+
     // Relationship: A habit can be selected in multiple listings
     public List<Listing> Listings { get; set; } = new List<Listing>();
 
