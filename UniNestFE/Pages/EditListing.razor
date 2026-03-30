@@ -66,7 +66,7 @@
                         <textarea @bind="listing.Description" rows="4" class="form-textarea" placeholder="Describe the room, furniture, and surroundings..."></textarea>
                     </div>
                     <div class="form-group mb-4">
-                        <label class="form-label">Property Type</label>
+                        <label class="form-label">Property Type <span class="text-red-500 text-lg" title="Information must be entered">*</span></label>
                         <div class="property-type-grid">
                             @foreach (var type in propertyTypes)
                             {
@@ -221,13 +221,6 @@
                     <h2>Media Upload</h2>
                 </div>
                 
-                @if(!string.IsNullOrEmpty(uploadErrorMessage))
-                {
-                    <div class="error-msg" style="color: red; margin-bottom: 16px;">
-                        <i class="material-icons" style="vertical-align: middle;">error</i> @uploadErrorMessage
-                    </div>
-                }
-
                 <div class="upload-zone" onclick="document.getElementById('fileInput').click()">
                     <div class="upload-icon">
                         <i class="material-icons">cloud_upload</i>
@@ -292,6 +285,13 @@
                     <i class="material-icons">arrow_back</i> Previous Section
                 </button>
                 <div class="footer-right">
+                    @if (!string.IsNullOrEmpty(uploadErrorMessage))
+                    {
+                        <div class="error-msg text-red-600 dark:text-red-400 mb-4 flex items-center gap-2">
+                            <i class="material-icons text-[18px]">error</i>
+                            <span>@uploadErrorMessage</span>
+                        </div>
+                    }
                     <span class="auto-save-text">All changes automatically saved</span>
                     @if (listing.ApprovalStatus == "Draft")
                     {
