@@ -1,185 +1,370 @@
 @page "/admin/reports"
+@using System.Net.Http.Json
+@inject HttpClient Http
 @layout Layout.AdminLayout
 
-<PageTitle>Hàng đợi kiểm duyệt | Quản trị UniNest</PageTitle>
+<PageTitle>Report Manage | Quản trị UniNest</PageTitle>
 
 <div class="flex flex-col space-y-8 animate-fade-in-up">
     <!-- Header -->
     <div class="flex justify-between items-end">
         <div>
             <h3 class="text-xs font-bold text-[#515f74] uppercase tracking-widest mb-1">An toàn & Kiểm duyệt</h3>
-            <h2 class="text-3xl font-extrabold text-[#171c1f] dark:text-white tracking-tight">Hàng đợi Moderation</h2>
-            <p class="text-sm text-[#515f74] dark:text-slate-400 mt-2">Quản lý và giải quyết các báo cáo vi phạm cộng đồng.</p>
+            <h2 class="text-3xl font-extrabold text-[#171c1f] dark:text-white tracking-tight">Report Manage</h2>
+            <p class="text-sm text-[#515f74] dark:text-slate-400 mt-2">Quản lý và giải quyết các báo cáo vi phạm, quản lý thẻ phạt.</p>
         </div>
         <div class="flex space-x-4">
             <div class="bg-emerald-50 text-emerald-700 px-4 py-3 rounded-lg flex items-center gap-3">
                 <span class="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse"></span>
-                <span class="text-xs font-bold uppercase tracking-widest">Resolver đang trực: <span class="text-emerald-900 font-black ml-1">4 Online</span></span>
-            </div>
-            <div class="bg-red-50 text-red-700 px-4 py-3 rounded-lg flex items-center gap-3">
-                <span class="w-2.5 h-2.5 bg-red-500 rounded-full"></span>
-                <span class="text-xs font-bold uppercase tracking-widest">Báo cáo Mức cao: <span class="text-red-900 font-black ml-1">@reports.Count(r => r.Severity == "Mức cao")</span></span>
+                <span class="text-xs font-bold uppercase tracking-widest">Hệ thống giám sát: <span class="text-emerald-900 font-black ml-1">Đang hoạt động</span></span>
             </div>
         </div>
     </div>
 
-    <!-- Stats & Filters -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div class="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-100 dark:border-slate-700 flex flex-col justify-center">
-            <div class="text-[10px] font-bold text-[#515f74] uppercase tracking-widest mb-2">Tổng số báo cáo (24H)</div>
-            <div class="text-3xl font-black text-[#171c1f] dark:text-white">@reports.Count</div>
-            <div class="text-sm font-semibold text-emerald-600 mt-2 flex items-center gap-1">
-                <span class="material-symbols-outlined text-sm">trending_down</span>
-                -12% so với hôm qua
+    <!-- Stats Matrix -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="bg-white p-6 rounded-xl border border-slate-100 flex flex-col justify-center">
+            <div class="text-[10px] font-bold text-[#515f74] uppercase tracking-widest mb-2">Pending Reports</div>
+            <div class="flex items-end gap-3">
+                <div class="text-4xl font-black text-[#171c1f]">@pendingReports.Count</div>
+                <div class="text-xs font-bold text-red-500 mb-1">+5%</div>
             </div>
         </div>
         
-        <div class="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-100 dark:border-slate-700 flex flex-col justify-center">
-            <div class="text-[10px] font-bold text-[#515f74] uppercase tracking-widest mb-2">Thời gian xử lý TB</div>
-            <div class="text-3xl font-black text-[#171c1f] dark:text-white">18p</div>
-            <div class="text-sm font-semibold text-[#004ac6] mt-2 flex items-center gap-1">
-                <span class="material-symbols-outlined text-sm">bolt</span>
-                Hệ thống ổn định
+        <div class="bg-white p-6 rounded-xl border-t-4 border-t-red-500 border-x-slate-100 border-b-slate-100 border-x border-b shadow-sm flex flex-col justify-center">
+            <div class="text-[10px] font-bold text-[#515f74] uppercase tracking-widest mb-2">High Priority</div>
+            <div class="flex items-end gap-3">
+                <div class="text-4xl font-black text-[#171c1f]">@pendingReports.Count(r => r.Priority == "High")</div>
+                <div class="text-xs font-bold text-red-500 mb-1">-2%</div>
             </div>
         </div>
 
-        <div class="bg-[#004ac6] text-white p-6 rounded-xl relative overflow-hidden group hover:shadow-lg transition-all">
-            <div class="absolute -right-8 -top-8 w-32 h-32 bg-white/10 rounded-full group-hover:bg-white/20 transition-all blur-2xl"></div>
-            <div class="flex justify-between items-start mb-2 relative z-10">
-                <div class="text-lg font-bold">Lá chắn AI tự động</div>
-                <span class="material-symbols-outlined text-3xl opacity-80">shield</span>
+        <div class="bg-white p-6 rounded-xl border border-slate-100 flex flex-col justify-center">
+            <div class="text-[10px] font-bold text-[#515f74] uppercase tracking-widest mb-2">Resolved Today</div>
+            <div class="flex items-end gap-3">
+                <div class="text-4xl font-black text-[#171c1f]">128</div>
+                <div class="text-xs font-bold text-emerald-500 mb-1">+15%</div>
             </div>
-            <div class="text-sm font-medium text-blue-100 mt-2 relative z-10 line-clamp-3">
-                Trí tuệ nhân tạo đã tự động chặn 89% ngôn ngữ độc hại và spam trước khi cần con người phê duyệt.
+        </div>
+
+        <div class="bg-white p-6 rounded-xl border border-slate-100 flex flex-col justify-center">
+            <div class="text-[10px] font-bold text-[#515f74] uppercase tracking-widest mb-2">Avg Response Time</div>
+            <div class="flex items-end gap-3">
+                <div class="text-4xl font-black text-[#171c1f]">14m</div>
+                <div class="text-xs font-bold text-emerald-500 mb-1">-3m</div>
             </div>
         </div>
     </div>
 
-    <!-- Filter Buttons -->
-    <div class="flex items-center gap-2">
-        <button class="px-5 py-2.5 bg-[#004ac6] text-white text-xs font-bold rounded-full shadow-md uppercase tracking-wider">Tất cả báo cáo</button>
-        <button class="px-5 py-2.5 bg-slate-100 dark:bg-slate-800 text-[#515f74] dark:text-slate-300 text-xs font-bold rounded-full hover:bg-slate-200 transition-colors uppercase tracking-wider">Cố tình lừa đảo</button>
-        <button class="px-5 py-2.5 bg-slate-100 dark:bg-slate-800 text-[#515f74] dark:text-slate-300 text-xs font-bold rounded-full hover:bg-slate-200 transition-colors uppercase tracking-wider">Ngôn từ độc hại</button>
-        <button class="px-5 py-2.5 bg-slate-100 dark:bg-slate-800 text-[#515f74] dark:text-slate-300 text-xs font-bold rounded-full hover:bg-slate-200 transition-colors uppercase tracking-wider">Gian lận tài khoản</button>
-        <div class="flex-grow"></div>
-        <button class="flex items-center gap-2 text-[#515f74] text-xs font-bold hover:text-[#171c1f]">
-            <span class="material-symbols-outlined text-sm">filter_list</span> Xếp theo mức độ
+    <!-- Navigation Tabs -->
+    <div class="flex items-center gap-4 border-b border-slate-200">
+        <button @onclick='() => currentTab = "Pending"' class="pb-3 text-sm font-bold uppercase tracking-widest transition-all @(currentTab == "Pending" ? "text-[#004ac6] border-b-2 border-[#004ac6]" : "text-[#515f74] hover:text-[#171c1f]")">
+            Hàng đợi kiểm duyệt
+        </button>
+        <button @onclick='() => currentTab = "Warned"' class="pb-3 text-sm font-bold uppercase tracking-widest transition-all @(currentTab == "Warned" ? "text-[#004ac6] border-b-2 border-[#004ac6]" : "text-[#515f74] hover:text-[#171c1f]")">
+            Danh sách cảnh cáo
+        </button>
+        <button @onclick='() => currentTab = "Banned"' class="pb-3 text-sm font-bold uppercase tracking-widest transition-all @(currentTab == "Banned" ? "text-[#004ac6] border-b-2 border-[#004ac6]" : "text-[#515f74] hover:text-[#171c1f]")">
+            Danh sách đen
         </button>
     </div>
 
-    <!-- Data List -->
-    <div class="space-y-4">
-        @foreach(var report in reports.Where(r => r.IsVisible))
-        {
-            <div class="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-100 dark:border-slate-700 flex items-center shadow-sm hover:shadow-md transition-shadow group">
-                <!-- Mức độ -->
-                <div class="w-20 text-center">
-                    <div class="text-[10px] font-bold text-[#515f74] uppercase tracking-widest mb-1">Mức độ</div>
-                    <div class="text-xs font-black uppercase @(report.Severity == "Mức cao" ? "text-red-600" : "text-amber-500")">
-                        @report.Severity
+    <!-- Filter Buttons (For Pending Tab) -->
+    @if (currentTab == "Pending")
+    {
+        <div class="flex items-center gap-2">
+            <button @onclick='() => SetFilter("All")' class="px-5 py-2.5 @(currentFilter == "All" ? "bg-[#004ac6] text-white" : "bg-white text-[#515f74] border border-slate-200") text-xs font-bold rounded-full transition-colors uppercase tracking-wider">All Reports</button>
+            <button @onclick='() => SetFilter("Scam Alert")' class="px-5 py-2.5 @(currentFilter == "Scam Alert" ? "bg-[#004ac6] text-white" : "bg-white text-[#515f74] border border-slate-200") text-xs font-bold rounded-full transition-colors uppercase tracking-wider">Scam Alert</button>
+            <button @onclick='() => SetFilter("Fake Listing")' class="px-5 py-2.5 @(currentFilter == "Fake Listing" ? "bg-[#004ac6] text-white" : "bg-white text-[#515f74] border border-slate-200") text-xs font-bold rounded-full transition-colors uppercase tracking-wider">Fake Listing</button>
+            <div class="flex-grow"></div>
+            <div class="text-[#515f74] text-xs font-medium">Keyboard Shortcuts: <kbd class="px-2 py-1 bg-white border border-slate-200 rounded font-mono text-[10px] ml-1">d</kbd> <kbd class="px-2 py-1 bg-white border border-slate-200 rounded font-mono text-[10px]">w</kbd> <kbd class="px-2 py-1 bg-white border border-slate-200 rounded font-mono text-[10px]">b</kbd></div>
+        </div>
+    }
+
+    <!-- Tab 1: Pending Reports Grid -->
+    @if (currentTab == "Pending")
+    {
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 relative">
+            @if(isLoading)
+            {
+                <div class="col-span-2 text-center py-10 text-[#515f74]">Đang tải dữ liệu...</div>
+            }
+            else if (FilteredReports.Count == 0)
+            {
+                 <div class="col-span-2 bg-slate-50 border outline-dashed outline-2 outline-slate-200 p-12 rounded-xl text-center">
+                    <span class="material-symbols-outlined text-4xl text-emerald-500 mb-2">task_alt</span>
+                    <h3 class="text-lg font-bold text-[#171c1f]">Hàng đợi đã trống</h3>
+                 </div>
+            }
+            else
+            {
+                @foreach(var report in FilteredReports)
+                {
+                    <div class="bg-white rounded-xl border border-slate-200 flex flex-col group overflow-hidden hover:shadow-lg transition-all" @key="report.ReportId">
+                        
+                        <!-- Top Bar (Priority & Reporter) -->
+                        <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                            <div class="flex items-center gap-2">
+                                @if(report.Priority == "High" || report.Priority == "Escalated")
+                                {
+                                    <span class="material-symbols-outlined text-red-500 text-[18px]">error</span>
+                                    <span class="text-[10px] font-black text-red-600 uppercase tracking-widest">@report.Priority PRIORITY</span>
+                                }
+                                else if (report.Priority == "Medium")
+                                {
+                                    <span class="material-symbols-outlined text-amber-500 text-[18px]">chat</span>
+                                    <span class="text-[10px] font-black text-amber-600 uppercase tracking-widest">@report.Priority PRIORITY</span>
+                                }
+                                else
+                                {
+                                    <span class="material-symbols-outlined text-[#004ac6] text-[18px]">info</span>
+                                    <span class="text-[10px] font-black text-[#515f74] uppercase tracking-widest">STANDARD PRIORITY</span>
+                                }
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <div class="text-[10px] text-[#515f74]">Reported by: <span class="font-bold">@report.ReporterName</span> • @GetTimeAgo(report.CreatedAt)</div>
+                                <span class="px-2 py-0.5 bg-red-50 text-red-600 text-[9px] font-bold rounded">New</span>
+                            </div>
+                        </div>
+
+                        <!-- Content Area -->
+                        <div class="p-6 flex-grow">
+                            <!-- Target Info (User vs Listing) -->
+                            <div class="flex gap-4 mb-4">
+                                @if (report.TargetListingId.HasValue)
+                                {
+                                    <div class="w-12 h-12 rounded bg-blue-100 text-[#004ac6] flex items-center justify-center shrink-0">
+                                        <span class="material-symbols-outlined">real_estate_agent</span>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-sm font-bold text-[#171c1f]">@report.TargetListingTitle</h4>
+                                        <p class="text-[11px] text-[#515f74] mt-0.5">Listing ID: #LC-@report.TargetListingId • Host: @report.TargetListingOwner</p>
+                                    </div>
+                                }
+                                else if (report.TargetUserId.HasValue)
+                                {
+                                    <img src="@(string.IsNullOrEmpty(report.TargetUserAvatar) ? "https://ui-avatars.com/api/?name=U" : $"http://localhost:5249{report.TargetUserAvatar}")" class="w-12 h-12 rounded bg-slate-200 shrink-0 object-cover" />
+                                    <div>
+                                        <h4 class="text-sm font-bold text-[#171c1f]">@report.TargetUserName</h4>
+                                        <p class="text-[11px] text-[#515f74] mt-0.5">User ID: @report.TargetUserId • Chat Interaction</p>
+                                    </div>
+                                }
+                            </div>
+
+                            <!-- Reason Badge -->
+                            <div class="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-100 rounded text-[10px] font-bold text-[#515f74] uppercase tracking-widest mb-4">
+                                <span class="material-symbols-outlined text-[14px]">flag</span> @report.Reason
+                            </div>
+
+                            <!-- User Description Text -->
+                            <div class="text-sm text-[#171c1f] italic bg-slate-50/80 p-4 rounded-lg border-l-2 border-slate-200">
+                                "@(string.IsNullOrEmpty(report.Description) ? "Người dùng không cung cấp mô tả chi tiết." : report.Description)"
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons Row -->
+                        <div class="px-6 py-4 border-t border-slate-100 bg-white flex justify-between gap-3">
+                            <button @onclick='() => Resolve(report.ReportId, "Dismiss")' disabled="@isProcessing" class="flex-1 py-2.5 flex justify-center items-center gap-2 border border-slate-200 text-[#515f74] hover:bg-slate-50 rounded-lg text-[11px] font-bold uppercase tracking-widest transition-colors shadow-sm disabled:opacity-50">
+                                <span class="material-symbols-outlined text-[16px]">visibility_off</span> Dismiss
+                            </button>
+                            <button @onclick='() => Resolve(report.ReportId, "Warn")' disabled="@isProcessing" class="flex-1 py-2.5 flex justify-center items-center gap-2 border border-amber-500 text-amber-600 hover:bg-amber-50 rounded-lg text-[11px] font-bold uppercase tracking-widest transition-colors shadow-sm disabled:opacity-50">
+                                <span class="material-symbols-outlined text-[16px]">warning</span> Warn
+                            </button>
+                            <button @onclick='() => Resolve(report.ReportId, report.TargetListingId.HasValue ? "RemovePost" : "BanUser")' disabled="@isProcessing" class="flex-1 py-2.5 flex justify-center items-center gap-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-[11px] font-bold uppercase tracking-widest transition-colors shadow-sm shadow-red-500/20 disabled:opacity-50">
+                                <span class="material-symbols-outlined text-[16px]">delete</span> @(report.TargetListingId.HasValue ? "Remove Post" : "Ban User")
+                            </button>
+                        </div>
                     </div>
-                </div>
-                
-                <div class="w-px h-10 bg-slate-100 dark:bg-slate-700 mx-4"></div>
+                }
+            }
+        </div>
+    }
 
-                <!-- Phân loại -->
-                <div class="w-32">
-                    <div class="text-[10px] font-bold text-[#515f74] uppercase tracking-widest mb-1.5">Phân loại</div>
-                    <span class="px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-widest
-                        @(report.Category == "Lừa đảo" ? "bg-red-50 text-red-600" : 
-                          report.Category == "Toxic" ? "bg-amber-50 text-amber-600" : "bg-[#004ac6]/10 text-[#004ac6]")">
-                        @report.Category
-                    </span>
-                </div>
+    <!-- Tab 2 & 3: Warned & Banned Lists -->
+    @if (currentTab != "Pending")
+    {
+        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-slate-50 border-b border-slate-200">
+                        <th class="px-6 py-4 text-[10px] font-extrabold uppercase tracking-widest text-[#434655]">Type</th>
+                        <th class="px-6 py-4 text-[10px] font-extrabold uppercase tracking-widest text-[#434655]">Tên / Tiêu đề</th>
+                        <th class="px-6 py-4 text-[10px] font-extrabold uppercase tracking-widest text-[#434655]">Thông tin thêm</th>
+                        <th class="px-6 py-4 text-[10px] font-extrabold uppercase tracking-widest text-[#434655]">Warnings</th>
+                        <th class="px-6 py-4 text-[10px] font-extrabold uppercase tracking-widest text-[#434655] text-right">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    @if (isLoading)
+                    {
+                        <tr><td colspan="5" class="p-6 text-center text-[#515f74]">Đang tải...</td></tr>
+                    }
+                    else if ((currentTab == "Warned" && warnedList.Count == 0) || (currentTab == "Banned" && bannedList.Count == 0))
+                    {
+                        <tr><td colspan="5" class="p-6 text-center text-[#515f74]">Không có dữ liệu trong danh sách này.</td></tr>
+                    }
+                    else
+                    {
+                        var listToRender = currentTab == "Warned" ? warnedList : bannedList;
+                        foreach (var item in listToRender)
+                        {
+                            <tr class="hover:bg-slate-50 transition-colors">
+                                <td class="px-6 py-4">
+                                    <span class="@(item.Type == "User" ? "bg-purple-100 text-purple-700" : "bg-blue-100 text-blue-700") px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-widest">
+                                        @item.Type
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 font-bold @(currentTab == "Warned" ? "text-amber-600" : "text-black")">@item.Name</td>
+                                <td class="px-6 py-4 text-xs text-[#515f74]">@item.SubInfo</td>
+                                <td class="px-6 py-4">
+                                    <span class="flex gap-1">
+                                        @for(int i=0; i<item.Warnings; i++){ <span class="w-1.5 h-4 bg-amber-500 rounded-sm"></span> }
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-right">
+                                    @if(currentTab == "Warned")
+                                    {
+                                        <button @onclick='() => RemoveWarning(item)' class="px-3 py-1.5 border border-slate-200 hover:bg-slate-100 text-slate-600 rounded text-xs font-bold mr-2">Gỡ cờ</button>
+                                        <button @onclick='() => DirectBan(item)' class="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded text-xs font-bold">Ban</button>
+                                    }
+                                    else
+                                    {
+                                        <button @onclick='() => Unban(item)' class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-bold mr-2">Gỡ Ban</button>
+                                        <button @onclick='() => DeletePermanently(item)' class="px-3 py-1.5 bg-slate-800 hover:bg-black text-white rounded text-xs font-bold">Xóa Triệt Để</button>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
 
-                <!-- Reporter -->
-                <div class="w-48">
-                    <div class="text-[10px] font-bold text-[#515f74] uppercase tracking-widest mb-1.5 flex items-center gap-1">
-                        @if(report.Reporter == "System Audit") { <span class="material-symbols-outlined text-[12px] text-green-600">smart_toy</span> }
-                        <div>Người báo cáo</div>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <div class="w-6 h-6 rounded-full bg-slate-200 text-[#515f74] flex items-center justify-center text-[10px] font-bold">@report.Reporter.Substring(0, 1)</div>
-                        <div class="text-xs font-bold text-[#171c1f] dark:text-white">@report.Reporter</div>
-                    </div>
-                </div>
-
-                <!-- Bị báo cáo -->
-                <div class="w-48">
-                    <div class="text-[10px] font-bold text-[#515f74] uppercase tracking-widest mb-1.5">Người bị tố</div>
-                    <div class="flex items-center gap-2">
-                        <div class="w-6 h-6 rounded-full bg-red-100 text-red-600 flex items-center justify-center text-[10px] font-bold">@report.Accused.Substring(0, 1)</div>
-                        <div class="text-xs font-bold text-red-600">@report.Accused</div>
-                    </div>
-                </div>
-
-                <!-- Reason -->
-                <div class="flex-grow pr-4">
-                    <div class="text-[10px] font-bold text-[#515f74] uppercase tracking-widest mb-1.5">Lý do chi tiết</div>
-                    <div class="text-xs font-semibold text-[#171c1f] dark:text-slate-300 line-clamp-1">@report.Reason</div>
-                </div>
-
-                <!-- Actions -->
-                <div class="flex items-center gap-3">
-                    <button @onclick="() => report.IsVisible = false" class="w-8 h-8 rounded-full border border-slate-200 text-slate-400 hover:text-slate-600 hover:border-slate-300 flex items-center justify-center transition-colors">
-                        <span class="material-symbols-outlined text-[18px]">close</span>
-                    </button>
-                    <button @onclick="() => WarnUser(report)" class="px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-[#515f74] text-xs font-bold uppercase tracking-widest rounded transition-colors shadow-sm">
-                        Cảnh cáo
-                    </button>
-                    <button @onclick="() => BlockUser(report)" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold uppercase tracking-widest rounded transition-colors shadow-sm shadow-red-500/30">
-                        Khóa User
-                    </button>
-                </div>
-            </div>
-        }
-
-        @if(reports.Count(r => r.IsVisible) == 0)
-        {
-            <div class="bg-slate-50 border outline-dashed outline-2 outline-slate-200 p-12 rounded-xl text-center">
-                <span class="material-symbols-outlined text-4xl text-emerald-500 mb-2">task_alt</span>
-                <h3 class="text-lg font-bold text-[#171c1f]">Hàng đợi đã trống</h3>
-                <p class="text-sm text-[#515f74] mt-1">Bạn đã giải quyết tất cả các báo cáo hiện có. Chúc một ngày làm việc vui vẻ!</p>
-            </div>
-        }
-    </div>
 </div>
 
-<style>
-    .animate-fade-in-up { animation: fadeInUp 0.4s ease-out forwards; }
-    @@keyframes fadeInUp {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-</style>
-
 @code {
-    private List<ReportMock> reports = new()
-    {
-        new ReportMock { Severity = "Mức cao", Category = "Lừa đảo", Reporter = "Nguyễn Hằng", Accused = "Nhatro_Danang_99", Reason = "Phòng trọ không giống ảnh, đòi cọc 100% trước khi xem phòng", IsVisible = true },
-        new ReportMock { Severity = "Mức độ Vừa", Category = "Toxic", Reporter = "Trần Kha", Accused = "Lyli_Cute", Reason = "Sử dụng từ ngữ xúc phạm dân tộc trong phần chat", IsVisible = true },
-        new ReportMock { Severity = "Mức cao", Category = "Gian lận", Reporter = "System Audit", Accused = "Urban_Properties", Reason = "Hệ thống phát hiện tài khoản đăng 15 tin trọ giả mạo giống nhau", IsVisible = true }
-    };
+    private string currentTab = "Pending";
+    private string currentFilter = "All";
+    private bool isLoading = true;
+    private bool isProcessing = false;
 
-    public class ReportMock
+    // DTOs matching Controller
+    public class ReportDto
     {
-        public string Severity { get; set; } = "";
-        public string Category { get; set; } = "";
-        public string Reporter { get; set; } = "";
-        public string Accused { get; set; } = "";
+        public int ReportId { get; set; }
+        public string ReporterName { get; set; } = "";
+        public DateTime CreatedAt { get; set; }
+        public string Priority { get; set; } = "Standard";
         public string Reason { get; set; } = "";
-        public bool IsVisible { get; set; } = true;
+        public string? Description { get; set; }
+        
+        public int? TargetUserId { get; set; }
+        public string? TargetUserName { get; set; }
+        public string? TargetUserAvatar { get; set; }
+
+        public int? TargetListingId { get; set; }
+        public string? TargetListingTitle { get; set; }
+        public string? TargetListingOwner { get; set; }
     }
 
-    private void WarnUser(ReportMock report)
+    public class PenalizedItemDto
     {
-        report.IsVisible = false;
-        Console.WriteLine("Warned " + report.Accused);
+        public string Type { get; set; } = "";
+        public int Id { get; set; }
+        public string Name { get; set; } = "";
+        public int Warnings { get; set; }
+        public string? SubInfo { get; set; }
     }
 
-    private void BlockUser(ReportMock report)
+    private List<ReportDto> pendingReports = new();
+    private List<PenalizedItemDto> warnedList = new();
+    private List<PenalizedItemDto> bannedList = new();
+
+    private List<ReportDto> FilteredReports => pendingReports.Where(r => currentFilter == "All" || r.Reason == currentFilter).ToList();
+
+    protected override async Task OnInitializedAsync()
     {
-        report.IsVisible = false;
-        Console.WriteLine("Blocked " + report.Accused);
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+        try
+        {
+            pendingReports = await Http.GetFromJsonAsync<List<ReportDto>>("api/AdminReport/pending") ?? new();
+            warnedList = await Http.GetFromJsonAsync<List<PenalizedItemDto>>("api/AdminReport/warned") ?? new();
+            bannedList = await Http.GetFromJsonAsync<List<PenalizedItemDto>>("api/AdminReport/banned") ?? new();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error: " + ex.Message);
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void SetFilter(string filter)
+    {
+        currentFilter = filter;
+    }
+
+    private string GetTimeAgo(DateTime dt)
+    {
+        var span = DateTime.Now - dt;
+        if(span.TotalMinutes < 60) return $"{(int)span.TotalMinutes}m ago";
+        if(span.TotalHours < 24) return $"{(int)span.TotalHours}h ago";
+        return $"{(int)span.TotalDays}d ago";
+    }
+
+    // ACTIONS API BINDINGS
+    private async Task Resolve(int id, string actionType)
+    {
+        isProcessing = true;
+        try
+        {
+            var res = await Http.PostAsJsonAsync($"api/AdminReport/resolve/{id}", new { ActionType = actionType });
+            if (res.IsSuccessStatusCode)
+            {
+                await LoadData(); // Reload all lists since warning may push to warned list
+            }
+        }
+        catch { }
+        finally { isProcessing = false; }
+    }
+
+    private async Task RemoveWarning(PenalizedItemDto item)
+    {
+        isProcessing = true;
+        await Http.PostAsync($"api/AdminReport/remove-warning?type={item.Type}&id={item.Id}", null);
+        await LoadData();
+        isProcessing = false;
+    }
+
+    private async Task DirectBan(PenalizedItemDto item)
+    {
+        isProcessing = true;
+        await Http.PostAsync($"api/AdminReport/ban-direct?type={item.Type}&id={item.Id}", null);
+        await LoadData();
+        isProcessing = false;
+    }
+
+    private async Task Unban(PenalizedItemDto item)
+    {
+        isProcessing = true;
+        await Http.PostAsync($"api/AdminReport/unban?type={item.Type}&id={item.Id}", null);
+        await LoadData();
+        isProcessing = false;
+    }
+
+    private async Task DeletePermanently(PenalizedItemDto item)
+    {
+        isProcessing = true;
+        await Http.PostAsync($"api/AdminReport/delete-permanently?type={item.Type}&id={item.Id}", null);
+        await LoadData();
+        isProcessing = false;
     }
 }

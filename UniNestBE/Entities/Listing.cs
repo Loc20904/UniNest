@@ -21,6 +21,8 @@ public class Listing
 
     public double AreaSquareMeters { get; set; }
 
+    public int WarningCount { get; set; } = 0;
+
     public bool IsAvailable { get; set; } = true;
 
     [MaxLength(20)]

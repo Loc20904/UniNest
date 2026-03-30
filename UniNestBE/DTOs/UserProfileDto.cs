@@ -14,5 +14,6 @@ namespace UniNestBE.DTOs
         public string? Major { get; set; }
         public string? YearOfStudy { get; set; }
         public string? EnrollmentStatus { get; set; }
+        public bool IsWarned { get; set; }
     }
 }
