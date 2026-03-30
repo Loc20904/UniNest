@@ -44,7 +44,7 @@
         <div class="card active @(currentFilter == "Published" ? "selected" : "")" @onclick='() => SetFilter("Published")' style="cursor: pointer;">
             <div class="card-info">
                 <span>Published</span>
-                <span class="count">@(listings?.Count(l => l.ApprovalStatus == "Approved" && l.ExpireAt >= DateTime.Now && l.IsAvailable) ?? 0)</span>
+                <span class="count">@(listings?.Count(l => (l.ApprovalStatus == "Approved" || l.ApprovalStatus == "Published") && l.ExpireAt >= DateTime.Now && l.IsAvailable) ?? 0)</span>
             </div>
             <i class="fas fa-check-circle"></i>
         </div>
@@ -58,7 +58,7 @@
         <div class="card hidden-card @(currentFilter == "Hidden" ? "selected" : "")" @onclick='() => SetFilter("Hidden")' style="cursor: pointer;">
             <div class="card-info">
                 <span>Hidden</span>
-                <span class="count">@(listings?.Count(l => l.ApprovalStatus == "Hidden" || (l.ApprovalStatus == "Published" && l.ExpireAt >= DateTime.Now && !l.IsAvailable)) ?? 0)</span>
+                <span class="count">@(listings?.Count(l => l.ApprovalStatus == "Hidden" || ((l.ApprovalStatus == "Published" || l.ApprovalStatus == "Approved") && l.ExpireAt >= DateTime.Now && !l.IsAvailable)) ?? 0)</span>
             </div>
             <i class="fas fa-eye-slash"></i>
         </div>
@@ -72,7 +72,7 @@
         <div class="card reject-card @(currentFilter == "Not Approved" ? "selected" : "")" @onclick='() => SetFilter("Not Approved")' style="cursor: pointer;">
             <div class="card-info">
                 <span>Not Approved</span>
-                <span class="count">@(listings?.Count(l => l.ApprovalStatus == "Rejected" || l.ApprovalStatus == "Reject") ?? 0)</span>
+                <span class="count">@(listings?.Count(l => l.ApprovalStatus == "Rejected" || l.ApprovalStatus == "Reject" || l.ApprovalStatus == "Not Approved") ?? 0)</span>
             </div>
             <i class="fas fa-times-circle"></i>
         </div>
@@ -113,17 +113,25 @@
                         <td colspan="5" style="text-align:center; padding: 40px;">Loading listings...</td>
                     </tr>
                 }
-                else if (listings.Count == 0)
+                else if (!FilteredListings.Any())
                 {
                     <tr>
-                        <td colspan="5" style="text-align:center; padding: 40px;">You have no listings.</td>
+                        <td colspan="5" style="text-align:center; padding: 60px;">
+                            <div class="empty-state" style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                                <i class="fas fa-folder-open" style="font-size: 40px; color: #e2e8f0; margin-bottom: 12px;"></i>
+                                <p style="color: #94a3b8; font-size: 15px; font-weight: 500; margin: 0;">There are no posts in this section.</p>
+                            </div>
+                        </td>
                     </tr>
                 }
                 else
                 {
-                    @foreach (var listing in FilteredListings
-                                    .Skip((currentPage - 1) * pageSize)
-                                    .Take(pageSize))
+                    var pagedListings = FilteredListings
+                                        .Skip((currentPage - 1) * pageSize)
+                                        .Take(pageSize)
+                                        .ToList();
+
+                    @foreach (var listing in pagedListings)
                     {
                         <tr>
                             <td>
@@ -140,7 +148,7 @@
                                 {
                                     <span class="status-badge" style="background-color: #f1f5f9; color: #475569; padding: 4px 12px; border-radius: 9999px; font-weight: 700; font-size: 13px;">Draft</span>
                                 }
-                                else if (listing.ApprovalStatus == "Rejected" || listing.ApprovalStatus == "Reject")
+                                else if (listing.ApprovalStatus == "Rejected" || listing.ApprovalStatus == "Reject" || listing.ApprovalStatus == "Not Approved")
                                 {
                                     <span class="status-badge" style="background-color: #fee2e2; color: #ef4444; padding: 4px 12px; border-radius: 9999px; font-weight: 700; font-size: 13px;">Not Approved</span>
                                 }
@@ -200,38 +208,34 @@
             </tbody>
         </table>
 
-        <div class="table-footer">
-            <div class="extension-tools">
-                <span>EXTENSION TOOLS:</span>
-                <div class="duration-select">
-                    Listing Duration: <strong>+ 30 Days</strong>
+        @if (FilteredListings.Any())
+        {
+            <div class="table-footer">
+                <div class="extension-tools">
+                    <span>EXTENSION TOOLS:</span>
+                    <div class="duration-select">
+                        Listing Duration: <strong>+ 30 Days</strong>
+                    </div>
                 </div>
-            </div>
-            <div class="pagination">
-                <span class="prev"
-                      @onclick="PrevPage"
-                      style="cursor:pointer">
-                    Previous
-                </span>
-
-                @for (int i = 1; i <= TotalPages; i++)
+                
+                @if (TotalPages > 1)
                 {
-                    int pageNum = i;
-                    <span class="page-num @(currentPage == pageNum ? "active" : "")"
-                          @onclick="(() => GoToPage(pageNum))"
-                          style="cursor:pointer">
-                        @pageNum
-                    </span>
+                    <div class="pagination">
+                        <span class="prev" @onclick="PrevPage" style="cursor:pointer">Previous</span>
+                        @for (int i = 1; i <= TotalPages; i++)
+                        {
+                            int pageNum = i;
+                            <span class="page-num @(currentPage == pageNum ? "active" : "")"
+                                  @onclick="(() => GoToPage(pageNum))"
+                                  style="cursor:pointer">
+                                @pageNum
+                            </span>
+                        }
+                        <span class="next" @onclick="NextPage" style="cursor:pointer">Next</span>
+                    </div>
                 }
-
-                <span class="next"
-                      @onclick="NextPage"
-                      style="cursor:pointer">
-                    Next
-                </span>
-
             </div>
-        </div>
+        }
     </div>
 
     <!-- Info Cards -->
@@ -306,19 +310,19 @@
             switch (currentFilter)
             {
                 case "Published":
-                    query = query.Where(l => l.ApprovalStatus == "Published" && l.IsAvailable && l.ExpireAt >= DateTime.Now);
+                    query = query.Where(l => (l.ApprovalStatus == "Published" || l.ApprovalStatus == "Approved") && l.IsAvailable && l.ExpireAt >= DateTime.Now);
                     break;
                 case "Pending":
                     query = query.Where(l => l.ApprovalStatus == "Pending");
                     break;
                 case "Not Approved":
-                    query = query.Where(l => l.ApprovalStatus == "Rejected" || l.ApprovalStatus == "Reject");
+                    query = query.Where(l => l.ApprovalStatus == "Rejected" || l.ApprovalStatus == "Reject" || l.ApprovalStatus == "Not Approved");
                     break;
                 case "Expired":
                     query = query.Where(l => l.ApprovalStatus == "Expired" || (l.ExpireAt < DateTime.Now && l.ApprovalStatus != "Draft" && l.ApprovalStatus != "Reject" && l.ApprovalStatus != "Rejected" && l.ApprovalStatus != "Pending"));
                     break;
                 case "Hidden":
-                    query = query.Where(l => l.ApprovalStatus == "Hidden" || (l.ApprovalStatus == "Published" && !l.IsAvailable && l.ExpireAt >= DateTime.Now));
+                    query = query.Where(l => l.ApprovalStatus == "Hidden" || ((l.ApprovalStatus == "Published" || l.ApprovalStatus == "Approved") && !l.IsAvailable && l.ExpireAt >= DateTime.Now));
                     break;
                 case "Draft":
                     query = query.Where(l => l.ApprovalStatus == "Draft");
