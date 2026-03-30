@@ -1,0 +1,474 @@
+@page "/profile/lifestyle/edit"
+@using System.Net.Http.Json
+@inject NavigationManager NavManager
+@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Edit Lifestyle Preferences</PageTitle>
+
+<style>
+    :root {
+        --primary-blue: #38bdf8;
+        --primary-blue-hover: #0ea5e9;
+        --bg-light: #f8fafc;
+        --card-border: #e2e8f0;
+    }
+
+    .edit-wrapper {
+        background-color: #f1f5f9;
+        min-height: calc(100vh - 72px);
+        padding: 3rem 1rem;
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        color: #1e293b;
+    }
+
+    .card-panel {
+        background-color: white;
+        border-radius: 12px;
+        border: 1px solid var(--card-border);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        padding: 1.5rem;
+    }
+
+    .section-title {
+        font-weight: 700;
+        color: #0f172a;
+        margin-bottom: 1.25rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .form-label {
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #64748b;
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+
+    .btn-group {
+        display: flex;
+        gap: 0.5rem;
+        background-color: #f1f5f9;
+        padding: 0.25rem;
+        border-radius: 8px;
+    }
+
+    .toggle-btn {
+        flex: 1;
+        padding: 0.5rem;
+        text-align: center;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: 1px solid transparent;
+        color: #475569;
+    }
+
+    .toggle-btn.active {
+        background-color: var(--primary-blue);
+        color: white;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .form-input {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border-radius: 8px;
+        border: 1px solid #cbd5e1;
+        background-color: #f8fafc;
+        color: #0f172a;
+        font-size: 0.95rem;
+        outline: none;
+        transition: border-color 0.2s;
+    }
+
+    .form-input:focus {
+        border-color: var(--primary-blue);
+        background-color: white;
+    }
+
+    .tag-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+        gap: 0.75rem;
+    }
+
+    .tag-btn {
+        padding: 0.75rem 0.5rem;
+        border-radius: 8px;
+        border: 1px solid #cbd5e1;
+        background-color: white;
+        color: #475569;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .tag-btn:hover {
+        border-color: #94a3b8;
+        background-color: #f8fafc;
+    }
+
+    .tag-btn.active {
+        border-color: var(--primary-blue);
+        background-color: rgba(56, 189, 248, 0.05);
+        color: var(--primary-blue-hover);
+        box-shadow: 0 0 0 1px var(--primary-blue);
+    }
+
+    .range-slider {
+        width: 100%;
+        accent-color: var(--primary-blue);
+    }
+
+    .star-rating {
+        display: flex;
+        gap: 0.5rem;
+        font-size: 2rem;
+        cursor: pointer;
+        color: #cbd5e1;
+    }
+
+    .star-rating .material-icons-round.active {
+        color: #f59e0b; /* Amber 500 */
+    }
+
+    .bottom-bar {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background-color: white;
+        border-top: 1px solid var(--card-border);
+        padding: 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.05);
+        z-index: 10;
+    }
+</style>
+
+<div class="edit-wrapper pb-24">
+    <div class="max-w-5xl mx-auto">
+        
+        <div class="mb-8 flex justify-between items-end">
+            <div>
+                <h2 class="text-3xl font-bold text-slate-800 mb-2">Edit Lifestyle Preferences</h2>
+                <p class="text-slate-500">Fine-tune your profile to help our AI find your ideal roommate in Da Nang.</p>
+            </div>
+            <button @onclick="NavigateBack" class="px-4 py-2 border border-slate-300 rounded-lg font-semibold hover:bg-slate-50 transition-colors">
+                Cancel
+            </button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            <!-- Left Column -->
+            <div class="space-y-6">
+                
+                <!-- Living Habits -->
+                <div class="card-panel">
+                    <h3 class="section-title"><span class="material-icons-round text-[#38bdf8]">home</span> Living Habits</h3>
+                    
+                    <div class="mb-5">
+                        <label class="form-label">Sleep Schedule</label>
+                        <div class="btn-group">
+                            <div class="toggle-btn @(Model.SleepSchedule == "Early Bird" ? "active" : "")" @onclick="@(() => Model.SleepSchedule = "Early Bird")">
+                                <span class="material-icons-round text-sm align-middle me-1">wb_sunny</span> Early Bird
+                            </div>
+                            <div class="toggle-btn @(Model.SleepSchedule == "Night Owl" ? "active" : "")" @onclick="@(() => Model.SleepSchedule = "Night Owl")">
+                                <span class="material-icons-round text-sm align-middle me-1">dark_mode</span> Night Owl
+                            </div>
+                            <div class="toggle-btn @(Model.SleepSchedule == "Normal" ? "active" : "")" @onclick="@(() => Model.SleepSchedule = "Normal")">
+                                Normal
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-5">
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="form-label mb-0">Cleanliness Level</label>
+                            <span class="text-xs font-bold text-slate-500">@Model.CleanlinessLevel / 5 Stars</span>
+                        </div>
+                        <div class="star-rating">
+                            @for (int i = 1; i <= 5; i++)
+                            {
+                                int starValue = i;
+                                <span class="material-icons-round @(starValue <= Model.CleanlinessLevel ? "active" : "")" @onclick="() => Model.CleanlinessLevel = starValue">star</span>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 mb-5">
+                        <div>
+                            <label class="form-label">Smoking</label>
+                            <div class="btn-group">
+                                <div class="toggle-btn @(Model.Smoking ? "active" : "")" @onclick="() => Model.Smoking = true">Yes</div>
+                                <div class="toggle-btn @(!Model.Smoking ? "active" : "")" @onclick="() => Model.Smoking = false">No</div>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="form-label">Pets Friendly</label>
+                            <div class="btn-group">
+                                <div class="toggle-btn @(Model.HasPet ? "active" : "")" @onclick="() => Model.HasPet = true">Yes</div>
+                                <div class="toggle-btn @(!Model.HasPet ? "active" : "")" @onclick="() => Model.HasPet = false">No</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="form-label">Guest Frequency</label>
+                            <select class="form-input" @bind="Model.GuestFrequency">
+                                <option value="Rarely">Rarely</option>
+                                <option value="Occasional">Occasional</option>
+                                <option value="Often">Often</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label">Cooking Habit</label>
+                            <select class="form-input" @bind="Model.CookingHabit">
+                                <option value="Never">Never</option>
+                                <option value="Sometimes">Sometimes</option>
+                                <option value="Often">Often</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Financial & Location -->
+                <div class="card-panel">
+                    <h3 class="section-title"><span class="material-icons-round text-[#38bdf8]">payments</span> Financial & Location</h3>
+                    
+                    <div class="mb-6">
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="form-label mb-0">MAX MONTHLY BUDGET (VND)</label>
+                            <div class="flex items-center gap-1">
+                                <input type="number" class="w-28 text-right font-bold text-[#0ea5e9] border-b border-[#0ea5e9] outline-none bg-transparent" @bind="Model.BudgetMax" @bind:event="oninput" min="0" step="100000" />
+                                <span class="font-bold text-[#0ea5e9]">VND</span>
+                            </div>
+                        </div>
+                        <input type="range" class="range-slider" min="1000000" max="10000000" step="100000" @bind="Model.BudgetMax" @bind:event="oninput" />
+                        <div class="flex justify-between text-xs text-slate-400 mt-1 font-medium">
+                            <span>1 M</span>
+                            <span>10 M+</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="form-label">Preferred Districts</label>
+                        <select class="form-input" @bind="Model.PreferredDistricts">
+                            <option value="">Any District</option>
+                            <option value="Hai Chau">Hai Chau</option>
+                            <option value="Lien Chieu">Lien Chieu</option>
+                            <option value="Ngu Hanh Son">Ngu Hanh Son</option>
+                            <option value="Son Tra">Son Tra</option>
+                            <option value="Thanh Khe">Thanh Khe</option>
+                            <option value="Cam Le">Cam Le</option>
+                            <option value="Hoa Vang">Hoa Vang</option>
+                        </select>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Right Column -->
+            <div class="space-y-6">
+                
+                <!-- Personality & Hobbies -->
+                <div class="card-panel h-full">
+                    <h3 class="section-title"><span class="material-icons-round text-[#38bdf8]">groups</span> Personality & Hobbies</h3>
+                    <p class="text-sm text-slate-500 mb-6">Select the tags that best describe your lifestyle. Our AI uses these signals to calculate compatibility scores.</p>
+                    
+                    <div class="tag-grid">
+                        @foreach (var tag in AvailableTags)
+                        {
+                            bool isActive = SelectedTags.Contains(tag.Name);
+                            <div class="tag-btn @(isActive ? "active" : "")" @onclick="() => ToggleTag(tag.Name)">
+                                <span class="material-icons-round text-[20px]">@tag.Icon</span>
+                                @tag.Name
+                            </div>
+                        }
+                    </div>
+
+                    <div class="mt-8 p-4 bg-slate-50 rounded-xl border border-slate-200">
+                        <div class="flex gap-3">
+                            <span class="material-icons-round text-[#38bdf8]">auto_awesome</span>
+                            <div>
+                                <h5 class="font-bold text-sm text-slate-800 mb-1">AI Recommendation Context</h5>
+                                <p class="text-xs text-slate-500">Choosing tags accurately helps match you with compatible roommates who share similar values and living styles near your campus.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="bottom-bar">
+    <div class="max-w-5xl mx-auto w-full flex justify-between items-center">
+        <div>
+            @if(IsSaving)
+            {
+                <p class="text-sm text-slate-500 m-0"><span class="material-icons-round text-sm animate-spin align-middle me-1">sync</span> Saving changes...</p>
+            }
+        </div>
+        <button @onclick="SaveProfile" disabled="@IsSaving" class="bg-[#38bdf8] hover:bg-[#0ea5e9] text-white font-bold py-2.5 px-8 rounded-lg transition-colors flex gap-2 items-center">
+            @if(IsSaving)
+            {
+                <span>Saving...</span>
+            }
+            else
+            {
+                <span>Update Matching Signals</span>
+            }
+        </button>
+    </div>
+</div>
+
+@code {
+    private LifestyleEditModel Model { get; set; } = new LifestyleEditModel();
+    private bool IsSaving = false;
+    private string AuthToken = "";
+
+    private List<string> SelectedTags = new List<string>();
+
+    private List<TagItem> AvailableTags = new List<TagItem>
+    {
+        new TagItem { Name = "Quiet", Icon = "volume_off" },
+        new TagItem { Name = "Social", Icon = "people" },
+        new TagItem { Name = "Gamer", Icon = "sports_esports" },
+        new TagItem { Name = "Music Lover", Icon = "music_note" },
+        new TagItem { Name = "Bookworm", Icon = "menu_book" },
+        new TagItem { Name = "Fitness", Icon = "fitness_center" },
+        new TagItem { Name = "Foodie", Icon = "restaurant" },
+        new TagItem { Name = "Cinephile", Icon = "movie" },
+        new TagItem { Name = "Artist", Icon = "palette" },
+        new TagItem { Name = "Introvert", Icon = "self_improvement" },
+        new TagItem { Name = "Extrovert", Icon = "celebration" },
+        new TagItem { Name = "Tidy", Icon = "cleaning_services" }
+    };
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                AuthToken = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "authToken");
+                if (!string.IsNullOrEmpty(AuthToken))
+                {
+                    var request = new HttpRequestMessage(HttpMethod.Get, "api/profile/lifestyle");
+                    request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", AuthToken);
+                    var response = await Http.SendAsync(request);
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var dto = await response.Content.ReadFromJsonAsync<LifestyleEditModel>();
+                        if (dto != null)
+                        {
+                            Model = dto;
+                            // Need to parse traits into list format for UI
+                            if (!string.IsNullOrEmpty(Model.PersonalityTraits))
+                            {
+                                SelectedTags = Model.PersonalityTraits
+                                    .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                                    .Select(t => t.Trim())
+                                    .ToList();
+                            }
+                            
+                            // Initialize default budget max if 0
+                            if (Model.BudgetMax == 0) Model.BudgetMax = 3000000;
+                            
+                            StateHasChanged();
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error fetching lifestyle profile: {ex.Message}");
+            }
+        }
+    }
+
+    private void ToggleTag(string tagName)
+    {
+        if (SelectedTags.Contains(tagName))
+        {
+            SelectedTags.Remove(tagName);
+        }
+        else
+        {
+            SelectedTags.Add(tagName);
+        }
+    }
+
+    private async Task SaveProfile()
+    {
+        if (string.IsNullOrEmpty(AuthToken)) return;
+
+        IsSaving = true;
+        StateHasChanged();
+
+        try
+        {
+            // Sync tags back to text
+            Model.PersonalityTraits = string.Join(",", SelectedTags);
+
+            var request = new HttpRequestMessage(HttpMethod.Put, "api/profile/lifestyle");
+            request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", AuthToken);
+            request.Content = JsonContent.Create(Model);
+
+            var response = await Http.SendAsync(request);
+            if (response.IsSuccessStatusCode)
+            {
+                NavManager.NavigateTo("/profile");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error saving lifestyle profile: {ex.Message}");
+            IsSaving = false;
+            StateHasChanged();
+        }
+    }
+
+    private void NavigateBack()
+    {
+        NavManager.NavigateTo("/profile");
+    }
+
+    public class LifestyleEditModel
+    {
+        public string SleepSchedule { get; set; } = "Normal"; 
+        public int CleanlinessLevel { get; set; } = 3;
+        public bool Smoking { get; set; } = false;
+        public bool HasPet { get; set; } = false;
+        public string CookingHabit { get; set; } = "Sometimes";
+        public string? GuestFrequency { get; set; } = "Occasional";
+        public string? PreferredDistricts { get; set; } = "";
+        public string? PersonalityTraits { get; set; } = "";
+        public decimal BudgetMin { get; set; } = 0;
+        public decimal BudgetMax { get; set; } = 3000000;
+    }
+
+    public class TagItem
+    {
+        public string Name { get; set; } = "";
+        public string Icon { get; set; } = "";
+    }
+}

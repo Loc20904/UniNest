@@ -22,6 +22,25 @@ public class User
     public bool IsOnline { get; set; }
     public DateTime LastActiveAt { get; set; }
 
+    // Dữ liệu cá nhân mở rộng
+    public DateTime? DateOfBirth { get; set; }
+    [MaxLength(100)]
+    public string? Nationality { get; set; }
+    [MaxLength(50)]
+    public string? IdentificationId { get; set; }
+    [MaxLength(255)]
+    public string? CurrentAddress { get; set; }
+
+    // Dữ liệu sinh viên mở rộng
+    [MaxLength(50)]
+    public string? StudentId { get; set; }
+    [MaxLength(100)]
+    public string? Major { get; set; }
+    [MaxLength(50)]
+    public string? YearOfStudy { get; set; }
+    [MaxLength(50)]
+    public string? EnrollmentStatus { get; set; }
+
     public int? UniversityId { get; set; }
     [ForeignKey("UniversityId")]
     public virtual University? University { get; set; }

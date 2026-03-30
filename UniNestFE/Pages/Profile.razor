@@ -1,0 +1,513 @@
+@page "/profile"
+@using System.Net.Http.Json
+@inject NavigationManager NavManager
+@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+
+<PageTitle>User Profile</PageTitle>
+
+<style>
+    :root {
+        --primary-blue: #38bdf8;
+        --primary-blue-hover: #0ea5e9;
+        --bg-light: #f8fafc;
+        --card-border: #e2e8f0;
+    }
+
+    .profile-card {
+        border-radius: 14px;
+        background-color: white;
+        border: 1px solid var(--card-border);
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    }
+
+    .dark .profile-card {
+        background-color: #1e2228;
+        border-color: #2d333b;
+    }
+    
+    .dark .text-slate-800 {
+        color: #f1f5f9;
+    }
+
+    .avatar-wrapper {
+        width: 125px;
+        height: 125px;
+        margin: 0 auto;
+    }
+
+    .profile-avatar {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border: 4px solid white;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        border-radius: 50%;
+    }
+    
+    .dark .profile-avatar {
+        border-color: #1e2228;
+    }
+
+    .upload-btn {
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: var(--primary-blue);
+        color: white;
+        border: 2px solid white;
+        border-radius: 50%;
+        cursor: pointer;
+    }
+    
+    .dark .upload-btn {
+        border-color: #1e2228;
+    }
+
+    .upload-btn:hover {
+        background-color: var(--primary-blue-hover);
+    }
+
+    .contact-icon {
+        width: 36px;
+        height: 36px;
+        background-color: rgba(56, 189, 248, 0.1);
+        color: var(--primary-blue);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .lifestyle-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        background-color: var(--bg-light);
+        border: 1px solid var(--card-border);
+        border-radius: 8px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #475569;
+    }
+
+    .dark .lifestyle-badge {
+        background-color: #121418;
+        border-color: #2d333b;
+        color: #94a3b8;
+    }
+
+    .lifestyle-badge.active {
+        background-color: rgba(56, 189, 248, 0.1);
+        border-color: rgba(56, 189, 248, 0.3);
+        color: var(--primary-blue);
+    }
+    
+    .lifestyle-badge.chip {
+        border-radius: 20px;
+        padding: 0.35rem 0.85rem;
+    }
+
+    .progress-bar-bg {
+        height: 6px;
+        background-color: var(--card-border);
+        border-radius: 3px;
+        overflow: hidden;
+        margin-top: 0.5rem;
+    }
+    
+    .dark .progress-bar-bg {
+        background-color: #2d333b;
+    }
+
+    .progress-bar-fill {
+        height: 100%;
+        background-color: var(--primary-blue);
+        border-radius: 3px;
+    }
+
+    .warning-box {
+        background-color: #fef2f2;
+        border: 1px dashed #ef4444;
+        color: #991b1b;
+        border-radius: 8px;
+        padding: 1.5rem;
+        text-align: center;
+    }
+
+    .dark .warning-box {
+        background-color: rgba(239, 68, 68, 0.1);
+        color: #fca5a5;
+    }
+</style>
+
+<div class="max-w-6xl mx-auto py-8 px-4 sm:px-6">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        <!-- LEFT COLUMN: Profile Summary -->
+        <div class="md:col-span-1">
+            <div class="profile-card p-6 text-center h-full flex flex-col items-center">
+                <div class="avatar-wrapper mb-4 relative">
+                    <img src="@(string.IsNullOrEmpty(UserProfile.ProfileImageUrl) ? "https://ui-avatars.com/api/?name=User&background=38bdf8&color=fff&size=200" : UserProfile.ProfileImageUrl)" alt="Profile Avatar" class="profile-avatar">
+                    <button class="absolute bottom-0 right-0 upload-btn shadow-sm" title="Change Avatar">
+                        <span class="material-icons-round text-sm">photo_camera</span>
+                    </button>
+                </div>
+                
+                <h4 class="text-xl font-bold text-slate-800 flex items-center justify-center gap-1 mb-1">
+                    @UserProfile.FullName
+                    @if (UserProfile.IsVerified)
+                    {
+                        <span class="material-icons-round text-[#38bdf8] text-xl" title="Verified">verified</span>
+                    }
+                </h4>
+                @if (UserProfile.IsVerified)
+                {
+                    <p class="text-[#38bdf8] font-medium mb-1">Verified Student</p>
+                }
+                
+                <p class="text-slate-500 text-sm mb-6">@UserProfile.UniversityName</p>
+                
+                <div class="mt-auto w-full">
+                    <button @onclick="NavigateToEdit" class="w-full bg-[#38bdf8] hover:bg-[#0ea5e9] text-white font-semibold py-2.5 px-4 rounded-full transition-colors flex justify-center items-center gap-2">
+                        <span class="material-icons-round text-sm">edit</span> Edit Profile Details
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT COLUMN: Detailed Info -->
+        <div class="md:col-span-2 space-y-6">
+            
+            <!-- Card 1: Personal Details -->
+            <div class="profile-card p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h5 class="font-bold text-slate-800 text-lg flex items-center gap-2 m-0">
+                        <span class="material-icons-round text-[#38bdf8]">person</span> Profile Information
+                    </h5>
+                    <button @onclick="NavigateToEdit" class="text-[#38bdf8] hover:text-[#0ea5e9] text-sm font-semibold flex items-center gap-1 transition-colors">
+                        Edit <span class="material-icons-round text-sm">chevron_right</span>
+                    </button>
+                </div>
+                
+                <div class="space-y-6">
+                    <div class="flex items-center gap-4">
+                        <div class="contact-icon">
+                            <span class="material-icons-round">badge</span>
+                        </div>
+                        <div>
+                            <p class="text-slate-500 text-xs uppercase font-semibold mb-1 tracking-wider">Full Name</p>
+                            <p class="font-medium text-slate-800 m-0">@UserProfile.FullName</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-4">
+                        <div class="contact-icon">
+                            <span class="material-icons-round">wc</span>
+                        </div>
+                        <div>
+                            <p class="text-slate-500 text-xs uppercase font-semibold mb-1 tracking-wider">Gender</p>
+                            <p class="font-medium text-slate-800 m-0">@UserProfile.Gender</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 2: Contact Info -->
+            <div class="profile-card p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h5 class="font-bold text-slate-800 text-lg flex items-center gap-2 m-0">
+                        <span class="material-icons-round text-[#38bdf8]">contact_mail</span> Contact Info
+                    </h5>
+                    <button @onclick="NavigateToEdit" class="text-[#38bdf8] hover:text-[#0ea5e9] text-sm font-semibold flex items-center gap-1 transition-colors">
+                        Edit <span class="material-icons-round text-sm">chevron_right</span>
+                    </button>
+                </div>
+                
+                <div class="flex items-center gap-4 mb-5">
+                    <div class="contact-icon">
+                        <span class="material-icons-round">email</span>
+                    </div>
+                    <div>
+                        <p class="text-slate-500 text-xs uppercase font-semibold mb-1 tracking-wider">Email Address</p>
+                        <p class="font-medium text-slate-800 m-0">@UserProfile.Email</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-4 mb-5">
+                    <div class="contact-icon">
+                        <span class="material-icons-round">phone</span>
+                    </div>
+                    <div>
+                        <p class="text-slate-500 text-xs uppercase font-semibold mb-1 tracking-wider">Phone Number</p>
+                        <p class="font-medium text-slate-800 m-0">@UserProfile.PhoneNumber</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-4">
+                    <div class="contact-icon">
+                        <span class="material-icons-round">location_on</span>
+                    </div>
+                    <div>
+                        <p class="text-slate-500 text-xs uppercase font-semibold mb-1 tracking-wider">Current Address</p>
+                        <p class="font-medium text-slate-800 m-0">@(string.IsNullOrEmpty(UserProfile.CurrentAddress) ? "Not Provided" : UserProfile.CurrentAddress)</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 3: University Affiliation -->
+            <div class="profile-card p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h5 class="font-bold text-slate-800 text-lg flex items-center gap-2 m-0">
+                        <span class="material-icons-round text-[#38bdf8]">school</span> University Affiliation
+                    </h5>
+                    <button @onclick="NavigateToEdit" class="text-[#38bdf8] hover:text-[#0ea5e9] text-sm font-semibold flex items-center gap-1 transition-colors">
+                        Update <span class="material-icons-round text-sm">chevron_right</span>
+                    </button>
+                </div>
+
+                <div class="mb-5">
+                    <p class="text-slate-500 text-xs uppercase font-semibold mb-1 tracking-wider">University Name</p>
+                    <p class="font-medium text-slate-800 m-0">@(string.IsNullOrEmpty(UserProfile.UniversityName) ? "Not Provided" : UserProfile.UniversityName)</p>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                        <p class="text-slate-500 text-xs uppercase font-semibold mb-1 tracking-wider">Student ID</p>
+                        <p class="font-medium text-slate-800 m-0">@(string.IsNullOrEmpty(UserProfile.StudentId) ? "Not Provided" : UserProfile.StudentId)</p>
+                    </div>
+                    
+                    <div>
+                        <p class="text-slate-500 text-xs uppercase font-semibold mb-1 tracking-wider">Major</p>
+                        <p class="font-medium text-slate-800 m-0">@(string.IsNullOrEmpty(UserProfile.Major) ? "Not Provided" : UserProfile.Major)</p>
+                    </div>
+                    
+                    <div>
+                        <p class="text-slate-500 text-xs uppercase font-semibold mb-1 tracking-wider">Year of Study</p>
+                        <p class="font-medium text-slate-800 m-0">@(string.IsNullOrEmpty(UserProfile.YearOfStudy) ? "Not Provided" : UserProfile.YearOfStudy)</p>
+                    </div>
+                    
+                    <div>
+                        <p class="text-slate-500 text-xs uppercase font-semibold mb-1 tracking-wider">Status</p>
+                        @if (string.IsNullOrEmpty(UserProfile.EnrollmentStatus))
+                        {
+                            <p class="font-medium text-slate-800 m-0">Not Provided</p>
+                        }
+                        else
+                        {
+                            <span class="inline-block px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">@UserProfile.EnrollmentStatus</span>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 4: Lifestyle Profile -->
+            <div class="profile-card p-6 mt-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h5 class="font-bold text-slate-800 text-lg flex items-center gap-2 m-0">
+                        <span class="material-icons-round text-[#38bdf8]">nature_people</span> Lifestyle Profile Summary
+                    </h5>
+                    <button @onclick="NavigateToEditLifestyle" class="text-[#38bdf8] hover:text-[#0ea5e9] text-sm font-semibold flex items-center gap-1 transition-colors">
+                        Edit <span class="material-icons-round text-sm">edit</span>
+                    </button>
+                </div>
+
+                @if (!LifestyleProfile.IsComplete)
+                {
+                    <div class="warning-box">
+                        <span class="material-icons-round text-4xl mb-2 text-red-500">warning</span>
+                        <h4 class="font-bold text-lg mb-1">Incomplete Profile</h4>
+                        <p class="text-sm mb-4">Your lifestyle profile is empty. This section is very important for our AI Matching system to find your ideal roommate!</p>
+                        <button @onclick="NavigateToEditLifestyle" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-6 rounded-full transition-colors text-sm">
+                            Setup Profile Now
+                        </button>
+                    </div>
+                }
+                else
+                {
+                    <p class="text-sm text-slate-500 mb-6 font-medium">Your roommate identity is fine-tuned for Da Nang student hubs.</p>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                        <!-- Badges Column -->
+                        <div class="space-y-3">
+                            <p class="text-slate-500 text-xs uppercase font-semibold tracking-wider">Lifestyle Badges</p>
+                            <div class="flex flex-wrap gap-2 text-slate-800">
+                                <div class="lifestyle-badge @(LifestyleProfile.SleepSchedule == "Night Owl" ? "active" : "")">
+                                    <span class="material-icons-round text-[18px]">bedtime</span> @LifestyleProfile.SleepSchedule
+                                </div>
+                                @if(LifestyleProfile.HasPet)
+                                {
+                                    <div class="lifestyle-badge active">
+                                        <span class="material-icons-round text-[18px]">pets</span> Pet Friendly
+                                    </div>
+                                }
+                                @if(!LifestyleProfile.Smoking)
+                                {
+                                    <div class="lifestyle-badge active">
+                                        <span class="material-icons-round text-[18px]">smoke_free</span> Non-Smoker
+                                    </div>
+                                }
+                            </div>
+                        </div>
+
+                        <!-- Habits Column -->
+                        <div class="space-y-4">
+                            <p class="text-slate-500 text-xs uppercase font-semibold tracking-wider">Living Habits</p>
+                            <div>
+                                <div class="flex justify-between text-xs font-semibold mb-1">
+                                    <span class="text-slate-600">Cleanliness</span>
+                                    <span class="text-slate-800 font-bold">@LifestyleProfile.CleanlinessLevel / 5</span>
+                                </div>
+                                <div class="progress-bar-bg">
+                                    <div class="progress-bar-fill" style="width: @(LifestyleProfile.CleanlinessLevel * 20)%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-xs font-semibold mb-1">
+                                    <span class="text-slate-600">Guest Frequency</span>
+                                    <span class="text-slate-800 font-bold">@(string.IsNullOrEmpty(LifestyleProfile.GuestFrequency) ? "Occasional" : LifestyleProfile.GuestFrequency)</span>
+                                </div>
+                                <div class="progress-bar-bg">
+                                    <div class="progress-bar-fill" style="width: @(LifestyleProfile.GuestFrequency == "Often" ? "100%" : LifestyleProfile.GuestFrequency == "Rarely" ? "25%" : "60%")"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-xs font-semibold mb-1">
+                                    <span class="text-slate-600">Max Monthly Budget</span>
+                                    <span class="text-[#38bdf8] font-bold">@(LifestyleProfile.BudgetMax.ToString("N0", new System.Globalization.CultureInfo("vi-VN"))) VND</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Hub Column -->
+                        <div class="space-y-3">
+                            <p class="text-slate-500 text-xs uppercase font-semibold tracking-wider">Preferred Hub</p>
+                            <div class="p-4 rounded-xl border border-slate-200 dark:border-slate-700 h-full flex items-center">
+                                <div>
+                                    <h5 class="text-slate-800 font-bold flex items-center gap-2 mb-1">
+                                        <span class="material-icons-round text-slate-400">location_city</span> 
+                                        @(string.IsNullOrEmpty(LifestyleProfile.PreferredDistricts) ? "Any District" : LifestyleProfile.PreferredDistricts)
+                                    </h5>
+                                    <p class="text-xs text-slate-500 mt-1">Ready to rent around this area.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="border-t border-slate-200 dark:border-slate-700 pt-5">
+                        <p class="text-slate-500 text-xs uppercase font-semibold tracking-wider mb-3">Personality & Social Matrix</p>
+                        <div class="flex flex-wrap gap-2 text-slate-800">
+                            @if (!string.IsNullOrEmpty(LifestyleProfile.PersonalityTraits))
+                            {
+                                foreach (var trait in LifestyleProfile.PersonalityTraits.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+                                {
+                                    <span class="lifestyle-badge chip bg-slate-100 border-transparent dark:bg-slate-800">#@trait.Trim()</span>
+                                }
+                            }
+                            else
+                            {
+                                <span class="text-xs text-slate-400 italic">No traits selected</span>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private ProfileModel UserProfile { get; set; } = new ProfileModel();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                var token = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "authToken");
+                if (!string.IsNullOrEmpty(token))
+                {
+                    // Fetch User Profile
+                    var request = new HttpRequestMessage(HttpMethod.Get, "api/profile");
+                    request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+                    var response = await Http.SendAsync(request);
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var dto = await response.Content.ReadFromJsonAsync<ProfileModel>();
+                        if (dto != null)
+                        {
+                            UserProfile = dto;
+                        }
+                    }
+
+                    // Fetch Lifestyle Profile
+                    var lifeRequest = new HttpRequestMessage(HttpMethod.Get, "api/profile/lifestyle");
+                    lifeRequest.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+                    var lifeResponse = await Http.SendAsync(lifeRequest);
+                    if (lifeResponse.IsSuccessStatusCode)
+                    {
+                        var lifeDto = await lifeResponse.Content.ReadFromJsonAsync<LifestyleProfileModel>();
+                        if (lifeDto != null)
+                        {
+                            LifestyleProfile = lifeDto;
+                        }
+                    }
+                    
+                    StateHasChanged();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error fetching profile: {ex.Message}");
+            }
+        }
+    }
+
+    private LifestyleProfileModel LifestyleProfile { get; set; } = new LifestyleProfileModel();
+
+    private void NavigateToEdit()
+    {
+        NavManager.NavigateTo("/profile/edit");
+    }
+
+    private void NavigateToEditLifestyle()
+    {
+        NavManager.NavigateTo("/profile/lifestyle/edit");
+    }
+
+    public class ProfileModel
+    {
+        public string ProfileImageUrl { get; set; } = "";
+        public string FullName { get; set; } = "";
+        public string Gender { get; set; } = "";
+        public string Email { get; set; } = "";
+        public string PhoneNumber { get; set; } = "";
+        public string UniversityName { get; set; } = "";
+        public bool IsVerified { get; set; }
+        public string CurrentAddress { get; set; } = "";
+        public string StudentId { get; set; } = "";
+        public string Major { get; set; } = "";
+        public string YearOfStudy { get; set; } = "";
+        public string EnrollmentStatus { get; set; } = "";
+    }
+
+    public class LifestyleProfileModel
+    {
+        public string SleepSchedule { get; set; } = "Normal"; 
+        public int CleanlinessLevel { get; set; } = 3;
+        public bool Smoking { get; set; } = false;
+        public bool HasPet { get; set; } = false;
+        public string CookingHabit { get; set; } = "Sometimes";
+        public string? GuestFrequency { get; set; } = "Occasional";
+        public string? PreferredDistricts { get; set; }
+        public string? PersonalityTraits { get; set; }
+        public decimal BudgetMin { get; set; }
+        public decimal BudgetMax { get; set; }
+        public bool IsComplete { get; set; } = false;
+    }
+}
