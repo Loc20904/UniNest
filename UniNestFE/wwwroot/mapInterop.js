@@ -157,9 +157,9 @@ window.uniNestMap = {
                             <p class="text-[10px] uppercase font-bold tracking-wider" style="color: #64748b;">Price/Month</p>
                             <p class="font-extrabold text-lg" style="color: #06b5ef;">${data.priceStr}</p>
                         </div>
-                        <button class="text-xs hover:opacity-90 px-4 py-2 rounded-lg font-bold transition-all shadow-lg" style="background-color: #06b5ef; color: #121416;">
+                        <a href="/listing/${data.id}" class="text-xs hover:opacity-90 px-4 py-2 rounded-lg font-bold transition-all shadow-lg no-underline" style="background-color: #06b5ef; color: #121416;">
                             View Details
-                        </button>
+                        </a>
                     </div>
                 </div>
             </div>

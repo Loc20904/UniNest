@@ -54,6 +54,127 @@
 
 <body>
     <div id="app">
+        <!-- Premium Loading Splash Screen -->
+        <div id="splash-screen" style="
+            position: fixed; inset: 0; z-index: 99999;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            background: linear-gradient(135deg, #0a0e17 0%, #121a2b 40%, #0d1520 100%);
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+        ">
+            <!-- Animated background particles -->
+            <div style="position:absolute;inset:0;overflow:hidden;pointer-events:none;">
+                <div class="splash-particle" style="top:15%;left:10%;animation-delay:0s;"></div>
+                <div class="splash-particle" style="top:60%;left:80%;animation-delay:1.2s;"></div>
+                <div class="splash-particle" style="top:30%;left:65%;animation-delay:0.6s;"></div>
+                <div class="splash-particle" style="top:75%;left:25%;animation-delay:1.8s;"></div>
+                <div class="splash-particle" style="top:45%;left:45%;animation-delay:0.3s;"></div>
+            </div>
+
+            <!-- Pulsing rings -->
+            <div style="position:relative; width:120px; height:120px; margin-bottom:32px;">
+                <div class="splash-ring splash-ring-1"></div>
+                <div class="splash-ring splash-ring-2"></div>
+                <div class="splash-ring splash-ring-3"></div>
+                <!-- Center icon -->
+                <div style="
+                    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+                    z-index:2;
+                ">
+                    <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                        <path d="M24 4L6 14v20l18 10 18-10V14L24 4z" fill="none" stroke="#00BAF2" stroke-width="2.5" stroke-linejoin="round" class="splash-icon-path"/>
+                        <path d="M24 16c-4.4 0-8 3.6-8 8s3.6 8 8 8 8-3.6 8-8-3.6-8-8-8zm0 12c-2.2 0-4-1.8-4-4s1.8-4 4-4 4 1.8 4 4-1.8 4-4 4z" fill="#00BAF2" class="splash-icon-fill"/>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Brand name -->
+            <div style="
+                font-size: 28px; font-weight: 800; letter-spacing: -0.5px;
+                background: linear-gradient(90deg, #00BAF2, #7CD933);
+                -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+                background-clip: text;
+                margin-bottom: 8px;
+            ">UniNest</div>
+
+            <div style="color: #5a7a8a; font-size: 13px; font-weight: 500; margin-bottom: 36px; letter-spacing: 0.5px;">
+                Campus-centric living
+            </div>
+
+            <!-- Progress bar -->
+            <div style="width: 200px; height: 3px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden;">
+                <div class="splash-progress-bar"></div>
+            </div>
+
+            <div style="color: #3a5565; font-size: 11px; margin-top: 14px; letter-spacing: 1px; text-transform: uppercase;">
+                Loading...
+            </div>
+        </div>
+
+        <style>
+            .splash-particle {
+                position: absolute;
+                width: 4px; height: 4px;
+                background: rgba(0,186,242,0.3);
+                border-radius: 50%;
+                animation: splashFloat 6s ease-in-out infinite;
+            }
+            @keyframes splashFloat {
+                0%, 100% { transform: translateY(0) scale(1); opacity: 0.3; }
+                50% { transform: translateY(-30px) scale(1.5); opacity: 0.7; }
+            }
+
+            .splash-ring {
+                position: absolute; inset: 0;
+                border-radius: 50%;
+                border: 2px solid transparent;
+            }
+            .splash-ring-1 {
+                border-top-color: #00BAF2;
+                animation: splashSpin 1.5s linear infinite;
+            }
+            .splash-ring-2 {
+                inset: 10px;
+                border-right-color: rgba(0,186,242,0.4);
+                animation: splashSpin 2s linear infinite reverse;
+            }
+            .splash-ring-3 {
+                inset: 20px;
+                border-bottom-color: rgba(124,217,51,0.3);
+                animation: splashSpin 2.5s linear infinite;
+            }
+            @keyframes splashSpin {
+                to { transform: rotate(360deg); }
+            }
+
+            .splash-icon-path {
+                stroke-dasharray: 200;
+                stroke-dashoffset: 200;
+                animation: splashDraw 2s ease forwards;
+            }
+            @keyframes splashDraw {
+                to { stroke-dashoffset: 0; }
+            }
+            .splash-icon-fill {
+                animation: splashFadeIn 1s 0.8s ease forwards;
+                opacity: 0;
+            }
+            @keyframes splashFadeIn {
+                to { opacity: 1; }
+            }
+
+            .splash-progress-bar {
+                height: 100%; width: 30%;
+                background: linear-gradient(90deg, #00BAF2, #7CD933);
+                border-radius: 4px;
+                animation: splashProgress 2s ease-in-out infinite;
+            }
+            @keyframes splashProgress {
+                0% { transform: translateX(-100%); width: 30%; }
+                50% { width: 60%; }
+                100% { transform: translateX(350%); width: 30%; }
+            }
+        </style>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@goongmaps/goong-js@1.0.9/dist/goong-js.js"></script>
