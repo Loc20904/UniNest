@@ -42,5 +42,6 @@ namespace UniNestFE.DTOs
     {
         public int LifestyleHabitId { get; set; }
         public string Name { get; set; }
+        public string? Icon { get; set; }
     }
 }

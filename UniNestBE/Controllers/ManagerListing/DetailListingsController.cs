@@ -67,7 +67,8 @@ namespace UniNestBE.Controllers.ManagerListing
                 LifestyleHabits = listing.LifestyleHabits.Select(h => new LifestyleHabitDto
                 {
                     LifestyleHabitId = h.LifestyleHabitId,
-                    Name = h.Name
+                    Name = h.Name,
+                    Icon = h.Icon
                 }).ToList()
             };
 
