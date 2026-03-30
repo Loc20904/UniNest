@@ -14,6 +14,9 @@ services:
       target: final
     ports:
       - 7045:8080
+	environment:
+      # Ghi đè Connection String khi chạy trong Docker
+      - ConnectionStrings__DefaultConnection=Server=host.docker.internal,1433;Database=UniNestDB;User Id=loc;Password=	123;TrustServerCertificate=True;
 
   fe_server:
     build:

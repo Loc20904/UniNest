@@ -327,7 +327,7 @@ window.uniNestMap = {
             cursor: 'pointer',
             boxShadow: '0 4px 10px rgba(0,0,0,0.3)',
             border: '2px solid white',
-            zIndex: '10'
+            zIndex: '1'
         });
 
         // popup

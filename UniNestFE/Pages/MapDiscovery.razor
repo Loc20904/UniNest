@@ -1,4 +1,4 @@
-﻿@page "/"
+@page "/"
 @using System.Net.Http.Json
 @inject HttpClient Http
 @inject IJSRuntime JSRuntime
@@ -39,6 +39,9 @@
     }
     
     /* Ghi đè CSS cho Popup của Mapbox/Goong */
+    .mapboxgl-popup {
+        z-index: 9999 !important;
+    }
     .mapboxgl-popup-content {
         background: transparent !important;
         padding: 0 !important;
@@ -67,12 +70,6 @@
                         <h1 class="text-2xl font-extrabold tracking-tight">Find Your Base</h1>
                         <p class="text-slate-500 dark:text-[#9bb3bb] text-sm">Campus-centric living in Da Nang</p>
                     </div>
-                <div class="flex justify-between items-start">
-                    <div>
-                        <h1 class="text-2xl font-extrabold tracking-tight">Find Your Base</h1>
-                        <p class="text-slate-500 dark:text-[#9bb3bb] text-sm">Campus-centric living in Da Nang</p>
-                    </div>
-                </div>
                 </div>
                 
                 @* Search Bar *@
@@ -376,8 +373,8 @@
     // Giá trị: "Any", "Male", "Female"
     private string SelectedGender = "Any"; 
     private bool IsStudentVerified = false;
-    private double MinPrice = 1500000;
-    private double MaxPrice = 4000000;
+    private double MinPrice = 0;
+    private double MaxPrice = 10000000;
 
     private bool IsMapLoaded = false;
     private bool IsLoading = true;
