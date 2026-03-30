@@ -53,6 +53,7 @@ namespace UniNestBE.Controllers.ManagerListing
                 HostName = listing.Owner?.FullName ?? "Unknown",
                 HostAvatar = listing.Owner?.StudentAvatar ?? "default_avatar.jpg",
                 HostTotalListings = totalListingsByHost,
+                HostIsWarned = (listing.Owner?.WarningCount ?? 0) > 0,
 
                 Images = listing.Images.Select(i => i.ImageUrl).ToList(),
 
