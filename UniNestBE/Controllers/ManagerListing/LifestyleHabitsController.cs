@@ -27,7 +27,8 @@ namespace UniNestBE.Controllers
                 .Select(h => new LifestyleHabitDto
                 {
                     LifestyleHabitId = h.LifestyleHabitId,
-                    Name = h.Name
+                    Name = h.Name,
+                    Icon = h.Icon
                 }).ToListAsync();
         }
 
@@ -38,7 +39,8 @@ namespace UniNestBE.Controllers
         {
             var habit = new LifestyleHabit
             {
-                Name = dto.Name
+                Name = dto.Name,
+                Icon = dto.Icon
             };
 
             _context.LifestyleHabits.Add(habit);
