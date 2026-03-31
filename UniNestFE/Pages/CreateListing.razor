@@ -669,7 +669,7 @@
 
             var latStr = lat.ToString(System.Globalization.CultureInfo.InvariantCulture);
             var lonStr = lng.ToString(System.Globalization.CultureInfo.InvariantCulture);
-            // var url = $"https:nominatim.openstreetmap.org/reverse?lat={latStr}&lon={lonStr}&format=json&email=uninest.noreply@gmail.com";
+            var url = $"https:nominatim.openstreetmap.org/reverse?lat={latStr}&lon={lonStr}&format=json&email=uninest.noreply@gmail.com";
 
             using var nominatimClient = new HttpClient();
             var result = await nominatimClient.GetFromJsonAsync<NominatimResponse>(url);
