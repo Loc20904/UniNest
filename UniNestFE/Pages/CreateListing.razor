@@ -671,9 +671,6 @@
             var lonStr = lng.ToString(System.Globalization.CultureInfo.InvariantCulture);
             var url = $"https://nominatim.openstreetmap.org/reverse?lat={latStr}&lon={lonStr}&format=json&email=uninest.noreply@gmail.com";
 
-
-// Đảm bảo lat và lng luôn dùng dấu chấm (VD: 16.0321)
-var url = $"https://nominatim.openstreetmap.org/reverse?lat={lat.ToString(System.Globalization.CultureInfo.InvariantCulture)}&lon={lng.ToString(System.Globalization.CultureInfo.InvariantCulture)}&format=json";
             using var nominatimClient = new HttpClient();
             var result = await nominatimClient.GetFromJsonAsync<NominatimResponse>(url);
 
