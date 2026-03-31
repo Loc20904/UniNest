@@ -439,11 +439,12 @@
         }
     }
 
-    async Task SubmitListing(string status = "Pending")
+    async Task SubmitListing(string targetStatus = "Pending")
     {
-        listing.ApprovalStatus = status;
-
-        if (status != "Draft")
+        uploadErrorMessage = "";
+        
+        // Validation check based on the target status
+        if (targetStatus != "Draft")
         {
             if (string.IsNullOrWhiteSpace(listing.Title) ||
                 listing.Price <= 0 ||
@@ -462,6 +463,9 @@
                 return;
             }
         }
+
+        // Committing the status only after validation or if validation is not required
+        listing.ApprovalStatus = targetStatus;
 
         try
         {
@@ -667,9 +671,6 @@
             var lonStr = lng.ToString(System.Globalization.CultureInfo.InvariantCulture);
             // var url = $"https:nominatim.openstreetmap.org/reverse?lat={latStr}&lon={lonStr}&format=json&email=uninest.noreply@gmail.com";
 
-
-            // Đảm bảo lat và lng luôn dùng dấu chấm (VD: 16.0321)
-            var url = $"https://nominatim.openstreetmap.org/reverse?lat={lat.ToString(System.Globalization.CultureInfo.InvariantCulture)}&lon={lng.ToString(System.Globalization.CultureInfo.InvariantCulture)}&format=json";
             using var nominatimClient = new HttpClient();
             var result = await nominatimClient.GetFromJsonAsync<NominatimResponse>(url);
 
