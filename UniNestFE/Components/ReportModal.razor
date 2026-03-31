@@ -1,0 +1,171 @@
+@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+
+<div class="fixed inset-0 z-[1000] flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" @onclick="Close"></div>
+    
+    <div class="relative bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col transform animate-fade-in-up border border-slate-100 dark:border-slate-800">
+        <!-- Header -->
+        <div class="p-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50">
+            <h3 class="text-xl font-extrabold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                <span class="material-icons-round text-red-500">report_problem</span>
+                Report @TargetType
+            </h3>
+            <button @onclick="Close" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+                <span class="material-icons-round text-2xl">close</span>
+            </button>
+        </div>
+
+        <!-- Body -->
+        <div class="p-6">
+            @if (showSuccess)
+            {
+                <div class="text-center py-6">
+                    <span class="material-icons-round text-5xl text-emerald-500 mb-2">check_circle</span>
+                    <h4 class="text-lg font-bold text-slate-800 mb-2">Report Submitted</h4>
+                    <p class="text-slate-500 text-sm">Thank you for helping keep UniNest safe. Our moderation team will review this shortly.</p>
+                    <button @onclick="Close" class="mt-6 w-full py-3 bg-slate-100 text-slate-800 font-bold rounded-xl hover:bg-slate-200 transition-colors">Close</button>
+                </div>
+            }
+            else
+            {
+                <div class="mb-4">
+                    <p class="text-sm text-slate-500 mb-4">You are reporting <strong>@TargetName</strong>. Please select a reason and provide details if necessary.</p>
+                    
+                    @if (!string.IsNullOrEmpty(errorMessage))
+                    {
+                        <div class="mb-4 p-3 bg-red-50 text-red-600 text-sm rounded-lg flex items-start gap-2 border border-red-100">
+                            <i class="material-icons-round text-[18px]">error</i>
+                            @errorMessage
+                        </div>
+                    }
+
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Reason</label>
+                    <select @bind="reportReason" class="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-4 py-3 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all mb-4 font-medium">
+                        <option value="" disabled>Select a reason...</option>
+                        @if (TargetListingId.HasValue)
+                        {
+                            <option value="Fake Listing">Fake Listing</option>
+                            <option value="Scam Alert">Scam Alert</option>
+                            <option value="Inappropriate Content">Inappropriate Content</option>
+                            <option value="Unavailable Property">Unavailable Property</option>
+                        }
+                        else
+                        {
+                            <option value="Harassment">Harassment</option>
+                            <option value="Scam Alert">Scam Alert</option>
+                            <option value="Inappropriate Content">Inappropriate Content</option>
+                            <option value="Spam">Spam</option>
+                        }
+                        <option value="Other">Other</option>
+                    </select>
+
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Details (Optional)</label>
+                    <textarea @bind="reportDescription" rows="4" placeholder="Provide more context to help us understand the issue..." class="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-4 py-3 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all resize-none"></textarea>
+                </div>
+
+                <!-- Footer -->
+                <div class="flex gap-3 mt-6">
+                    <button @onclick="Close" class="flex-1 py-3 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200 transition-colors">Cancel</button>
+                    <button @onclick="Submit" disabled="@(string.IsNullOrEmpty(reportReason) || isSubmitting)" class="flex-1 py-3 bg-red-600 text-white font-bold rounded-xl shadow-lg shadow-red-500/30 hover:bg-red-700 transition-all flex justify-center items-center gap-2 disabled:opacity-50">
+                        @if (isSubmitting)
+                        {
+                            <span class="animate-spin material-icons-round text-lg">autorenew</span>
+                            <span>Submitting...</span>
+                        }
+                        else
+                        {
+                            <span class="material-icons-round text-lg">flag</span>
+                            <span>Submit Report</span>
+                        }
+                    </button>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public int? TargetListingId { get; set; }
+    [Parameter] public int? TargetUserId { get; set; }
+    [Parameter] public string TargetName { get; set; } = string.Empty;
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    private string TargetType => TargetListingId.HasValue ? "Listing" : "User";
+    private string reportReason = "";
+    private string reportDescription = "";
+    private bool isSubmitting = false;
+    private bool showSuccess = false;
+    private string errorMessage = "";
+
+    private async Task Close()
+    {
+        await OnClose.InvokeAsync();
+    }
+
+    private class ErrorResponse {
+        public string message { get; set; } = "";
+    }
+
+    private async Task Submit()
+    {
+        if (string.IsNullOrEmpty(reportReason)) return;
+        
+        errorMessage = "";
+        isSubmitting = true;
+        
+        try
+        {
+            var payload = new
+            {
+                TargetListingId = TargetListingId,
+                TargetUserId = TargetUserId,
+                Reason = reportReason,
+                Description = reportDescription,
+                Priority = "Standard" // backend handles it now
+            };
+
+            var token = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "authToken");
+            if (!string.IsNullOrEmpty(token))
+            {
+                Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+            }
+
+            var response = await Http.PostAsJsonAsync("api/AdminReport/submit", payload);
+
+            if (response.IsSuccessStatusCode)
+            {
+                showSuccess = true;
+            }
+            else
+            {
+                // check if it's the "already reported" error
+                if (response.StatusCode == System.Net.HttpStatusCode.BadRequest)
+                {
+                    try {
+                        var err = await response.Content.ReadFromJsonAsync<ErrorResponse>();
+                        errorMessage = err?.message ?? "An error occurred.";
+                    } catch {
+                        errorMessage = "Bạn đã báo cáo nội dung này rồi!";
+                    }
+                }
+                else if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                {
+                    errorMessage = "Vui lòng đăng nhập để gửi báo cáo.";
+                }
+                else
+                {
+                    errorMessage = "Lỗi hệ thống. Vui lòng thử lại sau.";
+                }
+            }
+        }
+        catch (Exception)
+        {
+            errorMessage = "Lỗi kết nối mạng.";
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+}

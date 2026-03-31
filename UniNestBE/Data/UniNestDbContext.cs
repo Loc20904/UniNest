@@ -21,6 +21,7 @@ public class UniNestDbContext : DbContext
     public DbSet<Amenity> Amenities { get; set; }
     public DbSet<LifestyleHabit> LifestyleHabits { get; set; }
     public DbSet<StudentVerificationRequest> StudentVerificationRequests { get; set; }
+    public DbSet<Report> Reports { get; set; }
 
     public DbSet<PropertyType> PropertyTypes { get; set; }
 
@@ -199,7 +200,26 @@ public class UniNestDbContext : DbContext
             .HasForeignKey<Address>(a => a.ListingId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // --- 9. Cấu hình StudentVerificationRequest ---
+        // --- 9. Cấu hình Report ---
+        modelBuilder.Entity<Report>()
+            .HasOne(r => r.Reporter)
+            .WithMany()
+            .HasForeignKey(r => r.ReporterId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Report>()
+            .HasOne(r => r.TargetUser)
+            .WithMany()
+            .HasForeignKey(r => r.TargetUserId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Report>()
+            .HasOne(r => r.TargetListing)
+            .WithMany()
+            .HasForeignKey(r => r.TargetListingId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // --- 10. Cấu hình StudentVerificationRequest ---
         modelBuilder.Entity<StudentVerificationRequest>()
             .HasOne(svr => svr.User)
             .WithMany(u => u.VerificationRequestsAsUser)

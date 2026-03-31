@@ -78,13 +78,6 @@
             <h2>Location<span class="text-red-500 text-lg" title="Information must be entered">*</span></h2>
         </div>
 
-        @if (!string.IsNullOrEmpty(locationErrorMessage))
-        {
-            <div class="error-msg" style="color: red; margin-bottom: 16px; background-color: #fee2e2; padding: 12px; border-radius: 8px;">
-                <i class="material-icons" style="vertical-align: middle;">error</i> <strong>@locationErrorMessage</strong>
-            </div>
-        }
-
         <div class="form-row" style="margin-bottom: 24px;">
             <div class="form-group">
                 <label class="form-label">District <span class="text-red-500 text-lg" title="Information must be entered">*</span></label>
@@ -121,7 +114,7 @@
         </div>
 
         <div class="relative group">
-            <!-- 🔥 MAP REAL -->
+            <!-- MAP REAL -->
             <div id="map" style="height: 350px; border-radius: 12px; border: 1px solid #e2e8f0;"></div>
 
             @if (!showLargeMap)
@@ -185,7 +178,13 @@
                     {
                         var isChecked = listing.LifestyleHabitIds.Contains(habit.LifestyleHabitId);
                         <label class="habit-item @(isChecked ? "checked" : "")" @onclick="() => ToggleHabit(habit.LifestyleHabitId)">
-                            <span class="habit-name">@habit.Name</span>
+                            <div class="flex items-center gap-3">
+                                @if (!string.IsNullOrEmpty(habit.Icon))
+                                {
+                                    <i class="material-icons-round @(isChecked ? "text-[#00BAF2]" : "text-slate-400")" style="font-size: 20px;">@habit.Icon</i>
+                                }
+                                <span class="habit-name">@habit.Name</span>
+                            </div>
                             <div class="checkbox-box"><i class="material-icons">check</i></div>
                         </label>
                     }
@@ -202,13 +201,6 @@
             </div>
             <h2>Media Upload</h2>
         </div>
-
-        @if (!string.IsNullOrEmpty(uploadErrorMessage))
-        {
-            <div class="error-msg" style="color: red; margin-bottom: 16px;">
-                <i class="material-icons" style="vertical-align: middle;">error</i> @uploadErrorMessage
-            </div>
-        }
 
         <div class="upload-zone" onclick="document.getElementById('fileInput').click()">
             <div class="upload-icon">
@@ -253,6 +245,13 @@
         <button type="button" class="btn-prev" @onclick="Cancel">
             <i class="material-icons">arrow_back</i> Previous Section
         </button>
+        @if (!string.IsNullOrEmpty(uploadErrorMessage))
+        {
+            <div class="error-msg text-red-600 dark:text-red-400 mb-4 flex items-center gap-2">
+                <i class="material-icons text-[18px]">error</i>
+                <span>@uploadErrorMessage</span>
+            </div>
+        }
         <div class="footer-right flex gap-3">
             <button type="button" class="btn-cancel bg-slate-100 hover:bg-slate-200 dark:bg-[#1e293b] dark:hover:bg-[#334155] border-none text-slate-600 dark:text-slate-300 font-bold px-6 py-3 rounded-full shadow-sm flex items-center gap-2 transition-all active:scale-95" @onclick='() => SubmitListing("Draft")'>
                 <i class="material-icons-round text-[18px]">save</i> Save as Draft
@@ -327,7 +326,7 @@
     public class AmenityItem { public int AmenityId { get; set; } public string Name { get; set; } public string Icon { get; set; } }
     List<AmenityItem> AvailableAmenities = new();
 
-    public class HabitItem { public int LifestyleHabitId { get; set; } public string Name { get; set; } }
+    public class HabitItem { public int LifestyleHabitId { get; set; } public string Name { get; set; } public string? Icon { get; set; } }
 
     public class PropertyType { public int PropertyTypeId { get; set; } public string Name { get; set; } }
     List<HabitItem> AvailableHabits = new();
@@ -666,8 +665,11 @@
 
             var latStr = lat.ToString(System.Globalization.CultureInfo.InvariantCulture);
             var lonStr = lng.ToString(System.Globalization.CultureInfo.InvariantCulture);
-            var url = $"https://nominatim.openstreetmap.org/reverse?lat={latStr}&lon={lonStr}&format=json&email=uninest.noreply@gmail.com";
+            // var url = $"https:nominatim.openstreetmap.org/reverse?lat={latStr}&lon={lonStr}&format=json&email=uninest.noreply@gmail.com";
 
+
+            // Đảm bảo lat và lng luôn dùng dấu chấm (VD: 16.0321)
+            var url = $"https://nominatim.openstreetmap.org/reverse?lat={lat.ToString(System.Globalization.CultureInfo.InvariantCulture)}&lon={lng.ToString(System.Globalization.CultureInfo.InvariantCulture)}&format=json";
             using var nominatimClient = new HttpClient();
             var result = await nominatimClient.GetFromJsonAsync<NominatimResponse>(url);
 

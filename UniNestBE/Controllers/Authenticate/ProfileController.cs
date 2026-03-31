@@ -43,7 +43,8 @@ namespace UniNestBE.Controllers.Authenticate
                 StudentId = user.StudentId,
                 Major = user.Major,
                 YearOfStudy = user.YearOfStudy,
-                EnrollmentStatus = user.EnrollmentStatus
+                EnrollmentStatus = user.EnrollmentStatus,
+                IsWarned = user.WarningCount > 0
             };
 
             return Ok(dto);
@@ -160,6 +161,63 @@ namespace UniNestBE.Controllers.Authenticate
 
             await _context.SaveChangesAsync();
             return Ok(new { message = "Lifestyle profile updated successfully." });
+        }
+
+        [HttpGet("public/{id}")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetPublicProfile(int id)
+        {
+            var user = await _context.Users
+                .Include(u => u.University)
+                .Include(u => u.LifestyleProfile)
+                    .ThenInclude(lp => lp.LifestyleHabits)
+                .FirstOrDefaultAsync(u => u.UserId == id);
+
+            if (user == null) return NotFound("User not found.");
+
+            var userDto = new UserProfileDto
+            {
+                FullName = user.FullName,
+                Email = "Hidden", // Protected
+                PhoneNumber = "Hidden", // Protected
+                Gender = user.Gender ? "Male" : "Female",
+                UniversityName = user.University?.UniName ?? "N/A",
+                IsVerified = user.IsVerified,
+                ProfileImageUrl = user.StudentAvatar ?? $"https://ui-avatars.com/api/?name={Uri.EscapeDataString(user.FullName ?? "User")}&background=38bdf8&color=fff&size=200",
+                CurrentAddress = "Hidden", // Protected
+                StudentId = "Hidden", // Protected
+                Major = user.Major,
+                YearOfStudy = user.YearOfStudy,
+                EnrollmentStatus = user.EnrollmentStatus,
+                IsWarned = user.WarningCount > 0
+            };
+
+            var lifestyleDto = new LifestyleProfileDto();
+            if (user.LifestyleProfile != null)
+            {
+                lifestyleDto.SleepSchedule = user.LifestyleProfile.SleepSchedule;
+                lifestyleDto.CleanlinessLevel = user.LifestyleProfile.CleanlinessLevel;
+                lifestyleDto.Smoking = user.LifestyleProfile.Smoking;
+                lifestyleDto.HasPet = user.LifestyleProfile.HasPet;
+                lifestyleDto.CookingHabit = user.LifestyleProfile.CookingHabit;
+                lifestyleDto.GuestFrequency = user.LifestyleProfile.GuestFrequency;
+                lifestyleDto.PreferredDistricts = user.LifestyleProfile.PreferredDistricts;
+                lifestyleDto.PersonalityTraits = user.LifestyleProfile.PersonalityTraits;
+                lifestyleDto.BudgetMin = user.LifestyleProfile.BudgetMin;
+                lifestyleDto.BudgetMax = user.LifestyleProfile.BudgetMax;
+                lifestyleDto.IsComplete = true;
+                
+                if (user.LifestyleProfile.LifestyleHabits != null)
+                {
+                    lifestyleDto.LifestyleHabitIds = user.LifestyleProfile.LifestyleHabits.Select(h => h.LifestyleHabitId).ToList();
+                }
+            }
+            else
+            {
+                lifestyleDto.IsComplete = false;
+            }
+
+            return Ok(new { Profile = userDto, Lifestyle = lifestyleDto });
         }
     }
 }

@@ -53,6 +53,7 @@ namespace UniNestBE.Controllers.ManagerListing
                 HostName = listing.Owner?.FullName ?? "Unknown",
                 HostAvatar = listing.Owner?.StudentAvatar ?? "default_avatar.jpg",
                 HostTotalListings = totalListingsByHost,
+                HostIsWarned = (listing.Owner?.WarningCount ?? 0) > 0,
 
                 Images = listing.Images.Select(i => i.ImageUrl).ToList(),
 
@@ -66,7 +67,8 @@ namespace UniNestBE.Controllers.ManagerListing
                 LifestyleHabits = listing.LifestyleHabits.Select(h => new LifestyleHabitDto
                 {
                     LifestyleHabitId = h.LifestyleHabitId,
-                    Name = h.Name
+                    Name = h.Name,
+                    Icon = h.Icon
                 }).ToList()
             };
 

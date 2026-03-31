@@ -1,10 +1,17 @@
 @page "/advanced-search"
 @using System.Text.Json
+@using UniNestFE.DTOs
 @inject HttpClient Http
 @inject NavigationManager NavManager
 @inject IJSRuntime JSRuntime
 
 <div class="w-full min-h-[calc(100vh-70px)] bg-transparent pb-24 relative font-sans text-slate-800 dark:text-slate-200">
+    @if (showMessage)
+    {
+        <div class="fixed top-5 right-5 z-50 px-6 py-3 rounded-xl shadow-lg text-white animate-fade-in @(messageType == "success" ? "bg-green-500" : "bg-red-500")">
+            @message
+        </div>
+    }
     
     <!-- Header Section -->
     <div class="px-6 md:px-12 lg:px-24 pt-12">
@@ -98,7 +105,7 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 content-start">
                     @foreach (var listing in PagedResults)
                     {
-                        <div class="bg-white dark:bg-[#1e293b] rounded-2xl p-4 shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col h-full min-h-[440px] hover:shadow-lg transition-transform hover:-translate-y-1 relative @(openDropdownId == listing.ListingId ? "z-50" : "z-10")">
+                        <div class="bg-white dark:bg-[#1e293b] rounded-2xl p-4 shadow-sm border @(listing.IsWarned ? "border-red-500 shadow-red-500/20" : "border-slate-100 dark:border-slate-800") flex flex-col h-full min-h-[440px] hover:shadow-lg transition-transform hover:-translate-y-1 relative @(openDropdownId == listing.ListingId ? "z-50" : "z-10")">
                             <!-- Image Area -->
                             <div class="relative w-full h-52 rounded-xl overflow-hidden mb-5 bg-slate-200 dark:bg-slate-700 shrink-0">
                                 <!-- In real scenario, image URL should have host prepended if relative -->
@@ -110,7 +117,7 @@
                                         @listing.MatchPercent% MATCH
                                     </div>
                                 }
-                                <button class="absolute top-4 right-4 text-white focus:outline-none bg-black/20 backdrop-blur-md p-2 rounded-full hover:bg-white hover:text-red-500 transition-colors shadow-sm">
+                                <button @onclick="() => ToggleSave(listing.ListingId)" @onclick:preventDefault @onclick:stopPropagation class="absolute top-4 right-4 focus:outline-none backdrop-blur-md p-2 rounded-full transition-colors shadow-sm @(savedListingIds.Contains(listing.ListingId) ? "text-red-500 bg-white" : "text-white bg-black/20 hover:bg-white hover:text-red-500")">
                                     <span class="material-icons-round text-lg leading-none">favorite</span>
                                 </button>
                                 <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-5 pt-16">
@@ -170,21 +177,29 @@
                                     <div class="flex flex-wrap gap-2 mb-4 h-auto">
                                         @{
                                             bool isExpanded = expandedAmenitiesCardIds.Contains(listing.ListingId);
-                                            var displayAmenities = isExpanded ? listing.Amenities : listing.Amenities.Take(2).ToList();
+                                            var allTags = new List<string>();
+                                            if (listing.Amenities != null) allTags.AddRange(listing.Amenities.Select(a => $"amenity|{a}|{GetAmenityIcon(a)}"));
+                                            if (listing.LifestyleHabits != null) allTags.AddRange(listing.LifestyleHabits.Select(h => $"habit|{h}|{GetHabitIcon(h)}"));
+                                            
+                                            var displayTags = isExpanded ? allTags : allTags.Take(2).ToList();
                                         }
-                                        @foreach (var amenity in displayAmenities)
+                                        @foreach (var tagData in displayTags)
                                         {
-                                            <span class="flex items-center gap-1.5 px-2.5 py-1 bg-[#f4f6f8] dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg text-[10px] uppercase font-bold tracking-wider transition-all">
-                                                <span class="material-icons-round text-[12px]">@GetAmenityIcon(amenity)</span> <span class="truncate max-w-[100px]">@amenity</span>
+                                            var parts = tagData.Split('|');
+                                            var isHabit = parts[0] == "habit";
+                                            var name = parts[1];
+                                            var icon = parts[2];
+                                            <span class="flex items-center gap-1.5 px-2.5 py-1 bg-[#f4f6f8] dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg text-[10px] uppercase font-bold tracking-wider transition-all border @(isHabit ? "border-[#4ebdea]/30 dark:border-[#3ba8d7]/30" : "border-slate-100 dark:border-slate-600")">
+                                                <span class="material-icons-round text-[12px] @(isHabit ? "text-[#3ba8d7]" : "")">@icon</span> <span class="truncate max-w-[100px]">@name</span>
                                             </span>
                                         }
-                                        @if (!isExpanded && listing.Amenities.Count > 2)
+                                        @if (!isExpanded && allTags.Count > 2)
                                         {
                                             <button @onclick="() => expandedAmenitiesCardIds.Add(listing.ListingId)" @onclick:preventDefault @onclick:stopPropagation class="flex items-center justify-center px-2.5 py-1 bg-[#e1f5fe] dark:bg-[#334155] text-[#3ba8d7] dark:text-white hover:bg-[#3ba8d7] hover:text-white dark:hover:bg-[#4ebdea] rounded-lg text-[10px] font-bold transition-colors shadow-sm cursor-pointer">
-                                                +@(listing.Amenities.Count - 2)
+                                                +@(allTags.Count - 2)
                                             </button>
                                         }
-                                        else if (isExpanded)
+                                        else if (isExpanded && allTags.Count > 2)
                                         {
                                             <button @onclick="() => expandedAmenitiesCardIds.Remove(listing.ListingId)" @onclick:preventDefault @onclick:stopPropagation class="flex items-center justify-center px-2 py-1 bg-[#f4f6f8] dark:bg-slate-700 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white rounded-lg text-[10px] transition-colors cursor-pointer">
                                                 <span class="material-icons-round text-[14px] leading-none">expand_less</span>
@@ -368,7 +383,11 @@
                                             <span class="material-icons-round text-white text-[14px] font-bold">check</span>
                                         }
                                     </div>
-                                    <span class="material-icons-round @(isSelected ? "text-slate-800 dark:text-white" : "text-slate-600 dark:text-slate-400") text-[20px]">check_circle_outline</span>
+
+                                    <span class="material-icons-round @(isSelected ? "text-slate-800 dark:text-white" : "text-slate-600 dark:text-slate-400") text-[20px]">@(string.IsNullOrEmpty(hb.Icon) ? "eco" : hb.Icon)</span>
+
+                                    <span class="material-icons-round @(isSelected ? "text-slate-800 dark:text-white" : "text-slate-600 dark:text-slate-400") text-[20px]">@hb.Icon</span>
+
                                     <span class="text-sm tracking-tight @(isSelected ? "font-bold text-slate-800 dark:text-white" : "font-medium text-slate-600 dark:text-slate-300")">@hb.Name</span>
                                 </div>
                             }
@@ -403,7 +422,7 @@
                 <button @onclick='() => NavManager.NavigateTo("/profile/lifestyle/edit")' class="w-full bg-[#4ebdea] hover:bg-[#3ba8d7] text-white font-bold h-12 rounded-xl transition-transform active:scale-95 shadow-md shadow-[#4ebdea]/30 mb-3">
                     Start Setup Now
                 </button>
-                <button @onclick="() => { showProfileRequiredModal = false; isAutoMatchActive = false; _ = FetchResults(); }" class="text-sm font-semibold text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
+                <button @onclick="async () => { showProfileRequiredModal = false; isAutoMatchActive = false; await FetchResults(); }" class="text-sm font-semibold text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
                     Maybe later
                 </button>
             </div>
@@ -458,6 +477,69 @@
     private bool isFilterModalOpen = false;
     private bool showProfileRequiredModal = false;
     private bool isLoading = true;
+
+    // Favorites
+    private HashSet<int> savedListingIds = new();
+    private string? message;
+    private string messageType = "success"; 
+    private bool showMessage = false;
+
+    private async void ShowMessage(string msg, string type)
+    {
+        message = msg;
+        messageType = type;
+        showMessage = true;
+        StateHasChanged();
+        await Task.Delay(2500);
+        showMessage = false;
+        StateHasChanged();
+    }
+
+    private async Task ToggleSave(int listingId)
+    {
+        if (!isLoggedIn)
+        {
+            ShowMessage("Please sign in to save listings.", "error");
+            return;
+        }
+
+        try
+        {
+            var token = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "authToken");
+            Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            if (savedListingIds.Contains(listingId))
+            {
+                var res = await Http.DeleteAsync($"api/favorites/{listingId}");
+                if (res.IsSuccessStatusCode)
+                {
+                    savedListingIds.Remove(listingId);
+                    ShowMessage("Removed from favorites", "success");
+                }
+                else
+                {
+                    ShowMessage("Failed to remove. Please try again.", "error");
+                }
+            }
+            else
+            {
+                var res = await Http.PostAsync($"api/favorites/{listingId}", null);
+                if (res.IsSuccessStatusCode)
+                {
+                    savedListingIds.Add(listingId);
+                    ShowMessage("Saved successfully", "success");
+                }
+                else
+                {
+                    ShowMessage("Could not save. Please login again.", "error");
+                }
+            }
+        }
+        catch
+        {
+            ShowMessage("Network error. Please check your connection.", "error");
+        }
+    }
 
     // Filter Options Data
     private List<FilterItem> universitiesList = new();
@@ -533,7 +615,7 @@
                 universitiesList = ParseItems(res, "universities", "uniId", "uniName");
                 propertyTypesList = ParseItems(res, "propertyTypes", "propertyTypeId", "name");
                 amenitiesList = ParseItems(res, "amenities", "amenityId", "name", "icon");
-                habitsList = ParseItems(res, "lifestyleHabits", "lifestyleHabitId", "name");
+                habitsList = ParseItems(res, "lifestyleHabits", "lifestyleHabitId", "name", "icon");
             }
         }
         catch (Exception ex)
@@ -734,6 +816,13 @@
         return "check";
     }
 
+    private string GetHabitIcon(string habitName)
+    {
+        var match = habitsList.FirstOrDefault(h => h.Name.Contains(habitName, StringComparison.OrdinalIgnoreCase));
+        if (match != null && !string.IsNullOrEmpty(match.Icon)) return match.Icon;
+        return "eco";
+    }
+
     public class FilterItem
     {
         public int Id { get; set; }
@@ -752,8 +841,10 @@
         public int? CustomUniversityId { get; set; }
         public double? CustomDistanceKm { get; set; }
         public int MatchPercent { get; set; }
+        public bool IsWarned { get; set; }
         public string PrimaryImageUrl { get; set; }
-        public List<string> Amenities { get; set; }
+        public List<string> Amenities { get; set; } = new();
+        public List<string> LifestyleHabits { get; set; } = new();
         public DateTime CreatedAt { get; set; }
         public int OwnerId { get; set; }
     }
@@ -780,6 +871,18 @@
              }
              
              isLoggedIn = true;
+            //favorite
+             try 
+             {
+                 Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+                 var savedList = await Http.GetFromJsonAsync<List<SavedListingDto>>("api/favorites");
+                 if (savedList != null)
+                 {
+                     savedListingIds = new HashSet<int>(savedList.Select(x => x.Id));
+                 }
+             }
+             catch { }
+            //end favorite
              var payload = token.Split('.')[1];
              switch (payload.Length % 4)
              {
