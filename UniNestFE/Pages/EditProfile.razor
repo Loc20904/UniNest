@@ -1,5 +1,6 @@
 @page "/profile/edit"
 @using System.Net.Http.Json
+@using System.ComponentModel.DataAnnotations
 @inject NavigationManager NavManager
 @inject HttpClient Http
 @inject IJSRuntime JSRuntime
@@ -144,13 +145,15 @@
                         <span class="material-icons-round text-sm">person</span> Full Name
                     </label>
                     <InputText @bind-Value="UserProfile.FullName" class="dark-input" placeholder="Enter your full name" />
+                    <ValidationMessage For="@(() => UserProfile.FullName)" class="text-red-500 text-xs mt-1" />
                 </div>
 
                 <div class="mb-4">
                     <label class="dark-label flex items-center gap-2">
                         <span class="material-icons-round text-sm">phone</span> Phone Number
                     </label>
-                    <InputText @bind-Value="UserProfile.PhoneNumber" class="dark-input" placeholder="+84 905 123 456" />
+                    <InputText @bind-Value="UserProfile.PhoneNumber" class="dark-input" placeholder="e.g. 0905123456" />
+                    <ValidationMessage For="@(() => UserProfile.PhoneNumber)" class="text-red-500 text-xs mt-1" />
                 </div>
 
                 <div class="mb-4 relative">
@@ -317,9 +320,16 @@
     public class EditProfileModel
     {
         public string ProfileImageUrl { get; set; } = "";
+        
+        [Required(ErrorMessage = "Full Name is required.")]
         public string FullName { get; set; } = "";
+        
         public string Email { get; set; } = "";
+        
+        [Required(ErrorMessage = "Phone Number is required.")]
+        [RegularExpression(@"^\d+$", ErrorMessage = "Phone number must contain only digits.")]
         public string PhoneNumber { get; set; } = "";
+        
         public string Gender { get; set; } = "Male";
         public string UniversityName { get; set; } = "";
         public string CurrentAddress { get; set; } = "";

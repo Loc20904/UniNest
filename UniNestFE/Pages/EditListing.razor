@@ -563,17 +563,21 @@
 
     async Task SubmitWithStatus(string status)
     {
-        listing.ApprovalStatus = status;
-        await UpdateListing();
+        await UpdateListing(status);
     }
 
-    async Task UpdateListing()
+    async Task UpdateListing(string targetStatus = null)
     {
+        uploadErrorMessage = "";
+        
         // Populate IDs for serialization
         listing.AmenityIds = listing.Amenities.Select(a => a.AmenityId).ToList();
         listing.LifestyleHabitIds = listing.LifestyleHabits.Select(h => h.LifestyleHabitId).ToList();
 
-        if (listing.ApprovalStatus != "Draft")
+        // Use the target status for validation, or the current status if not provided
+        var effectiveStatus = targetStatus ?? listing.ApprovalStatus;
+
+        if (effectiveStatus != "Draft")
         {
             if (string.IsNullOrWhiteSpace(listing.Title) ||
                 listing.Price <= 0 ||
@@ -593,6 +597,12 @@
             }
         }
         
+        // Only set the status if validation passes
+        if (targetStatus != null)
+        {
+            listing.ApprovalStatus = targetStatus;
+        }
+
         try
         {
             Console.WriteLine($"Updating listing {listing.ListingId} to status {listing.ApprovalStatus}...");
