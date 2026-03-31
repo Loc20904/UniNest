@@ -612,6 +612,7 @@
             var url = $"https://nominatim.openstreetmap.org/search?q={Uri.EscapeDataString(searchStr)}&format=json&limit=1&email=uninest.noreply@gmail.com";
 
             using var client = new HttpClient();
+            client.DefaultRequestHeaders.Add("User-Agent", "UniNestApp/1.0");
             var result = await client.GetFromJsonAsync<List<NominatimLocation>>(url);
 
             if (result == null || result.Count == 0)
@@ -669,9 +670,10 @@
 
             var latStr = lat.ToString(System.Globalization.CultureInfo.InvariantCulture);
             var lonStr = lng.ToString(System.Globalization.CultureInfo.InvariantCulture);
-            var url = $"https:nominatim.openstreetmap.org/reverse?lat={latStr}&lon={lonStr}&format=json&email=uninest.noreply@gmail.com";
+            var url = $"https://nominatim.openstreetmap.org/reverse?lat={latStr}&lon={lonStr}&format=json&email=uninest.noreply@gmail.com";
 
             using var nominatimClient = new HttpClient();
+            nominatimClient.DefaultRequestHeaders.Add("User-Agent", "UniNestApp/1.0");
             var result = await nominatimClient.GetFromJsonAsync<NominatimResponse>(url);
 
             if (result != null)
