@@ -1,4 +1,4 @@
-@page "/"
+﻿@page "/"
 @using System.Net.Http.Json
 @inject HttpClient Http
 @inject IJSRuntime JSRuntime
@@ -545,6 +545,7 @@ private List<UniversityDto> Universities = new()
         // --- BỔ SUNG PROPERTIES CHO FILTER ---
         public string Gender { get; set; } = "Any"; // Value: Male, Female, Any
         public bool IsVerified { get; set; } = false;
+        public int OwnerID { get; set; }
     }
     public class UniversityDto { public string Name { get; set; } = ""; public double Lat { get; set; } public double Lng { get; set; } }
 
@@ -655,6 +656,12 @@ private List<UniversityDto> Universities = new()
         }
     }
 
+    public class FlyToOptionsDto
+    {
+        public double[] center { get; set; }
+        public double zoom { get; set; }
+    }
+
     private async Task SelectPlace(GoongPrediction item)
     {
         // 1. Ẩn gợi ý
@@ -674,7 +681,7 @@ private List<UniversityDto> Universities = new()
                 var lng = detail.result.geometry.location.lng;
 
                 // 3. Bay tới đó
-                await JSRuntime.InvokeVoidAsync("uniNestMap.map.flyTo", new { center = new[] { lng, lat }, zoom = 16 });
+                await JSRuntime.InvokeVoidAsync("uniNestMap.map.flyTo", new FlyToOptionsDto { center = new[] { lng, lat }, zoom = 16 });
 
                 // 4. Vẽ Marker Đỏ (Search Marker)
                 await JSRuntime.InvokeVoidAsync("uniNestMap.addSearchMarker", lat, lng, item.description);
@@ -745,12 +752,25 @@ private List<UniversityDto> Universities = new()
         _areMarkersDrawn = true;
     }
 
+    public class MarkerDataDto
+    {
+        public int id { get; set; }
+        public double lat { get; set; }
+        public double lng { get; set; }
+        public string title { get; set; }
+        public string priceStr { get; set; }
+        public string address { get; set; }
+        public string image { get; set; }
+        public bool isVerified { get; set; }
+        public int ownerId { get; set; }
+    }
+
     private async Task DrawMarkers()
     {
         // Chỉ vẽ những room trong FilteredRooms
         foreach (var room in FilteredRooms)
         {
-            var roomData = new
+            var roomData = new MarkerDataDto
             {
                 id = room.Id,
                 lat = room.Lat,
@@ -759,7 +779,8 @@ private List<UniversityDto> Universities = new()
                 priceStr = FormatPrice(room.Price),
                 address = room.Address,
                 image = room.Image,
-                isVerified = room.IsVerified
+                isVerified = room.IsVerified,
+                ownerId = room.OwnerID
             };
             await JSRuntime.InvokeVoidAsync("uniNestMap.addMarker", objRef, roomData);
         }
@@ -780,7 +801,7 @@ private List<UniversityDto> Universities = new()
     private async Task PanToRoom(RoomDto room)
     {
         SelectedRoom = room;
-        await JSRuntime.InvokeVoidAsync("uniNestMap.map.flyTo", new { center = new[] { room.Lng, room.Lat }, zoom = 15.5 });
+        await JSRuntime.InvokeVoidAsync("uniNestMap.map.flyTo", new FlyToOptionsDto { center = new[] { room.Lng, room.Lat }, zoom = 15.5 });
         await JSRuntime.InvokeVoidAsync("uniNestMap.triggerMarkerPopup", room.Id);
     }
 

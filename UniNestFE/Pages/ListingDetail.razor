@@ -648,6 +648,7 @@
             ShowMessage("Please sign in to contact the host.", "error");
             return;
         }
+
         NavManager.NavigateTo($"/chat?partnerId={listing.OwnerId}&listingId={listing.ListingId}");
     }
 

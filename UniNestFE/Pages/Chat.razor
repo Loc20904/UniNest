@@ -616,8 +616,9 @@
                         return; // Silently drop messages from blocked users
                     }
                     
-                    // Scan all messages for safety threats
-                    message.SafetyAlert = _moderationService.ScanMessage(message.Content);
+                    // Scan all messages for safety threats using AI API
+                    var token = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "authToken");
+                    message.SafetyAlert = await _moderationService.ScanMessageAsync(Http, message.Content, token);
                     
                     if (SelectedConversation != null && 
                        (message.SenderId == SelectedConversation.PartnerId || message.SenderId == CurrentUserId)) 
@@ -794,7 +795,7 @@
                  
                  
                  // Scan all loaded messages from partner for safety threats
-                 ScanChatHistory();
+                 await ScanChatHistoryAsync();
                  
                  await ScrollToBottom();
                  
@@ -829,8 +830,27 @@
             MessageId = 0 // Pending
         };
         
-        // Scan outgoing message for safety threats
-        tempMsg.SafetyAlert = _moderationService.ScanMessage(content);
+        // Scan outgoing message for safety threats using AI API (fire-and-forget to not block send)
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                var token = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "authToken");
+                var alert = await _moderationService.ScanMessageAsync(Http, content, token);
+                if (alert != null)
+                {
+                    await InvokeAsync(() =>
+                    {
+                        tempMsg.SafetyAlert = alert;
+                        StateHasChanged();
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[Moderation] Outgoing scan error: {ex.Message}");
+            }
+        });
         
         ChatHistory.Add(tempMsg);
         await ScrollToBottom();
@@ -1025,15 +1045,26 @@
     
     // === CONTENT MODERATION METHODS ===
     
-    private void ScanChatHistory()
+    private async Task ScanChatHistoryAsync()
     {
+        var token = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "authToken");
+        
         foreach (var msg in ChatHistory)
         {
-            if (msg.SafetyAlert == null)
+            if (msg.SafetyAlert == null && !string.IsNullOrWhiteSpace(msg.Content))
             {
-                msg.SafetyAlert = _moderationService.ScanMessage(msg.Content);
+                try
+                {
+                    msg.SafetyAlert = await _moderationService.ScanMessageAsync(Http, msg.Content, token);
+                }
+                catch
+                {
+                    // Fallback to rule-based if API fails for this message
+                    msg.SafetyAlert = _moderationService.ScanMessage(msg.Content);
+                }
             }
         }
+        StateHasChanged();
     }
     
     private void DismissAlert(MessageDto msg)
