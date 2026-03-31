@@ -420,7 +420,7 @@ window.mapInterop = {
                 marker = L.marker(e.latlng).addTo(map);
             }
 
-            // 🔥 gọi trực tiếp qua dotNetHelper
+            // gọi trực tiếp qua dotNetHelper
             if (dotNetHelper) {
                 dotNetHelper.invokeMethodAsync("OnMapClick", lat, lng);
             }

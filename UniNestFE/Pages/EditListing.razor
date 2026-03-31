@@ -748,6 +748,7 @@
             var url = $"https://nominatim.openstreetmap.org/search?q={Uri.EscapeDataString(searchStr)}&format=json&limit=1&email=uninest.noreply@gmail.com";
             
             using var client = new HttpClient();
+            client.DefaultRequestHeaders.Add("User-Agent", "UniNestApp/1.0");
             var result = await client.GetFromJsonAsync<List<NominatimLocation>>(url);
             
             // Fallback: nếu không tìm thấy địa chỉ cụ thể như số nhà dài, thử tìm Phường/Quận
@@ -808,11 +809,14 @@
             // Khởi tạo HttpClient mới thay vì dùng Http đang chứa Bearer Token 
             // Điều này phòng tránh Nominatim từ chối request do header lạ và CORS
             using var nominatimClient = new HttpClient();
+            nominatimClient.DefaultRequestHeaders.Add("User-Agent", "UniNestApp/1.0");
             var result = await nominatimClient.GetFromJsonAsync<NominatimResponse>(url);
 
             if (result != null)
             {
-                // full address
+                string rawAddress = result.display_name;
+                listing.Address = rawAddress.Replace(" Ward", "").Trim();
+
                 string rawDistrict = result.address?.city_district ?? result.address?.suburb ?? result.address?.city ?? "Unknown";
                 listing.District = rawDistrict.Replace(" Ward", "").Trim();
 
