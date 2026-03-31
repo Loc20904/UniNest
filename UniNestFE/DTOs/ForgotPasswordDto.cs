@@ -6,7 +6,6 @@ namespace UniNestFE.DTOs
     {
         [Required(ErrorMessage = "Email is required.")]
         [EmailAddress(ErrorMessage = "Invalid email format.")]
-        [EduEmail(ErrorMessage = "Password reset requires a valid university email (.edu.vn).")]
         public string Email { get; set; } = string.Empty;
     }
 }
