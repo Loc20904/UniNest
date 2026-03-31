@@ -157,9 +157,14 @@ window.uniNestMap = {
                             <p class="text-[10px] uppercase font-bold tracking-wider" style="color: #64748b;">Price/Month</p>
                             <p class="font-extrabold text-lg" style="color: #06b5ef;">${data.priceStr}</p>
                         </div>
-                        <a href="/listing/${data.id}" class="text-xs hover:opacity-90 px-4 py-2 rounded-lg font-bold transition-all shadow-lg no-underline" style="background-color: #06b5ef; color: #121416;">
-                            View Details
-                        </a>
+                        <div class="flex gap-2">
+                            <a href="/chat?partnerId=${data.ownerId}&listingId=${data.id}" class="flex items-center justify-center p-2 rounded-lg transition-all shadow-md bg-white dark:bg-[#1c2126] border border-gray-200 dark:border-[#27353a] hover:bg-gray-100 dark:hover:bg-[#27353a] text-gray-700 dark:text-gray-300" title="Message Host">
+                                <span class="material-icons-round text-[16px]">chat_bubble_outline</span>
+                            </a>
+                            <a href="/listing/${data.id}" class="text-xs flex flex-center items-center hover:opacity-90 px-4 py-2 rounded-lg font-bold transition-all shadow-lg no-underline" style="background-color: #06b5ef; color: #121416;">
+                                View Details
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>

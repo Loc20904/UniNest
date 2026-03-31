@@ -7,6 +7,7 @@ using UniNestBE.Services;
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddScoped<IAiMatchingService, AiMatchingService>();
 builder.Services.AddTransient<IEmailService, EmailService>();
+builder.Services.AddSingleton<IAiModerationService, GroqModerationService>();
 // Add services to the container.
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>

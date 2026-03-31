@@ -428,8 +428,8 @@
             ShowMessage("Please sign in to contact the host.", "error");
             return;
         }
-        // Redirect to chat or show contact info logic here
-        ShowMessage("Contact host feature coming soon!", "success");
+        
+        NavManager.NavigateTo($"/chat?partnerId={listing.OwnerId}&listingId={listing.ListingId}");
     }
 
     private async Task ToggleSave()
