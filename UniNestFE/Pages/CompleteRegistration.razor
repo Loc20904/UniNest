@@ -4,23 +4,24 @@
 @inject IJSRuntime JSRuntime
 @using System.Text.Json
 @using System.Net.Http.Headers
+@using System.ComponentModel.DataAnnotations
 
-<PageTitle>Hoàn tất đăng ký | UniNest</PageTitle>
+<PageTitle>Complete Registration | UniNest</PageTitle>
 
 <div class="w-full min-h-screen bg-[#f0f4f8] dark:bg-slate-900 py-12 px-4 flex justify-center items-start font-body">
     <div class="w-full max-w-2xl bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8 animate-fade-in-up border border-slate-100 dark:border-slate-700">
         
         <div class="text-center mb-8 pb-6 border-b border-slate-100 dark:border-slate-700">
-            <h1 class="text-2xl font-bold text-[#171c1f] dark:text-white mb-2">Hoàn tất hồ sơ</h1>
+            <h1 class="text-2xl font-bold text-[#171c1f] dark:text-white mb-2">Complete Your Profile</h1>
             <p class="text-sm text-[#515f74] dark:text-slate-400">
                 Email: <span class="font-bold text-[#004ac6]">@Email</span>
                 @if (IsEduEmail)
                 {
-                    <span class="inline-flex ml-2 px-2 py-0.5 rounded text-[10px] font-bold bg-[#d1fae5] text-[#059669] uppercase">Đã xác thực trường</span>
+                    <span class="inline-flex ml-2 px-2 py-0.5 rounded text-[10px] font-bold bg-[#d1fae5] text-[#059669] uppercase">Verified University</span>
                 }
                 else
                 {
-                    <span class="inline-flex ml-2 px-2 py-0.5 rounded text-[10px] font-bold bg-[#ffeed2] text-[#d97706] uppercase">Cần tải hồ sơ</span>
+                    <span class="inline-flex ml-2 px-2 py-0.5 rounded text-[10px] font-bold bg-[#ffeed2] text-[#d97706] uppercase">Verification Required</span>
                 }
             </p>
         </div>
@@ -31,55 +32,59 @@
                 <DataAnnotationsValidator />
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Thông tin cơ bản -->
+                    <!-- Personal Info -->
                     <div class="space-y-4">
-                        <h3 class="text-xs font-bold uppercase tracking-widest text-[#515f74]">Thông tin cá nhân</h3>
+                        <h3 class="text-xs font-bold uppercase tracking-widest text-[#515f74]">Personal Information</h3>
                         
                         <div>
-                            <label class="text-[11px] font-bold text-[#171c1f] dark:text-white mb-1 block">Họ và tên</label>
-                            <InputText @bind-Value="Model.FullName" class="w-full px-4 py-2 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-lg text-sm outline-none focus:border-[#004ac6]" placeholder="Nguyễn Văn A" />
+                            <label class="text-[11px] font-bold text-[#171c1f] dark:text-white mb-1 block">Full Name</label>
+                            <InputText @bind-Value="Model.FullName" class="w-full px-4 py-2 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-lg text-sm outline-none focus:border-[#004ac6]" placeholder="e.g. John Doe" />
+                            <ValidationMessage For="@(() => Model.FullName)" class="text-red-500 text-[10px] mt-1" />
                         </div>
 
                         <div>
-                            <label class="text-[11px] font-bold text-[#171c1f] dark:text-white mb-1 block">Số điện thoại</label>
+                            <label class="text-[11px] font-bold text-[#171c1f] dark:text-white mb-1 block">Phone Number</label>
                             <InputText @bind-Value="Model.PhoneNumber" class="w-full px-4 py-2 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-lg text-sm outline-none focus:border-[#004ac6]" placeholder="0901234567" />
+                            <ValidationMessage For="@(() => Model.PhoneNumber)" class="text-red-500 text-[10px] mt-1" />
                         </div>
 
                         <div>
-                            <label class="text-[11px] font-bold text-[#171c1f] dark:text-white mb-1 block">Mật khẩu</label>
+                            <label class="text-[11px] font-bold text-[#171c1f] dark:text-white mb-1 block">Password</label>
                             <InputText @bind-Value="Model.Password" type="password" class="w-full px-4 py-2 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-lg text-sm outline-none focus:border-[#004ac6]" placeholder="••••••••" />
-                            <p class="text-[10px] text-slate-400 mt-1">Gồm ít nhất 8 ký tự, có chữ và số.</p>
+                            <ValidationMessage For="@(() => Model.Password)" class="text-red-500 text-[10px] mt-1" />
+                            <p class="text-[10px] text-slate-400 mt-1">At least 8 characters, including letters and numbers.</p>
                         </div>
                     </div>
 
-                    <!-- Khu vực Upload File (Chỉ hiển thị nếu không phải mail edu) -->
+                    <!-- Student Verification (Only if not edu mail) -->
                     @if (!IsEduEmail)
                     {
                         <div class="space-y-4">
-                            <h3 class="text-xs font-bold uppercase tracking-widest text-[#d97706]">Hồ sơ sinh viên</h3>
+                            <h3 class="text-xs font-bold uppercase tracking-widest text-[#d97706]">Student Verification</h3>
                             
                             <div>
-                                <label class="text-[11px] font-bold text-[#171c1f] dark:text-white mb-1 block">Học kỳ hiện tại</label>
+                                <label class="text-[11px] font-bold text-[#171c1f] dark:text-white mb-1 block">Current Semester</label>
                                 <InputSelect @bind-Value="Model.Semester" class="w-full px-4 py-2 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-lg text-sm outline-none focus:border-[#d97706]">
-                                    <option value="">-- Chọn học kỳ --</option>
-                                    <option value="Học kỳ 1 / Năm 1">Học kỳ 1 / Năm 1</option>
-                                    <option value="Học kỳ 2 / Năm 1">Học kỳ 2 / Năm 1</option>
-                                    <option value="Sinh viên năm 2">Sinh viên năm 2</option>
-                                    <option value="Sinh viên năm 3">Sinh viên năm 3</option>
-                                    <option value="Sinh viên năm 4+">Sinh viên năm 4+</option>
+                                    <option value="">-- Select Semester --</option>
+                                    <option value="Semester 1 / Year 1">Semester 1 / Year 1</option>
+                                    <option value="Semester 2 / Year 1">Semester 2 / Year 1</option>
+                                    <option value="Year 2 Student">Year 2 Student</option>
+                                    <option value="Year 3 Student">Year 3 Student</option>
+                                    <option value="Year 4+ Student">Year 4+ Student</option>
                                 </InputSelect>
+                                <ValidationMessage For="@(() => Model.Semester)" class="text-red-500 text-[10px] mt-1" />
                             </div>
 
                             <div class="p-4 border-2 border-dashed border-slate-200 dark:border-slate-600 rounded-xl bg-slate-50/50 dark:bg-slate-800/50">
-                                <label class="text-[11px] font-bold block mb-2 text-[#515f74]">Mặt trước thẻ sinh viên</label>
+                                <label class="text-[11px] font-bold block mb-2 text-[#515f74]">Student ID Front</label>
                                 <InputFile OnChange="@((e) => HandleFileUpload(e, true))" accept="image/png, image/jpeg" class="w-full text-xs text-slate-500 file:mr-4 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-amber-50 file:text-amber-700 hover:file:bg-amber-100" />
-                                @if (FrontImageSelected) { <span class="text-[10px] text-green-600 mt-1 block">✓ Đã chọn file</span> }
+                                @if (FrontImageSelected) { <span class="text-[10px] text-green-600 mt-1 block">✓ File selected</span> }
                             </div>
 
                             <div class="p-4 border-2 border-dashed border-slate-200 dark:border-slate-600 rounded-xl bg-slate-50/50 dark:bg-slate-800/50">
-                                <label class="text-[11px] font-bold block mb-2 text-[#515f74]">Mặt sau thẻ sinh viên</label>
+                                <label class="text-[11px] font-bold block mb-2 text-[#515f74]">Student ID Back</label>
                                 <InputFile OnChange="@((e) => HandleFileUpload(e, false))" accept="image/png, image/jpeg" class="w-full text-xs text-slate-500 file:mr-4 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-amber-50 file:text-amber-700 hover:file:bg-amber-100" />
-                                @if (BackImageSelected) { <span class="text-[10px] text-green-600 mt-1 block">✓ Đã chọn file</span> }
+                                @if (BackImageSelected) { <span class="text-[10px] text-green-600 mt-1 block">✓ File selected</span> }
                             </div>
                         </div>
                     }
@@ -88,8 +93,8 @@
                         <div class="bg-[#f0f4f8] dark:bg-slate-700/30 rounded-xl flex items-center justify-center p-6 text-center border border-slate-100 dark:border-slate-600">
                             <div>
                                 <span class="material-symbols-outlined text-[#059669] text-5xl mb-3">verified</span>
-                                <h4 class="font-bold text-sm text-[#171c1f] dark:text-white">Tài khoản được tự động xác minh</h4>
-                                <p class="text-xs text-[#515f74] mt-2">Bỏ qua bước tải thông tin thẻ sinh viên do bạn đang dùng email trực thuộc trường.</p>
+                                <h4 class="font-bold text-sm text-[#171c1f] dark:text-white">Account Auto-Verified</h4>
+                                <p class="text-xs text-[#515f74] mt-2">Skip student ID upload as you are using a university email address.</p>
                             </div>
                         </div>
                     }
@@ -99,9 +104,9 @@
                 <div class="pt-6 border-t border-slate-100 dark:border-slate-700 flex items-start gap-3">
                     <input type="checkbox" @bind="AcceptedTerms" id="terms" class="mt-1 w-4 h-4 text-[#004ac6] bg-slate-100 border-slate-300 rounded focus:ring-[#004ac6] cursor-pointer" />
                     <label for="terms" class="text-xs text-[#515f74] dark:text-slate-400 cursor-pointer">
-                        Bằng việc nhấp "Hoàn tất tạo tài khoản", tôi đồng ý với 
-                        <a href="/terms" target="_blank" class="text-[#004ac6] font-bold hover:underline">Điều khoản dịch vụ</a> và 
-                        <a href="/privacy" target="_blank" class="text-[#004ac6] font-bold hover:underline">Chính sách bảo mật</a> của UniNest.
+                        By clicking "Complete Registration", I agree to UniNest's 
+                        <a href="/terms" target="_blank" class="text-[#004ac6] font-bold hover:underline">Terms of Service</a> and 
+                        <a href="/privacy" target="_blank" class="text-[#004ac6] font-bold hover:underline">Privacy Policy</a>.
                     </label>
                 </div>
 
@@ -117,11 +122,11 @@
                         @if (IsLoading)
                         {
                             <span class="material-symbols-outlined animate-spin text-sm">progress_activity</span>
-                            <span>Đang xử lý...</span>
+                            <span>Processing...</span>
                         }
                         else
                         {
-                            <span>Hoàn tất tạo tài khoản</span>
+                            <span>Complete Registration</span>
                             <span class="material-symbols-outlined text-sm">arrow_forward</span>
                         }
                     </button>
@@ -134,17 +139,17 @@
                 <div class="w-20 h-20 bg-[#d1fae5] rounded-full flex items-center justify-center mx-auto text-[#059669] mb-6">
                     <span class="material-symbols-outlined text-4xl">how_to_reg</span>
                 </div>
-                <h2 class="text-2xl font-bold text-[#171c1f] dark:text-white mb-2">Đăng ký thành công!</h2>
+                <h2 class="text-2xl font-bold text-[#171c1f] dark:text-white mb-2">Registration Successful!</h2>
                 @if (IsEduEmail)
                 {
-                    <p class="text-[#515f74] text-sm mb-8">Tài khoản của bạn đã được kích hoạt. Trải nghiệm hệ sinh thái UniNest ngay bây giờ.</p>
+                    <p class="text-[#515f74] text-sm mb-8">Your account has been activated. Experience the UniNest ecosystem right now.</p>
                 }
                 else
                 {
-                    <p class="text-[#515f74] text-sm mb-8">Hồ sơ của bạn đã được gửi. Quản trị viên sẽ xem xét thẻ sinh viên của bạn trong vòng tối đa 24h. Kết quả xét duyệt (thành công hay thất bại) sẽ được thông báo trực tiếp qua email của bạn.</p>
+                    <p class="text-[#515f74] text-sm mb-8">Your profile has been submitted. An administrator will review your student ID within 24 hours. The result (approval or rejection) will be sent to your email.</p>
                 }
                 <a href="/login" class="px-8 py-3 bg-[#004ac6] hover:bg-blue-700 text-white rounded-xl font-bold text-sm transition-all shadow-lg shadow-blue-500/30">
-                    Đến trang đăng nhập
+                    Go to Login
                 </a>
             </div>
         }
@@ -153,7 +158,7 @@
 
 @code {
     private string Token = "";
-    private string Email = "Đang tải...";
+    private string Email = "Loading...";
     private bool IsEduEmail = false;
 
     private CompleteFormModel Model = new();
@@ -214,7 +219,7 @@
         catch (Exception ex)
         {
             Console.WriteLine("Error decoding token: " + ex.Message);
-            Email = "Lỗi đọc Token. Hãy thử yêu cầu link mới.";
+            Email = "Token Error. Please request a new link.";
         }
     }
 
@@ -239,7 +244,7 @@
 
         if (string.IsNullOrWhiteSpace(Model.FullName) || string.IsNullOrWhiteSpace(Model.Password))
         {
-            ErrorMessage = "Họ tên và Mật khẩu không được để trống.";
+            ErrorMessage = "Full Name and Password are required.";
             return;
         }
 
@@ -247,12 +252,12 @@
         {
             if (FrontIdFile == null || BackIdFile == null)
             {
-                ErrorMessage = "Vui lòng tải lên mặt trước và mặt sau của thẻ sinh viên.";
+                ErrorMessage = "Please upload both front and back images of your student ID.";
                 return;
             }
             if (string.IsNullOrWhiteSpace(Model.Semester))
             {
-                ErrorMessage = "Vui lòng chọn học kỳ hiện hành.";
+                ErrorMessage = "Please select your current semester.";
                 return;
             }
         }
@@ -292,12 +297,12 @@
             else
             {
                 var errorText = await response.Content.ReadAsStringAsync();
-                ErrorMessage = "Đã có lỗi: " + (errorText.Contains("message") ? errorText : "Thử lại sau.");
+                ErrorMessage = "Error: " + (errorText.Contains("message") ? errorText : "Please try again later.");
             }
         }
         catch (Exception ex)
         {
-            ErrorMessage = "Lỗi kết nối máy chủ: " + ex.Message;
+            ErrorMessage = "Server connection error: " + ex.Message;
         }
         finally
         {
@@ -307,9 +312,17 @@
 
     public class CompleteFormModel
     {
+        [Required(ErrorMessage = "Full Name is required.")]
         public string FullName { get; set; } = "";
+
+        [Required(ErrorMessage = "Phone Number is required.")]
+        [RegularExpression(@"^\d+$", ErrorMessage = "Phone number must contain only digits.")]
         public string PhoneNumber { get; set; } = "";
+
+        [Required(ErrorMessage = "Password is required.")]
+        [MinLength(8, ErrorMessage = "Password must be at least 8 characters.")]
         public string Password { get; set; } = "";
+
         public string Semester { get; set; } = "";
     }
 }

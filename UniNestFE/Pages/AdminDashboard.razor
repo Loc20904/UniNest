@@ -10,7 +10,7 @@
 <section class="flex justify-between items-end">
     <div>
         <p class="text-xs font-bold tracking-widest text-[#004ac6] uppercase mb-1">UniNest Analytics</p>
-        <h2 class="text-4xl font-extrabold tracking-tight text-[#171c1f]">Chào mừng trở lại, Admin.</h2>
+        <h2 class="text-4xl font-extrabold tracking-tight text-[#171c1f]">Welcome Back, Admin.</h2>
     </div>
     <div class="flex items-center space-x-3 text-[#515f74] text-sm">
         <span class="material-symbols-outlined text-sm" data-icon="calendar_today">calendar_today</span>
@@ -22,7 +22,7 @@
 <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-6">
     <div class="bg-white p-8 rounded-xl transition-all hover:shadow-xl hover:shadow-[#171c1f]/5 border border-slate-100">
         <div class="flex justify-between items-start mb-4">
-            <span class="text-[11px] font-bold tracking-wider text-[#434655] uppercase">Tổng tài khoản</span>
+            <span class="text-[11px] font-bold tracking-wider text-[#434655] uppercase">Total Accounts</span>
             <div class="p-2 bg-[#dbe1ff] rounded-lg">
                 <span class="material-symbols-outlined text-[#004ac6] text-md" data-icon="groups">groups</span>
             </div>
@@ -30,26 +30,26 @@
         <div class="text-[2.5rem] font-extrabold text-[#171c1f] leading-tight -ml-1">@(stats?.TotalAccounts.ToString("N0") ?? "...")</div>
         <div class="mt-4 flex items-center text-[#006242] text-xs font-bold">
             <span class="material-symbols-outlined text-xs mr-1" data-icon="trending_up">trending_up</span>
-            <span>+15% so với tháng trước</span>
+            <span>+15% from last month</span>
         </div>
     </div>
 
     <div class="bg-white p-8 rounded-xl transition-all hover:shadow-xl hover:shadow-[#171c1f]/5 border border-slate-100 relative overflow-hidden">
         <div class="flex justify-between items-start mb-4">
-            <span class="text-[11px] font-bold tracking-wider text-[#434655] uppercase">Xác minh sinh viên</span>
+            <span class="text-[11px] font-bold tracking-wider text-[#434655] uppercase">Student Verification</span>
             <div class="p-2 bg-[#ffeed2] rounded-lg">
                 <span class="material-symbols-outlined text-[#d97706]" data-icon="badge">badge</span>
             </div>
         </div>
         <div class="text-[2.5rem] font-extrabold text-[#171c1f] leading-tight -ml-1">@(stats?.PendingStudentVerifications.ToString("N0") ?? "...")</div>
         <div class="mt-4 flex items-center text-[#515f74] text-xs font-medium">
-            <span class="w-2 h-2 rounded-full bg-amber-500 mr-2"></span> Đang chờ duyệt thẻ sinh viên
+            <span class="w-2 h-2 rounded-full bg-amber-500 mr-2"></span> Awaiting ID verification
         </div>
     </div>
 
     <div class="bg-white p-8 rounded-xl transition-all hover:shadow-xl hover:shadow-[#171c1f]/5 border border-slate-100">
         <div class="flex justify-between items-start mb-4">
-            <span class="text-[11px] font-bold tracking-wider text-[#434655] uppercase">Duyệt bài đăng</span>
+            <span class="text-[11px] font-bold tracking-wider text-[#434655] uppercase">Listing Approval</span>
             <div class="p-2 bg-[#e0f2fe] rounded-lg">
                 <span class="material-symbols-outlined text-[#0284c7]" data-icon="fact_check">fact_check</span>
             </div>
@@ -60,8 +60,8 @@
                 <div class="bg-[#0284c7] h-full w-[40%]"></div>
             </div>
             <div class="flex justify-between mt-2 text-[10px] font-bold uppercase text-[#515f74]">
-                <span>Tỉ lệ duyệt: 40%</span>
-                <span>(Hôm nay)</span>
+                <span>Approval rate: 40%</span>
+                <span>(Today)</span>
             </div>
         </div>
     </div>
@@ -69,7 +69,7 @@
     <div class="bg-white p-8 rounded-xl transition-all hover:shadow-xl hover:shadow-[#171c1f]/5 border border-slate-100 relative">
         <div class="absolute top-0 right-0 w-24 h-24 bg-[#006242]/5 rounded-bl-full pointer-events-none"></div>
         <div class="flex justify-between items-start mb-4">
-            <span class="text-[11px] font-bold tracking-wider text-[#434655] uppercase">Tổng doanh thu</span>
+            <span class="text-[11px] font-bold tracking-wider text-[#434655] uppercase">Total Revenue</span>
             <div class="p-2 bg-[#d1fae5] rounded-lg">
                 <span class="material-symbols-outlined text-[#059669]" data-icon="payments">payments</span>
             </div>
@@ -77,7 +77,7 @@
         <div class="text-[2rem] font-extrabold text-[#171c1f] leading-tight -ml-1 mt-2">@(stats != null ? (stats.TotalRevenue / 1000000).ToString("0.##") + "M ₫" : "...")</div>
         <div class="mt-4 flex items-center text-[#059669] text-xs font-bold">
             <span class="material-symbols-outlined text-xs mr-1" data-icon="arrow_upward">arrow_upward</span>
-            <span>Doanh thu phí dịch vụ tháng này</span>
+            <span>Fee revenue this month</span>
         </div>
     </div>
 </section>
@@ -89,17 +89,17 @@
         <div class="bg-white rounded-xl p-8 border border-slate-100 shadow-sm">
             <div class="flex justify-between items-center mb-10">
                 <div>
-                    <h3 class="text-lg font-extrabold text-[#171c1f]">Tăng trưởng doanh thu & Bài đăng</h3>
-                    <p class="text-sm text-[#515f74]">Biểu đồ 30 ngày qua</p>
+                    <h3 class="text-lg font-extrabold text-[#171c1f]">Revenue & Listing Growth</h3>
+                    <p class="text-sm text-[#515f74]">Past 30 days chart</p>
                 </div>
                 <div class="flex space-x-4">
                     <div class="flex items-center space-x-2 text-[10px] font-bold uppercase">
                         <span class="w-2.5 h-2.5 rounded-full bg-[#004ac6]"></span>
-                        <span>Bài đăng mới</span>
+                        <span>New Listings</span>
                     </div>
                     <div class="flex items-center space-x-2 text-[10px] font-bold uppercase">
                         <span class="w-2.5 h-2.5 rounded-full bg-[#059669]"></span>
-                        <span>Doanh thu (Triệu)</span>
+                        <span>Revenue (Millions)</span>
                     </div>
                 </div>
             </div>
@@ -137,18 +137,18 @@
         <!-- Yêu cầu xác minh & duyệt bài mới -->
         <div class="bg-white rounded-xl overflow-hidden shadow-sm border border-slate-100">
             <div class="px-8 py-5 border-b border-slate-100 flex justify-between items-center">
-                <h3 class="text-lg font-extrabold text-[#171c1f]">Yêu cầu xác minh thẻ sinh viên</h3>
-                <button class="text-[#004ac6] text-xs font-bold uppercase tracking-widest hover:underline transition-all">Xem tất cả</button>
+                <h3 class="text-lg font-extrabold text-[#171c1f]">Student ID Verification Requests</h3>
+                <button class="text-[#004ac6] text-xs font-bold uppercase tracking-widest hover:underline transition-all">View All</button>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse">
                     <thead>
                         <tr class="bg-[#f0f4f8]/50">
-                            <th class="px-8 py-4 text-[10px] font-extrabold uppercase tracking-widest text-[#434655]">Sinh viên</th>
-                            <th class="px-8 py-4 text-[10px] font-extrabold uppercase tracking-widest text-[#434655]">Trường đại học</th>
-                            <th class="px-8 py-4 text-[10px] font-extrabold uppercase tracking-widest text-[#434655]">Tài liệu đính kèm</th>
-                            <th class="px-8 py-4 text-[10px] font-extrabold uppercase tracking-widest text-[#434655]">Tình trạng</th>
-                            <th class="px-8 py-4 text-[10px] font-extrabold uppercase tracking-widest text-[#434655] text-right">Thao tác</th>
+                            <th class="px-8 py-4 text-[10px] font-extrabold uppercase tracking-widest text-[#434655]">Student</th>
+                            <th class="px-8 py-4 text-[10px] font-extrabold uppercase tracking-widest text-[#434655]">University</th>
+                            <th class="px-8 py-4 text-[10px] font-extrabold uppercase tracking-widest text-[#434655]">Attached Documents</th>
+                            <th class="px-8 py-4 text-[10px] font-extrabold uppercase tracking-widest text-[#434655]">Status</th>
+                            <th class="px-8 py-4 text-[10px] font-extrabold uppercase tracking-widest text-[#434655] text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y border-t-0 divide-slate-100">
@@ -174,10 +174,10 @@
                                         </div>
                                     </td>
                                     <td class="px-8 py-4">
-                                        <span class="px-3 py-1 bg-[#ffeed2] text-[#d97706] text-[10px] font-bold uppercase rounded-full">Chờ duyệt</span>
+                                        <span class="px-3 py-1 bg-[#ffeed2] text-[#d97706] text-[10px] font-bold uppercase rounded-full">Pending</span>
                                     </td>
                                     <td class="px-8 py-4 text-right">
-                                        <button @onclick="() => OpenVerifyModal(req)" class="bg-[#004ac6] text-white px-3 py-1.5 rounded text-xs font-semibold hover:bg-blue-700 transition">Kiểm duyệt</button>
+                                        <button @onclick="() => OpenVerifyModal(req)" class="bg-[#004ac6] text-white px-3 py-1.5 rounded text-xs font-semibold hover:bg-blue-700 transition">Review</button>
                                     </td>
                                 </tr>
                             }
@@ -185,13 +185,13 @@
                         else if (isLoading)
                         {
                             <tr>
-                                <td colspan="5" class="px-8 py-8 text-center text-sm text-[#515f74]">Đang tải...</td>
+                                <td colspan="5" class="px-8 py-8 text-center text-sm text-[#515f74]">Loading...</td>
                             </tr>
                         }
                         else
                         {
                             <tr>
-                                <td colspan="5" class="px-8 py-8 text-center text-sm text-[#515f74]">Không có yêu cầu xác minh mới.</td>
+                                <td colspan="5" class="px-8 py-8 text-center text-sm text-[#515f74]">No matching verification requests found.</td>
                             </tr>
                         }
                     </tbody>
@@ -205,8 +205,8 @@
         
         <!-- Yêu cầu duyệt bài đăng (New) -->
         <div class="bg-white p-6 rounded-xl border border-slate-100 shadow-sm relative">
-            <h3 class="text-sm font-extrabold text-[#434655] uppercase tracking-widest mb-4">Bài đăng cần duyệt (@(stats?.PendingListings ?? 0))</h3>
-            <p class="text-[11px] text-[#515f74] mb-4">Kiểm tra thông tin phòng trọ trước khi hiển thị lên bảng tin sinh viên.</p>
+            <h3 class="text-sm font-extrabold text-[#434655] uppercase tracking-widest mb-4">Pending Listings (@(stats?.PendingListings ?? 0))</h3>
+            <p class="text-[11px] text-[#515f74] mb-4">Review property information before it goes live on the student feed.</p>
             
             <div class="space-y-4">
                 @if (stats?.RecentListings != null && stats.RecentListings.Any())
@@ -223,7 +223,7 @@
                                     <div class="flex items-center text-[10px] text-[#515f74] mt-1 space-x-2">
                                         <span class="text-amber-500 font-semibold">@listing.Price.ToString("N0") đ</span>
                                         <span>•</span>
-                                        <span>Chủ trọ: @listing.OwnerName</span>
+                                        <span>Host: @listing.OwnerName</span>
                                     </div>
                                 </div>
                             </div>
@@ -241,7 +241,7 @@
             </div>
             
             <button class="w-full mt-4 bg-slate-100 text-[#004ac6] hover:bg-blue-50 py-2.5 rounded text-xs font-bold uppercase tracking-widest transition-colors">
-                Trang quản lý bài đăng
+                Listing Management Page
             </button>
         </div>
 
@@ -252,16 +252,16 @@
             <div class="relative z-10">
                 <div class="flex items-center space-x-3 mb-4">
                     <span class="material-symbols-outlined text-[#b4c5ff]" data-icon="admin_panel_settings">admin_panel_settings</span>
-                    <h3 class="text-xs font-extrabold uppercase tracking-widest text-[#b4c5ff]">Hệ thống bảo mật</h3>
+                    <h3 class="text-xs font-extrabold uppercase tracking-widest text-[#b4c5ff]">Security System</h3>
                 </div>
                 
                 <div class="space-y-3">
                     <div class="bg-white/5 backdrop-blur-md p-3 rounded-lg border-l-2 border-[#ba1a1a]">
                         <div class="flex justify-between items-start mb-1">
-                            <span class="text-[10px] font-black uppercase text-[#ffdad6]">Nghi ngờ lừa đảo</span>
-                            <span class="text-[9px] text-white/50">2 phút trước</span>
+                            <span class="text-[10px] font-black uppercase text-[#ffdad6]">Fraud Suspected</span>
+                            <span class="text-[9px] text-white/50">2 mins ago</span>
                         </div>
-                        <p class="text-[11px] text-white/80 leading-relaxed">Tài khoản "Nhà trọ giá siêu rẻ" yêu cầu cọc trước 100%. Đã tự động ẩn tin.</p>
+                        <p class="text-[11px] text-white/80 leading-relaxed">Account "Cheap Housing" requested 100% upfront deposit. Automatically hidden.</p>
                     </div>
                 </div>
             </div>
@@ -279,8 +279,8 @@
             <!-- Header -->
             <div class="px-8 py-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/50">
                 <div>
-                    <h3 class="text-xl font-black text-[#171c1f] dark:text-white">Kiểm duyệt thẻ sinh viên</h3>
-                    <p class="text-xs text-[#515f74] dark:text-slate-400 mt-1">Yêu cầu được gửi lúc @selectedRequest.SubmittedAt.ToString("HH:mm dd/MM/yyyy")</p>
+                    <h3 class="text-xl font-black text-[#171c1f] dark:text-white">Review Student ID Card</h3>
+                    <p class="text-xs text-[#515f74] dark:text-slate-400 mt-1">Submitted at @selectedRequest.SubmittedAt.ToString("HH:mm dd/MM/yyyy")</p>
                 </div>
                 <button @onclick="CloseModal" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 transition-colors">
                     <span class="material-symbols-outlined text-[20px]">close</span>
@@ -293,11 +293,11 @@
                 <!-- Info Section -->
                 <div class="grid grid-cols-2 gap-6 bg-slate-50 dark:bg-slate-800/30 p-6 rounded-xl border border-slate-100 dark:border-slate-800">
                     <div>
-                        <span class="text-[10px] font-bold uppercase tracking-widest text-[#515f74] dark:text-slate-400">Họ và tên</span>
+                        <span class="text-[10px] font-bold uppercase tracking-widest text-[#515f74] dark:text-slate-400">Full Name</span>
                         <p class="text-sm font-bold text-[#171c1f] dark:text-white mt-1">@selectedRequest.StudentName</p>
                     </div>
                     <div>
-                        <span class="text-[10px] font-bold uppercase tracking-widest text-[#515f74] dark:text-slate-400">Trường đại học</span>
+                        <span class="text-[10px] font-bold uppercase tracking-widest text-[#515f74] dark:text-slate-400">University</span>
                         <p class="text-sm font-bold text-[#171c1f] dark:text-white mt-1">@selectedRequest.UniversityName</p>
                     </div>
                     <div>
@@ -305,17 +305,17 @@
                         <p class="text-sm font-bold text-[#171c1f] dark:text-white mt-1">@selectedRequest.Email</p>
                     </div>
                     <div>
-                        <span class="text-[10px] font-bold uppercase tracking-widest text-[#515f74] dark:text-slate-400">Học kỳ hiện tại</span>
+                        <span class="text-[10px] font-bold uppercase tracking-widest text-[#515f74] dark:text-slate-400">Current Semester</span>
                         <p class="text-sm font-bold text-[#171c1f] dark:text-white mt-1">@selectedRequest.CurrentSemester</p>
                     </div>
                 </div>
 
                 <!-- Images Section -->
                 <div class="space-y-4">
-                    <h4 class="text-xs font-bold uppercase tracking-widest text-[#171c1f] dark:text-white border-b border-slate-100 dark:border-slate-800 pb-2">Hồ sơ đính kèm</h4>
+                    <h4 class="text-xs font-bold uppercase tracking-widest text-[#171c1f] dark:text-white border-b border-slate-100 dark:border-slate-800 pb-2">Documents Attached</h4>
                     <div class="grid grid-cols-2 gap-4">
                         <div class="space-y-2">
-                            <span class="text-[10px] text-[#515f74] font-semibold">Mặt trước thẻ SV</span>
+                            <span class="text-[10px] text-[#515f74] font-semibold">Student ID Front</span>
                             <div class="bg-slate-100 dark:bg-slate-800 h-40 rounded-lg flex items-center justify-center overflow-hidden border border-slate-200 dark:border-slate-700 group cursor-pointer relative">
                                 @if (!string.IsNullOrEmpty(selectedRequest.FrontIdImageUrl))
                                 {
@@ -326,12 +326,12 @@
                                 }
                                 else
                                 {
-                                    <span class="text-xs text-slate-400">Không có ảnh</span>
+                                    <span class="text-xs text-slate-400">No image</span>
                                 }
                             </div>
                         </div>
                         <div class="space-y-2">
-                            <span class="text-[10px] text-[#515f74] font-semibold">Mặt sau thẻ SV</span>
+                            <span class="text-[10px] text-[#515f74] font-semibold">Student ID Back</span>
                             <div class="bg-slate-100 dark:bg-slate-800 h-40 rounded-lg flex items-center justify-center overflow-hidden border border-slate-200 dark:border-slate-700 group cursor-pointer relative">
                                 @if (!string.IsNullOrEmpty(selectedRequest.BackIdImageUrl))
                                 {
@@ -353,8 +353,8 @@
                 @if (showRejectReason)
                 {
                     <div class="animate-fade-in-up mt-4 bg-red-50 dark:bg-red-900/10 p-5 rounded-xl border border-red-100 dark:border-red-900/30">
-                        <label class="block text-[11px] font-bold uppercase tracking-widest text-red-600 dark:text-red-400 mb-2">Lý do từ chối (Gửi qua Email)</label>
-                        <textarea @bind="rejectReason" rows="3" class="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-red-200 dark:border-red-800 rounded-lg outline-none focus:ring-2 focus:ring-red-500 text-sm resize-none" placeholder="Ví dụ: Thẻ sinh viên bị mờ, không rõ học kỳ..."></textarea>
+                        <label class="block text-[11px] font-bold uppercase tracking-widest text-red-600 dark:text-red-400 mb-2">Rejection Reason (Sent via Email)</label>
+                        <textarea @bind="rejectReason" rows="3" class="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-red-200 dark:border-red-800 rounded-lg outline-none focus:ring-2 focus:ring-red-500 text-sm resize-none" placeholder="e.g.: Image is blurry, semester is not visible..."></textarea>
                     </div>
                 }
             </div>
@@ -363,18 +363,18 @@
             <div class="px-8 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-end gap-3">
                 @if (showRejectReason)
                 {
-                    <button @onclick="() => showRejectReason = false" disabled="@isProcessing" class="px-5 py-2.5 rounded-lg text-sm font-bold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 transition-colors disabled:opacity-50">Hủy bỏ</button>
+                    <button @onclick="() => showRejectReason = false" disabled="@isProcessing" class="px-5 py-2.5 rounded-lg text-sm font-bold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 transition-colors disabled:opacity-50">Cancel</button>
                     <button @onclick="ConfirmReject" disabled="@isProcessing" class="px-6 py-2.5 rounded-lg text-sm font-bold text-white bg-red-600 hover:bg-red-700 shadow-lg shadow-red-600/20 transition-all flex items-center gap-2 disabled:opacity-50">
                         @if (isProcessing) { <span class="material-symbols-outlined text-sm animate-spin">progress_activity</span> }
-                        Xác nhận từ chối
+                        Confirm Rejection
                     </button>
                 }
                 else
                 {
-                    <button @onclick="RejectRequest" disabled="@isProcessing" class="px-6 py-2.5 rounded-lg text-sm font-bold text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50">Từ chối</button>
+                    <button @onclick="RejectRequest" disabled="@isProcessing" class="px-6 py-2.5 rounded-lg text-sm font-bold text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50">Reject</button>
                     <button @onclick="ApproveRequest" disabled="@isProcessing" class="px-8 py-2.5 rounded-lg text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-600/20 transition-all flex items-center gap-2 disabled:opacity-50">
                         @if (isProcessing) { <span class="material-symbols-outlined text-sm animate-spin">progress_activity</span> }
-                        Phê duyệt
+                        Approve
                     </button>
                 }
             </div>
@@ -505,10 +505,10 @@
     private string GetTimeAgo(DateTime dateTime)
     {
         var timeSpan = DateTime.UtcNow - dateTime;
-        if (timeSpan <= TimeSpan.FromSeconds(60)) return $"{Math.Max(0, timeSpan.Seconds)} giây trước";
-        if (timeSpan <= TimeSpan.FromMinutes(60)) return $"{timeSpan.Minutes} phút trước";
-        if (timeSpan <= TimeSpan.FromHours(24)) return $"{timeSpan.Hours} giờ trước";
-        if (timeSpan <= TimeSpan.FromDays(30)) return $"{timeSpan.Days} ngày trước";
+        if (timeSpan <= TimeSpan.FromSeconds(60)) return $"{Math.Max(0, timeSpan.Seconds)} seconds ago";
+        if (timeSpan <= TimeSpan.FromMinutes(60)) return $"{timeSpan.Minutes} minutes ago";
+        if (timeSpan <= TimeSpan.FromHours(24)) return $"{timeSpan.Hours} hours ago";
+        if (timeSpan <= TimeSpan.FromDays(30)) return $"{timeSpan.Days} days ago";
         return dateTime.ToString("dd/MM/yyyy");
     }
 }

@@ -54,6 +54,28 @@
     .mapboxgl-popup-tip {
         border-top-color: #121416 !important;
     }
+
+    /* Map Loading Animations */
+    @@keyframes mapPinBounce {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-8px); }
+    }
+    @@keyframes mapPulseRing {
+        0% { transform: scale(0.8); opacity: 1; }
+        100% { transform: scale(1.6); opacity: 0; }
+    }
+    @@keyframes mapDotBlink {
+        0%, 100% { opacity: 0.2; }
+        50% { opacity: 1; }
+    }
+    @@keyframes mapShimmer {
+        0% { transform: translateX(-200%); }
+        100% { transform: translateX(400%); }
+    }
+    @@keyframes mapGridSlide {
+        0% { background-position: 0 0; }
+        100% { background-position: 40px 40px; }
+    }
 </style>
 
 @* --- 2. LAYOUT CHÍNH (Full màn hình) --- *@
@@ -288,7 +310,19 @@
                     <p class="text-xs font-bold text-slate-400 mb-4">SHOWING @FilteredRooms.Count ROOMS</p>
                     @if (IsLoading)
                     {
-                         <div class="flex justify-center py-4"><span class="text-slate-400 text-sm">Loading listings...</span></div>
+                        <div class="flex flex-col gap-3">
+                            @for (int i = 0; i < 4; i++)
+                            {
+                                <div class="flex gap-3 p-2 rounded-lg animate-pulse">
+                                    <div class="size-16 rounded-lg bg-slate-200 dark:bg-[#27353a] shrink-0"></div>
+                                    <div class="flex flex-col justify-center gap-2 flex-1">
+                                        <div class="h-3 bg-slate-200 dark:bg-[#27353a] rounded w-3/4"></div>
+                                        <div class="h-2.5 bg-slate-100 dark:bg-[#1c2126] rounded w-full"></div>
+                                        <div class="h-3 bg-slate-200 dark:bg-[#27353a] rounded w-1/3"></div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
                     }
                     else
                     {
@@ -317,13 +351,41 @@
             @* Container chứa Map *@
             <div id="google-map" class="absolute inset-0 w-full h-full z-0"></div>
 
-            @* Loading Overlay *@
+            @* Loading Overlay - Premium *@
             @if (!IsMapLoaded)
             {
-                <div class="absolute inset-0 flex items-center justify-center bg-[#1c2126] z-50">
-                    <div class="flex flex-col items-center gap-2">
-                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                        <span class="text-slate-400 text-sm">Loading Map...</span>
+                <div class="absolute inset-0 flex items-center justify-center z-50" style="background: linear-gradient(135deg, #121416 0%, #1a2028 50%, #121416 100%);">
+                    @* Animated grid background *@
+                    <div class="absolute inset-0 opacity-10" style="
+                        background-image: linear-gradient(rgba(0,186,242,0.15) 1px, transparent 1px), linear-gradient(90deg, rgba(0,186,242,0.15) 1px, transparent 1px);
+                        background-size: 40px 40px;
+                        animation: mapGridSlide 4s linear infinite;
+                    "></div>
+
+                    <div class="flex flex-col items-center gap-4 relative z-10">
+                        @* Pulsing pin icon *@
+                        <div class="relative" style="width:64px;height:64px;">
+                            <div class="absolute inset-0 rounded-full border-2 border-primary/30" style="animation: mapPulseRing 2s ease-out infinite;"></div>
+                            <div class="absolute inset-2 rounded-full border-2 border-primary/20" style="animation: mapPulseRing 2s 0.5s ease-out infinite;"></div>
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <span class="material-icons-round text-primary" style="font-size:32px; animation: mapPinBounce 1.5s ease-in-out infinite;">location_on</span>
+                            </div>
+                        </div>
+
+                        @* Text with animated dots *@
+                        <div class="flex items-center gap-1">
+                            <span class="text-slate-400 text-sm font-medium">Đang tải bản đồ</span>
+                            <span class="flex gap-0.5">
+                                <span class="text-primary text-sm" style="animation: mapDotBlink 1.4s 0s infinite;">.</span>
+                                <span class="text-primary text-sm" style="animation: mapDotBlink 1.4s 0.2s infinite;">.</span>
+                                <span class="text-primary text-sm" style="animation: mapDotBlink 1.4s 0.4s infinite;">.</span>
+                            </span>
+                        </div>
+
+                        @* Shimmer bar *@
+                        <div style="width:140px; height:2px; background: rgba(255,255,255,0.05); border-radius:4px; overflow:hidden;">
+                            <div style="height:100%; width:40%; background: linear-gradient(90deg, transparent, #00BAF2, transparent); animation: mapShimmer 1.5s ease-in-out infinite;"></div>
+                        </div>
                     </div>
                 </div>
             }

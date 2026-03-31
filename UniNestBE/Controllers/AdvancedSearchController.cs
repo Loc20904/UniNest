@@ -96,7 +96,8 @@ namespace UniNestBE.Controllers
                 .Include(l => l.Images)
                 .Include(l => l.Amenities)
                 .Include(l => l.LifestyleHabits)
-                .Where(l => l.IsAvailable && l.Address != null && (l.ApprovalStatus == "Approved" || l.ApprovalStatus == "Published") && l.ExpireAt >= DateTime.Now);
+                .Include(l => l.Owner)
+                .Where(l => l.IsAvailable && l.Address != null && (l.ApprovalStatus == "Approved" || l.ApprovalStatus == "Published") && l.ExpireAt >= DateTime.Now && (l.Owner == null || !l.Owner.IsBanned));
 
             // Filter by Query text
             if (!string.IsNullOrWhiteSpace(queryStr))
@@ -210,6 +211,13 @@ namespace UniNestBE.Controllers
                         matchPercent = 85; // Hai bên đều không yêu cầu gì -> Khá hợp nhau
                     }
 
+                    // Apply penalty directly to MatchPercent if warned
+                    if (listing.WarningCount > 0)
+                    {
+                        matchPercent -= 25;
+                        if (matchPercent < 0) matchPercent = 0;
+                    }
+
                     // Tạm thời hạ mức lọc xuống 50% thay vì 70% để các phòng cơ sở (55%) vẫn hiện ra
                     if (matchPercent < 50) 
                     {
@@ -230,8 +238,10 @@ namespace UniNestBE.Controllers
                     District = listing.Address?.District ?? "Da Nang",
                     DistanceKm = distanceKm,
                     MatchPercent = matchPercent,
+                    IsWarned = listing.WarningCount > 0,
                     PrimaryImageUrl = listing.Images?.Where(i => i.IsPrimary).Select(i => i.ImageUrl).FirstOrDefault() ?? "/images/default.jpg",
                     Amenities = listing.Amenities.Select(a => a.Name).ToList(),
+                    LifestyleHabits = listing.LifestyleHabits.Select(h => h.Name).ToList(),
                     CreatedAt = listing.CreatedAt,
                     OwnerId = listing.OwnerId
                 });
