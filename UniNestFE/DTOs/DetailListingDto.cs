@@ -24,6 +24,7 @@ namespace UniNestFE.DTOs
         public string? HostName { get; set; }
         public string? HostAvatar { get; set; }
         public int HostTotalListings { get; set; }
+        public bool HostIsWarned { get; set; }
 
         public List<string> Images { get; set; } = new List<string>();
         public List<AmenityDto> Amenities { get; set; } = new List<AmenityDto>();
@@ -41,5 +42,6 @@ namespace UniNestFE.DTOs
     {
         public int LifestyleHabitId { get; set; }
         public string Name { get; set; }
+        public string? Icon { get; set; }
     }
 }

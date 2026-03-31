@@ -1,4 +1,4 @@
-﻿.edit-listing-container {
+.edit-listing-container {
     max-width: none !important;
     width: 100% !important;
     margin: 0 auto;
@@ -251,7 +251,21 @@
     transition: border-color 0.2s;
     background: transparent;
     box-sizing: border-box;
-    appearance: none; /* ẩn mũi tên mặc định */
+    appearance: none;
+    /* ẩn mũi tên mặc định */
+}
+
+/* Hide number input spinners for Chrome, Safari, Edge, Opera */
+.form-input::-webkit-outer-spin-button,
+.form-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    appearance: none;
+    margin: 0;
+}
+
+/* Hide number input spinners for Firefox */
+.form-input[type=number] {
+    -moz-appearance: textfield;
 }
 
 .form-input:focus {
@@ -262,16 +276,19 @@
 .form-input::placeholder {
     color: #94A3B8;
 }
+
 .form-input option {
-  padding: 12px;
-  font-size: 14px;
-  color: #334155;
-  background-color: #fff;
+    padding: 12px;
+    font-size: 14px;
+    color: #334155;
+    background-color: #fff;
 }
+
 .form-input option:hover {
-  background-color: #F1F5F9;
-  color: #0F172A;
+    background-color: #F1F5F9;
+    color: #0F172A;
 }
+
 .form-select {
     appearance: none;
     cursor: pointer;
@@ -284,6 +301,11 @@
     font-weight: 500;
     color: #94A3B8;
     pointer-events: none;
+    z-index: 5;
+}
+
+.form-input-container .form-input {
+    padding-right: 60px;
 }
 
 .form-textarea {
@@ -727,48 +749,178 @@
 /* ---------------------------------
    DARK MODE OVERRIDES
 -----------------------------------*/
-html.dark .edit-listing-container, .dark .edit-listing-container {
+html.dark .edit-listing-container,
+.dark .edit-listing-container {
     background-color: transparent !important;
 }
-html.dark .header-title { color: #f8fafc; }
-html.dark .header-desc { color: #94a3b8; }
-html.dark .section-card { background: #1e293b; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3); border: 1px solid #334155; }
-html.dark .section-header h2 { color: #f8fafc; }
-html.dark .form-label { color: #cbd5e1; }
-html.dark .form-input, html.dark .form-textarea { 
-    background: #0f172a; border-color: #334155; color: #f8fafc; 
+
+html.dark .header-title {
+    color: #f8fafc;
 }
-html.dark .form-input:focus, html.dark .form-textarea:focus { border-color: #00BAF2; }
-html.dark .form-input-container { background: #0f172a; border-color: #334155; }
-html.dark .form-input-container:focus-within { border-color: #00BAF2; }
-html.dark .form-input-container input { background: transparent; color: #f8fafc; border: none; }
-html.dark .form-input-suffix { background: #1e293b; color: #94a3b8; border-left-color: #334155; }
-html.dark .amenity-card { border-color: #334155; background: #0f172a; color: #cbd5e1; }
-html.dark .amenity-card:hover { border-color: #475569; background: #1e293b; }
-html.dark .amenity-card.checked { border-color: #00BAF2; background: rgba(0, 186, 242, 0.1); color: #00BAF2; }
-html.dark .amenity-name { color: #f8fafc; }
-html.dark .amenity-icon { color: #94a3b8; }
-html.dark .amenity-card.checked .amenity-name { color: #00BAF2; }
-html.dark .amenity-card.checked .amenity-icon { color: #00BAF2; }
 
-html.dark .segmented-btn { background: #0f172a; border-color: #334155; color: #cbd5e1; }
-html.dark .segmented-btn.active { background: #00BAF2; color: #fff; border-color: #00BAF2; }
-html.dark .upload-zone { border-color: #334155; background: #0f172a; }
-html.dark .upload-zone:hover { border-color: #00BAF2; background: rgba(0, 186, 242, 0.05); }
-html.dark .upload-title { color: #cbd5e1; }
-html.dark .upload-desc { color: #64748b; }
-html.dark .footer-actions { background: #1e293b; border-top-color: #334155; }
-html.dark .btn-prev { color: #94a3b8; }
-html.dark .btn-prev:hover { background: #334155; color: #f8fafc; }
+html.dark .header-desc {
+    color: #94a3b8;
+}
 
-html.dark .habit-item { background: #0f172a; color: #cbd5e1; border: 1px solid #334155; }
-html.dark .habit-item:hover { border-color: #475569; background: #1e293b; }
-html.dark .habit-item.checked { background: rgba(0, 186, 242, 0.1); border-color: #00BAF2; color: #00BAF2; }
-html.dark .habit-name { color: #cbd5e1; }
-html.dark .habit-item.checked .habit-name { color: #00BAF2; }
-html.dark .checkbox-box { background-color: #0f172a; border-color: #475569; }
-html.dark .habit-item.checked .checkbox-box, 
-html.dark .amenity-card.checked .checkbox-box { background-color: #00BAF2; border-color: #00BAF2; }
+html.dark .section-card {
+    background: #1e293b;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+    border: 1px solid #334155;
+}
+
+html.dark .section-header h2 {
+    color: #f8fafc;
+}
+
+html.dark .form-label {
+    color: #cbd5e1;
+}
+
+html.dark .form-input,
+html.dark .form-textarea {
+    background: #0f172a;
+    border-color: #334155;
+    color: #f8fafc;
+}
+
+html.dark .form-input:focus,
+html.dark .form-textarea:focus {
+    border-color: #00BAF2;
+}
+
+html.dark .form-input-container {
+    background: #0f172a;
+    border-color: #334155;
+}
+
+html.dark .form-input-container:focus-within {
+    border-color: #00BAF2;
+}
+
+html.dark .form-input-container input {
+    background: transparent;
+    color: #f8fafc;
+    border: none;
+}
+
+html.dark .form-input-suffix {
+    background: transparent;
+    color: #94a3b8;
+}
+
+html.dark .amenity-card {
+    border-color: #334155;
+    background: #0f172a;
+    color: #cbd5e1;
+}
+
+html.dark .amenity-card:hover {
+    border-color: #475569;
+    background: #1e293b;
+}
+
+html.dark .amenity-card.checked {
+    border-color: #00BAF2;
+    background: rgba(0, 186, 242, 0.1);
+    color: #00BAF2;
+}
+
+html.dark .amenity-name {
+    color: #f8fafc;
+}
+
+html.dark .amenity-icon {
+    color: #94a3b8;
+}
+
+html.dark .amenity-card.checked .amenity-name {
+    color: #00BAF2;
+}
+
+html.dark .amenity-card.checked .amenity-icon {
+    color: #00BAF2;
+}
+
+html.dark .segmented-btn {
+    background: #0f172a;
+    border-color: #334155;
+    color: #cbd5e1;
+}
+
+html.dark .segmented-btn.active {
+    background: #00BAF2;
+    color: #fff;
+    border-color: #00BAF2;
+}
+
+html.dark .upload-zone {
+    border-color: #334155;
+    background: #0f172a;
+}
+
+html.dark .upload-zone:hover {
+    border-color: #00BAF2;
+    background: rgba(0, 186, 242, 0.05);
+}
+
+html.dark .upload-title {
+    color: #cbd5e1;
+}
+
+html.dark .upload-desc {
+    color: #64748b;
+}
+
+html.dark .footer-actions {
+    background: #1e293b;
+    border-top-color: #334155;
+}
+
+html.dark .btn-prev {
+    color: #94a3b8;
+}
+
+html.dark .btn-prev:hover {
+    background: #334155;
+    color: #f8fafc;
+}
+
+html.dark .habit-item {
+    background: #0f172a;
+    color: #cbd5e1;
+    border: 1px solid #334155;
+}
+
+html.dark .habit-item:hover {
+    border-color: #475569;
+    background: #1e293b;
+}
+
+html.dark .habit-item.checked {
+    background: rgba(0, 186, 242, 0.1);
+    border-color: #00BAF2;
+    color: #00BAF2;
+}
+
+html.dark .habit-name {
+    color: #cbd5e1;
+}
+
+html.dark .habit-item.checked .habit-name {
+    color: #00BAF2;
+}
+
+html.dark .checkbox-box {
+    background-color: #0f172a;
+    border-color: #475569;
+}
+
+html.dark .habit-item.checked .checkbox-box,
+html.dark .amenity-card.checked .checkbox-box {
+    background-color: #00BAF2;
+    border-color: #00BAF2;
+}
+
 /* Property Type Grid Premium Styles */
 .property-type-grid {
     display: grid;
