@@ -22,6 +22,9 @@ public class User
     public bool IsOnline { get; set; }
     public DateTime LastActiveAt { get; set; }
 
+    public int WarningCount { get; set; } = 0;
+    public bool IsBanned { get; set; } = false;
+
     // Dữ liệu cá nhân mở rộng
     public DateTime? DateOfBirth { get; set; }
     [MaxLength(100)]

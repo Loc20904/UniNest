@@ -1,9 +1,10 @@
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 using UniNestBE.DTOs;
 using UniNestBE.Services;
 
@@ -25,38 +26,45 @@ namespace UniNestBE.Controllers
         }
 
         // POST: api/Auth/login
+        [AllowAnonymous]
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginDto loginDto)
         {
-            // 1. Tìm user theo Email
-            var user = await _context.Users
-                .FirstOrDefaultAsync(u => u.Email == loginDto.Email);
-
-            // 2. Kiểm tra User tồn tại và verify Password
-            // Lưu ý: Password trong DB nên được hash bằng BCrypt.
-            // Nếu bạn đang lưu plain-text (không nên), hãy dùng: if (user.Password != loginDto.Password)
-            if (user == null || !BCrypt.Net.BCrypt.Verify(loginDto.Password, user.PasswordHash))
+            try
             {
-                return Unauthorized(new { message = "Email hoặc mật khẩu không chính xác." });
+                // 1. Tìm user theo Email
+                var user = await _context.Users
+                    .FirstOrDefaultAsync(u => u.Email == loginDto.Email);
+
+                // 2. Kiểm tra User tồn tại và verify Password
+                if (user == null || string.IsNullOrEmpty(user.PasswordHash) || !BCrypt.Net.BCrypt.Verify(loginDto.Password, user.PasswordHash))
+                {
+                    return Unauthorized(new { message = "Email hoặc mật khẩu không chính xác." });
+                }
+
+                // Kiểm tra trạng thái xác thực đối với sinh viên
+                if (user.Role == "student" && !user.IsVerified)
+                {
+                    return Unauthorized(new { message = "Tài khoản của bạn đang chờ quản trị viên xét duyệt thẻ sinh viên. Vui lòng thử lại sau." });
+                }
+
+                // 3. Tạo Token
+                var token = GenerateJwtToken(user);
+
+                // 4. Trả về kết quả
+                return Ok(new AuthResponseDto
+                {
+                    Token = token,
+                    UserId = user.UserId,
+                    FullName = user.FullName,
+                    Role = user.Role
+                });
             }
-
-            // Kiểm tra trạng thái xác thực đối với sinh viên
-            if (user.Role == "student" && !user.IsVerified)
+            catch (Exception ex)
             {
-                return Unauthorized(new { message = "Tài khoản của bạn đang chờ quản trị viên xét duyệt thẻ sinh viên. Vui lòng thử lại sau." });
+                // Trả về Unauthorized với thông báo lỗi thay vì 500 nếu hash không hợp lệ
+                return Unauthorized(new { message = "Lỗi xác thực: Mật khẩu không hợp lệ hoặc dữ liệu người dùng bị lỗi." });
             }
-
-            // 3. Tạo Token
-            var token = GenerateJwtToken(user);
-
-            // 4. Trả về kết quả
-            return Ok(new AuthResponseDto
-            {
-                Token = token,
-                UserId = user.UserId,
-                FullName = user.FullName,
-                Role = user.Role
-            });
         }
 
         // POST: api/Auth/logout
@@ -69,6 +77,7 @@ namespace UniNestBE.Controllers
         }
 
         // POST: api/Auth/request-registration
+        [AllowAnonymous]
         [HttpPost("request-registration")]
         public async Task<IActionResult> RequestRegistration([FromBody] RequestRegistrationDto dto)
         {
@@ -129,6 +138,7 @@ namespace UniNestBE.Controllers
         }
 
         // POST: api/Auth/complete-registration
+        [AllowAnonymous]
         [HttpPost("complete-registration")]
         public async Task<IActionResult> CompleteRegistration([FromForm] CompleteRegistrationDto dto)
         {
@@ -161,7 +171,7 @@ namespace UniNestBE.Controllers
 
                     if (string.IsNullOrEmpty(email))
                         return BadRequest(new { message = "Token thiếu Claim Email." });
-                    
+
                     if (isRegToken != "true")
                         return BadRequest(new { message = "Token không mang Claim IsRegistrationToken=true." });
 
@@ -243,6 +253,7 @@ namespace UniNestBE.Controllers
         }
 
         // POST: api/Auth/forgot-password
+        [AllowAnonymous]
         [HttpPost("forgot-password")]
         public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto forgotRequest)
         {
@@ -281,6 +292,7 @@ namespace UniNestBE.Controllers
         }
 
         // POST: api/Auth/reset-password
+        [AllowAnonymous]
         [HttpPost("reset-password")]
         public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto resetRequest)
         {

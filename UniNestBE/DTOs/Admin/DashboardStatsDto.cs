@@ -34,7 +34,12 @@ namespace UniNestBE.DTOs.Admin
         public string Title { get; set; } = string.Empty;
         public decimal Price { get; set; }
         public string OwnerName { get; set; } = string.Empty;
+        public string OwnerEmail { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; }
         public string ImageUrl { get; set; } = string.Empty;
+        public string ApprovalStatus { get; set; } = string.Empty;
+        public bool IsAvailable { get; set; }
+        public string District { get; set; } = string.Empty;
+        public string FullAddress { get; set; } = string.Empty;
     }
 }

@@ -134,6 +134,9 @@
                 
                     @if (!SelectedConversation.IsBlockedByMe && !SelectedConversation.IsBlockedByThem)
                     {
+                        <button @onclick="OpenReportUserModal" class="p-2 text-slate-400 hover:text-red-500 transition-colors bg-slate-50 dark:bg-[#2a2d32] rounded-full" title="Report User">
+                            <span class="material-icons-round">flag</span>
+                        </button>
                         <button @onclick="BlockUser" class="p-2 text-slate-400 hover:text-red-500 transition-colors bg-slate-50 dark:bg-[#2a2d32] rounded-full" title="Block User">
                             <span class="material-icons-round">block</span>
                         </button>
@@ -285,10 +288,27 @@
         <div class="p-6">
             <h3 class="text-sm font-bold text-[#67837f] uppercase tracking-widest mb-4">Chat Details</h3>
             
-            <div class="flex flex-col items-center mb-6">
+            <div class="flex flex-col items-center mb-6 text-center">
                  <div class="size-24 rounded-full bg-cover bg-center mb-3" style='background-image: url("@(string.IsNullOrEmpty(SelectedConversation.PartnerAvatar) ? $"https://ui-avatars.com/api/?name={SelectedConversation.PartnerName}&background=random" : SelectedConversation.PartnerAvatar)");'></div>
                  <h4 class="font-bold text-lg dark:text-white">@SelectedConversation.PartnerName</h4>
-                 <p class="text-slate-500 text-sm">Student</p>
+                 
+                 @if (partnerReputation != null && partnerReputation.TotalReviews > 0)
+                 {
+                     <div class="flex items-center gap-1 mt-2 text-amber-500 bg-amber-50 dark:bg-amber-900/20 px-3 py-1.5 rounded-full text-xs font-bold ring-1 ring-amber-500/30 tracking-wide">
+                         <span class="material-icons-round text-[16px]">star</span>
+                         @partnerReputation.AverageRating.ToString("0.0") 
+                         <span class="text-amber-500/70 font-medium ml-1">(@partnerReputation.TotalReviews)</span>
+                     </div>
+                 }
+                 else 
+                 {
+                     <p class="text-slate-500 text-sm mt-1">Student</p>
+                 }
+
+                 <button @onclick="OpenReviewModal" class="mt-4 flex items-center justify-center gap-1.5 px-5 h-10 w-full bg-[#f8fbfa] hover:bg-[#ebf3f1] dark:bg-slate-800 dark:hover:bg-slate-700 text-[#42b883] dark:text-emerald-400 text-sm font-bold rounded-xl transition-all shadow-sm ring-1 ring-[#42b883]/20">
+                     <span class="material-icons-round text-[18px]">rate_review</span>
+                     Write a Review
+                 </button>
             </div>
             
             @if (SelectedConversation.ListingId.HasValue)
@@ -338,6 +358,71 @@
         </div>
         }
     </aside>
+
+    <!-- REVIEW MODAL -->
+    @if (IsReviewModalOpen)
+    {
+        <div class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in" @onclick="CloseReviewModal">
+            <div class="bg-white dark:bg-[#1e293b] rounded-[24px] w-full max-w-md shadow-2xl p-8 transform transition-all animate-bounce-in border border-slate-100 dark:border-slate-700" @onclick:stopPropagation>
+                
+                <div class="text-center mb-6">
+                    <div class="size-16 mx-auto bg-amber-100 dark:bg-amber-900/30 text-amber-500 rounded-full flex items-center justify-center mb-4">
+                        <span class="material-icons-round text-3xl">star_rate</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900 dark:text-white">Review @SelectedConversation?.PartnerName</h3>
+                    <p class="text-slate-500 dark:text-slate-400 text-sm mt-1">Share your experience to keep the community safe.</p>
+                </div>
+
+                <!-- Star Rating -->
+                <div class="flex justify-center gap-2 mb-2" @onmouseout="() => HoverRating = 0">
+                    @for (int i = 1; i <= 5; i++)
+                    {
+                        var starValue = i;
+                        <button class="text-4xl transition-transform hover:scale-125 focus:outline-none @(starValue <= (HoverRating > 0 ? HoverRating : ReviewScore) ? "text-amber-400 drop-shadow-md" : "text-slate-200 dark:text-slate-600")"
+                                @onclick="() => ReviewScore = starValue"
+                                @onmouseover="() => HoverRating = starValue">
+                            <span class="material-icons-round">@(starValue <= (HoverRating > 0 ? HoverRating : ReviewScore) ? "star" : "star_border")</span>
+                        </button>
+                    }
+                </div>
+                <!-- Meaning -->
+                <p class="text-center text-sm font-bold text-amber-500 mb-6 h-5">
+                    @(ReviewScore switch { 1 => "Terrible", 2 => "Bad", 3 => "Okay", 4 => "Good", 5 => "Excellent!", _ => "" })
+                </p>
+
+                <div class="mb-6">
+                    <textarea @bind="ReviewComment" @bind:event="oninput" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-amber-400 focus:border-transparent outline-none transition-all placeholder:text-slate-400 dark:text-white resize-none" rows="4" placeholder="Write an honest review... (Min 10 chars)"></textarea>
+                    <div class="flex justify-between mt-2">
+                        @if (ReviewComment?.Length > 0 && ReviewComment.Length < 10)
+                        {
+                            <p class="text-red-500 text-xs font-semibold">Minimum 10 characters required.</p>
+                        }
+                        else
+                        {
+                            <span></span>
+                        }
+                        <span class="text-xs text-slate-400">@(ReviewComment?.Length ?? 0)/500</span>
+                    </div>
+                </div>
+
+                <div class="flex gap-3">
+                    <button @onclick="CloseReviewModal" class="flex-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold h-12 rounded-xl transition-colors">
+                        Cancel
+                    </button>
+                    <button @onclick="SubmitReview" disabled="@(ReviewScore == 0 || (ReviewComment?.Length < 10))" class="flex-1 bg-amber-400 hover:bg-amber-500 text-amber-950 font-bold h-12 rounded-xl transition-all shadow-md shadow-amber-400/30 disabled:opacity-50 disabled:cursor-not-allowed">
+                        @if (IsSubmittingReview)
+                        {
+                            <span class="material-icons-round text-[18px] animate-spin">refresh</span>
+                        }
+                        else
+                        {
+                            <span>Submit Review</span>
+                        }
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
     <!-- Custom Modal -->
     @if (IsModalOpen)
     {
@@ -348,8 +433,27 @@
             <!-- Modal Content -->
             <div class="relative bg-white dark:bg-[#1e293b] rounded-2xl shadow-2xl w-full max-w-sm p-6 transform transition-all animate-bounce-in border border-slate-100 dark:border-slate-700">
                 <div class="text-center mb-6">
-                    <div class="size-14 mx-auto bg-red-100 dark:bg-red-900/30 text-red-500 rounded-full flex items-center justify-center mb-4">
-                        <span class="material-icons-round text-3xl">@(ModalType == "Confirm" ? "gpp_bad" : "info")</span>
+                    @{
+                        string iconName = "info";
+                        string colorClass = "bg-blue-100 dark:bg-blue-900/30 text-blue-500";
+                        if (ModalType == "Confirm")
+                        {
+                            iconName = "gpp_bad";
+                            colorClass = "bg-red-100 dark:bg-red-900/30 text-red-500";
+                        }
+                        else if (ModalTitle != null && (ModalTitle.Contains("Success", StringComparison.OrdinalIgnoreCase) || ModalTitle.Contains("Submitted", StringComparison.OrdinalIgnoreCase)))
+                        {
+                            iconName = "check_circle";
+                            colorClass = "bg-green-100 dark:bg-green-900/30 text-green-500";
+                        }
+                        else if (ModalTitle != null && (ModalTitle.Contains("Error", StringComparison.OrdinalIgnoreCase) || ModalTitle.Contains("Failed", StringComparison.OrdinalIgnoreCase) || ModalTitle.Contains("too large", StringComparison.OrdinalIgnoreCase)))
+                        {
+                            iconName = "error";
+                            colorClass = "bg-red-100 dark:bg-red-900/30 text-red-500";
+                        }
+                    }
+                    <div class="size-14 mx-auto @colorClass rounded-full flex items-center justify-center mb-4">
+                        <span class="material-icons-round text-3xl">@iconName</span>
                     </div>
                     
                     <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">@ModalTitle</h3>
@@ -375,6 +479,11 @@
                 </div>
             </div>
         </div>
+    }
+
+    @if (IsReportUserModalOpen)
+    {
+        <ReportModal TargetUserId="@SelectedConversation?.PartnerId" TargetName="@SelectedConversation?.PartnerName" OnClose="CloseReportUserModal" />
     }
 </div>
 
@@ -413,6 +522,19 @@
     private string ModalMessage = "";
     private string ModalType = "Info"; // Info, Confirm
     private Func<Task>? OnConfirm;
+
+    private bool IsReportUserModalOpen = false;
+
+    private void OpenReportUserModal()
+    {
+        IsReportUserModalOpen = true;
+    }
+
+    private void CloseReportUserModal()
+    {
+        IsReportUserModalOpen = false;
+        StateHasChanged();
+    }
 
     private void ShowModal(string title, string message, string type = "Info", Func<Task>? onConfirm = null)
     {
@@ -671,10 +793,14 @@
                      ChatHistory.Add(new MessageDto { MessageId = 3, SenderId = conv.PartnerId, Content = "Bạn chuyển khoản cọc gấp để mình giữ phòng nhé, đang có nhiều người hỏi lắm.", SentAt = DateTime.Now.AddMinutes(-5) });
                  }
                  
+                 
                  // Scan all loaded messages from partner for safety threats
                  await ScanChatHistoryAsync();
                  
                  await ScrollToBottom();
+                 
+                 // Load partner reputation stats
+                 _ = LoadReputation(conv.PartnerId);
              }
         }
         catch (Exception ex)
@@ -954,33 +1080,80 @@
     {
         if (SelectedConversation == null) return;
         
-        ShowModal(
-            "Report User", 
-            $"Report {SelectedConversation.PartnerName} for suspicious activity? This message was flagged: \"{msg.Content}\"", 
-            "Confirm", 
-            async () =>
-            {
-                try
-                {
-                    var token = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "authToken");
-                    var request = new HttpRequestMessage(HttpMethod.Post, $"api/Chat/report/{SelectedConversation.PartnerId}");
-                    request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-                    await Http.SendAsync(request);
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine("Report Error: " + ex.Message);
-                }
-                
-                ShowModal("Report Submitted", $"Thank you for reporting. Our team will review this conversation.");
-            }
-        );
+        IsReportUserModalOpen = true;
     }
     
     private async Task ScrollToBottom()
     {
         await Task.Delay(50); 
         await JSRuntime.InvokeVoidAsync("eval", "var objDiv = document.getElementById('messages-container'); if(objDiv) objDiv.scrollTop = objDiv.scrollHeight;");
+    }
+
+    // === REVIEW SYSTEM ===
+    private UniNestFE.DTOs.UserReputationDto? partnerReputation;
+    private bool IsReviewModalOpen = false;
+    private int ReviewScore = 0;
+    private int HoverRating = 0;
+    private string ReviewComment = "";
+    private bool IsSubmittingReview = false;
+
+    private void OpenReviewModal()
+    {
+        ReviewScore = 0;
+        HoverRating = 0;
+        ReviewComment = "";
+        IsReviewModalOpen = true;
+    }
+
+    private void CloseReviewModal()
+    {
+        IsReviewModalOpen = false;
+    }
+
+    private async Task SubmitReview()
+    {
+        if (ReviewScore == 0 || SelectedConversation == null) return;
+        IsSubmittingReview = true;
+        
+        try
+        {
+             var token = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "authToken");
+             var dto = new UniNestFE.DTOs.ReviewSubmitDto { Rating = ReviewScore, Comment = ReviewComment };
+             var request = new HttpRequestMessage(HttpMethod.Post, $"api/Review/submit/{SelectedConversation.PartnerId}");
+             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+             request.Content = System.Net.Http.Json.JsonContent.Create(dto);
+             
+             var response = await Http.SendAsync(request);
+             if (response.IsSuccessStatusCode)
+             {
+                 IsReviewModalOpen = false;
+                 ShowModal("Success", "Your review has been submitted. Thank you for keeping our community safe!", "Info");
+                 // Refresh partner reputation natively
+                 if (SelectedConversation != null) await LoadReputation(SelectedConversation.PartnerId);
+             }
+             else
+             {
+                 var error = await response.Content.ReadAsStringAsync();
+                 ShowModal("Error", $"Could not submit review: {error}");
+             }
+        }
+        catch (Exception ex)
+        {
+             Console.WriteLine("Review Error: " + ex.Message);
+        }
+        finally
+        {
+             IsSubmittingReview = false;
+             StateHasChanged();
+        }
+    }
+
+    private async Task LoadReputation(int targetId)
+    {
+        try {
+            partnerReputation = await Http.GetFromJsonAsync<UniNestFE.DTOs.UserReputationDto>($"api/Review/user/{targetId}/stats");
+            await InvokeAsync(StateHasChanged);
+        } catch { } // fail silently
     }
 
     public async ValueTask DisposeAsync()

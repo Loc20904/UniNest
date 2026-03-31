@@ -25,6 +25,12 @@ namespace UniNestBE.Controllers.Admin
             public string? RejectReason { get; set; }
         }
 
+        public class ListingActionDto
+        {
+            public int ListingId { get; set; }
+            public string? RejectReason { get; set; }
+        }
+
         [HttpPost("verify-student")]
         public async Task<IActionResult> VerifyStudent([FromBody] VerifyRequestDto dto)
         {
@@ -223,8 +229,13 @@ namespace UniNestBE.Controllers.Admin
                         Title = l.Title ?? "N/A",
                         Price = l.Price,
                         OwnerName = l.Owner != null ? (l.Owner.FullName ?? "N/A") : "N/A",
+                        OwnerEmail = l.Owner != null ? (l.Owner.Email ?? "N/A") : "N/A",
                         CreatedAt = l.CreatedAt,
-                        ImageUrl = l.Images.Select(i => i.ImageUrl).FirstOrDefault() ?? string.Empty
+                        ImageUrl = l.Images.Select(i => i.ImageUrl).FirstOrDefault() ?? string.Empty,
+                        ApprovalStatus = l.ApprovalStatus,
+                        IsAvailable = l.IsAvailable,
+                        District = l.Address != null ? (l.Address.District ?? "N/A") : "N/A",
+                        FullAddress = l.Address != null ? (l.Address.FullAddress ?? "N/A") : "N/A"
                     })
                     .ToListAsync();
 
@@ -246,6 +257,160 @@ namespace UniNestBE.Controllers.Admin
                 return StatusCode(500, new { message = $"Đã xảy ra lỗi khi tải thống kê: {ex.ToString()}" });
             }
         }
+
+        [HttpGet("listings")]
+        public async Task<IActionResult> GetAdminListings()
+        {
+            try
+            {
+                var listings = await _context.Listings
+                    .Include(l => l.Owner)
+                    .Include(l => l.Address)
+                    .Include(l => l.Images)
+                    .OrderByDescending(l => l.CreatedAt)
+                    .Select(l => new DashboardListingDto
+                    {
+                        ListingId = l.ListingId,
+                        Title = l.Title ?? "N/A",
+                        Price = l.Price,
+                        OwnerName = l.Owner != null ? (l.Owner.FullName ?? "N/A") : "N/A",
+                        OwnerEmail = l.Owner != null ? (l.Owner.Email ?? "N/A") : "N/A",
+                        CreatedAt = l.CreatedAt,
+                        ImageUrl = l.Images.Select(i => i.ImageUrl).FirstOrDefault() ?? string.Empty,
+                        ApprovalStatus = l.ApprovalStatus,
+                        IsAvailable = l.IsAvailable,
+                        District = l.Address != null ? (l.Address.District ?? "N/A") : "N/A",
+                        FullAddress = l.Address != null ? (l.Address.FullAddress ?? "N/A") : "N/A"
+                    })
+                    .ToListAsync();
+
+                return Ok(listings);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = $"Lỗi khi tải danh sách bài đăng: {ex.Message}" });
+            }
+        }
+
+        [HttpPost("approve-listing/{id}")]
+        public async Task<IActionResult> ApproveListing(int id)
+        {
+            try
+            {
+                var listing = await _context.Listings.FindAsync(id);
+                if (listing == null) return NotFound(new { message = "Không tìm thấy bài đăng." });
+
+                listing.ApprovalStatus = "Published";
+                listing.IsAvailable = true;
+
+                await _context.SaveChangesAsync();
+                return Ok(new { message = "Đã duyệt bài đăng thành công." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = $"Lỗi: {ex.Message}" });
+            }
+        }
+
+        [HttpPost("reject-listing")]
+        public async Task<IActionResult> RejectListing([FromBody] ListingActionDto dto)
+        {
+            try
+            {
+                var listing = await _context.Listings
+                    .Include(l => l.Owner)
+                    .FirstOrDefaultAsync(l => l.ListingId == dto.ListingId);
+
+                if (listing == null) return NotFound(new { message = "Không tìm thấy bài đăng." });
+
+                if (string.IsNullOrWhiteSpace(dto.RejectReason))
+                {
+                    return BadRequest(new { message = "Vui lòng cung cấp lý do từ chối." });
+                }
+
+                listing.ApprovalStatus = "Not Approved";
+                listing.IsAvailable = false;
+
+                // Send email
+                if (listing.Owner != null && !string.IsNullOrEmpty(listing.Owner.Email))
+                {
+                    var subject = "Thông báo kết quả kiểm duyệt bài đăng - UniNest";
+                    var emailBody = $@"
+                        <div style='font-family: Arial, sans-serif; color: #333;'>
+                            <h2 style='color: #E11D48'>Bài đăng của bạn không được phê duyệt</h2>
+                            <p>Chào <b>{listing.Owner.FullName}</b>,</p>
+                            <p>Bài đăng: <b>{listing.Title}</b> đã không vượt qua được quá trình kiểm duyệt.</p>
+                            <p><b>Lý do: </b> {dto.RejectReason}</p>
+                            <p>Vui lòng cập nhật lại nội dung bài đăng theo đúng quy định của hệ thống.</p>
+                            <hr style='border: 1px solid #eee; margin-top: 20px;' />
+                            <p style='font-size: 12px; color: #888;'>Cảm ơn bạn đã sử dụng UniNest.<br>UniNest Team</p>
+                        </div>";
+                    await _emailService.SendEmailAsync(listing.Owner.Email, subject, emailBody);
+                }
+
+                await _context.SaveChangesAsync();
+                return Ok(new { message = "Đã từ chối bài đăng và gửi email thông báo." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = $"Lỗi: {ex.Message}" });
+            }
+        }
+
+        [HttpPost("block-listing/{id}")]
+        public async Task<IActionResult> BlockListing(int id)
+        {
+            try
+            {
+                var listing = await _context.Listings.FindAsync(id);
+                if (listing == null) return NotFound(new { message = "Không tìm thấy bài đăng." });
+
+                listing.IsAvailable = false;
+                await _context.SaveChangesAsync();
+                return Ok(new { message = "Đã khóa bài đăng." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = $"Lỗi: {ex.Message}" });
+            }
+        }
+
+        [HttpPost("unblock-listing/{id}")]
+        public async Task<IActionResult> UnblockListing(int id)
+        {
+            try
+            {
+                var listing = await _context.Listings.FindAsync(id);
+                if (listing == null) return NotFound(new { message = "Không tìm thấy bài đăng." });
+
+                listing.IsAvailable = true;
+                await _context.SaveChangesAsync();
+                return Ok(new { message = "Đã mở khóa bài đăng." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = $"Lỗi: {ex.Message}" });
+            }
+        }
+
+        [HttpDelete("delete-listing/{id}")]
+        public async Task<IActionResult> DeleteListing(int id)
+        {
+            try
+            {
+                var listing = await _context.Listings.FindAsync(id);
+                if (listing == null) return NotFound(new { message = "Không tìm thấy bài đăng." });
+
+                _context.Listings.Remove(listing);
+                await _context.SaveChangesAsync();
+                return Ok(new { message = "Đã xóa bài đăng vĩnh viễn." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = $"Lỗi: {ex.Message}" });
+            }
+        }
+
         [HttpGet("domains")]
         public async Task<IActionResult> GetDomains()
         {
