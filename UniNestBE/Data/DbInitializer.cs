@@ -70,7 +70,13 @@ namespace UniNestBE.Data
                     var owner = context.Users.FirstOrDefault();
                     if (owner == null)
                     {
-                        owner = new User { FullName = "Admin Default", Email = "admin_mock@test.com", PasswordHash = "123", Role = "admin" };
+                        owner = new User 
+                        { 
+                            FullName = "Admin Default", 
+                            Email = "admin_mock@test.com", 
+                            PasswordHash = BCrypt.Net.BCrypt.HashPassword("123"), 
+                            Role = "admin" 
+                        };
                         context.Users.Add(owner);
                         context.SaveChanges();
                     }

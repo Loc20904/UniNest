@@ -1,24 +1,24 @@
 @page "/admin/reports"
 @layout Layout.AdminLayout
 
-<PageTitle>Hàng đợi kiểm duyệt | Quản trị UniNest</PageTitle>
+<PageTitle>Moderation Queue | UniNest Admin</PageTitle>
 
 <div class="flex flex-col space-y-8 animate-fade-in-up">
     <!-- Header -->
     <div class="flex justify-between items-end">
         <div>
-            <h3 class="text-xs font-bold text-[#515f74] uppercase tracking-widest mb-1">An toàn & Kiểm duyệt</h3>
-            <h2 class="text-3xl font-extrabold text-[#171c1f] dark:text-white tracking-tight">Hàng đợi Moderation</h2>
-            <p class="text-sm text-[#515f74] dark:text-slate-400 mt-2">Quản lý và giải quyết các báo cáo vi phạm cộng đồng.</p>
+            <h3 class="text-xs font-bold text-[#515f74] uppercase tracking-widest mb-1">Safety & Moderation</h3>
+            <h2 class="text-3xl font-extrabold text-[#171c1f] dark:text-white tracking-tight">Moderation Queue</h2>
+            <p class="text-sm text-[#515f74] dark:text-slate-400 mt-2">Manage and resolve community violation reports.</p>
         </div>
         <div class="flex space-x-4">
             <div class="bg-emerald-50 text-emerald-700 px-4 py-3 rounded-lg flex items-center gap-3">
                 <span class="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse"></span>
-                <span class="text-xs font-bold uppercase tracking-widest">Resolver đang trực: <span class="text-emerald-900 font-black ml-1">4 Online</span></span>
+                <span class="text-xs font-bold uppercase tracking-widest">Resolvers Online: <span class="text-emerald-900 font-black ml-1">4 Online</span></span>
             </div>
             <div class="bg-red-50 text-red-700 px-4 py-3 rounded-lg flex items-center gap-3">
                 <span class="w-2.5 h-2.5 bg-red-500 rounded-full"></span>
-                <span class="text-xs font-bold uppercase tracking-widest">Báo cáo Mức cao: <span class="text-red-900 font-black ml-1">@reports.Count(r => r.Severity == "Mức cao")</span></span>
+                <span class="text-xs font-bold uppercase tracking-widest">High Severity: <span class="text-red-900 font-black ml-1">@reports.Count(r => r.Severity == "High")</span></span>
             </div>
         </div>
     </div>
@@ -26,44 +26,44 @@
     <!-- Stats & Filters -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div class="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-100 dark:border-slate-700 flex flex-col justify-center">
-            <div class="text-[10px] font-bold text-[#515f74] uppercase tracking-widest mb-2">Tổng số báo cáo (24H)</div>
+            <div class="text-[10px] font-bold text-[#515f74] uppercase tracking-widest mb-2">Total Reports (24H)</div>
             <div class="text-3xl font-black text-[#171c1f] dark:text-white">@reports.Count</div>
             <div class="text-sm font-semibold text-emerald-600 mt-2 flex items-center gap-1">
                 <span class="material-symbols-outlined text-sm">trending_down</span>
-                -12% so với hôm qua
+                -12% vs yesterday
             </div>
         </div>
         
         <div class="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-100 dark:border-slate-700 flex flex-col justify-center">
-            <div class="text-[10px] font-bold text-[#515f74] uppercase tracking-widest mb-2">Thời gian xử lý TB</div>
-            <div class="text-3xl font-black text-[#171c1f] dark:text-white">18p</div>
+            <div class="text-[10px] font-bold text-[#515f74] uppercase tracking-widest mb-2">Avg. Handling Time</div>
+            <div class="text-3xl font-black text-[#171c1f] dark:text-white">18m</div>
             <div class="text-sm font-semibold text-[#004ac6] mt-2 flex items-center gap-1">
                 <span class="material-symbols-outlined text-sm">bolt</span>
-                Hệ thống ổn định
+                System Stable
             </div>
         </div>
 
         <div class="bg-[#004ac6] text-white p-6 rounded-xl relative overflow-hidden group hover:shadow-lg transition-all">
             <div class="absolute -right-8 -top-8 w-32 h-32 bg-white/10 rounded-full group-hover:bg-white/20 transition-all blur-2xl"></div>
             <div class="flex justify-between items-start mb-2 relative z-10">
-                <div class="text-lg font-bold">Lá chắn AI tự động</div>
+                <div class="text-lg font-bold">AI Auto-Shield</div>
                 <span class="material-symbols-outlined text-3xl opacity-80">shield</span>
             </div>
             <div class="text-sm font-medium text-blue-100 mt-2 relative z-10 line-clamp-3">
-                Trí tuệ nhân tạo đã tự động chặn 89% ngôn ngữ độc hại và spam trước khi cần con người phê duyệt.
+                AI automatically blocked 89% of harmful language and spam before requiring human review.
             </div>
         </div>
     </div>
 
     <!-- Filter Buttons -->
     <div class="flex items-center gap-2">
-        <button class="px-5 py-2.5 bg-[#004ac6] text-white text-xs font-bold rounded-full shadow-md uppercase tracking-wider">Tất cả báo cáo</button>
-        <button class="px-5 py-2.5 bg-slate-100 dark:bg-slate-800 text-[#515f74] dark:text-slate-300 text-xs font-bold rounded-full hover:bg-slate-200 transition-colors uppercase tracking-wider">Cố tình lừa đảo</button>
-        <button class="px-5 py-2.5 bg-slate-100 dark:bg-slate-800 text-[#515f74] dark:text-slate-300 text-xs font-bold rounded-full hover:bg-slate-200 transition-colors uppercase tracking-wider">Ngôn từ độc hại</button>
-        <button class="px-5 py-2.5 bg-slate-100 dark:bg-slate-800 text-[#515f74] dark:text-slate-300 text-xs font-bold rounded-full hover:bg-slate-200 transition-colors uppercase tracking-wider">Gian lận tài khoản</button>
+        <button class="px-5 py-2.5 bg-[#004ac6] text-white text-xs font-bold rounded-full shadow-md uppercase tracking-wider">All Reports</button>
+        <button class="px-5 py-2.5 bg-slate-100 dark:bg-slate-800 text-[#515f74] dark:text-slate-300 text-xs font-bold rounded-full hover:bg-slate-200 transition-colors uppercase tracking-wider">Intentional Fraud</button>
+        <button class="px-5 py-2.5 bg-slate-100 dark:bg-slate-800 text-[#515f74] dark:text-slate-300 text-xs font-bold rounded-full hover:bg-slate-200 transition-colors uppercase tracking-wider">Harmful Content</button>
+        <button class="px-5 py-2.5 bg-slate-100 dark:bg-slate-800 text-[#515f74] dark:text-slate-300 text-xs font-bold rounded-full hover:bg-slate-200 transition-colors uppercase tracking-wider">Account Abuse</button>
         <div class="flex-grow"></div>
         <button class="flex items-center gap-2 text-[#515f74] text-xs font-bold hover:text-[#171c1f]">
-            <span class="material-symbols-outlined text-sm">filter_list</span> Xếp theo mức độ
+            <span class="material-symbols-outlined text-sm">filter_list</span> Sort by Severity
         </button>
     </div>
 
@@ -74,8 +74,8 @@
             <div class="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-100 dark:border-slate-700 flex items-center shadow-sm hover:shadow-md transition-shadow group">
                 <!-- Mức độ -->
                 <div class="w-20 text-center">
-                    <div class="text-[10px] font-bold text-[#515f74] uppercase tracking-widest mb-1">Mức độ</div>
-                    <div class="text-xs font-black uppercase @(report.Severity == "Mức cao" ? "text-red-600" : "text-amber-500")">
+                    <div class="text-[10px] font-bold text-[#515f74] uppercase tracking-widest mb-1">Severity</div>
+                    <div class="text-xs font-black uppercase @(report.Severity == "High" ? "text-red-600" : "text-amber-500")">
                         @report.Severity
                     </div>
                 </div>
@@ -84,7 +84,7 @@
 
                 <!-- Phân loại -->
                 <div class="w-32">
-                    <div class="text-[10px] font-bold text-[#515f74] uppercase tracking-widest mb-1.5">Phân loại</div>
+                    <div class="text-[10px] font-bold text-[#515f74] uppercase tracking-widest mb-1.5">Category</div>
                     <span class="px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-widest
                         @(report.Category == "Lừa đảo" ? "bg-red-50 text-red-600" : 
                           report.Category == "Toxic" ? "bg-amber-50 text-amber-600" : "bg-[#004ac6]/10 text-[#004ac6]")">
@@ -96,7 +96,7 @@
                 <div class="w-48">
                     <div class="text-[10px] font-bold text-[#515f74] uppercase tracking-widest mb-1.5 flex items-center gap-1">
                         @if(report.Reporter == "System Audit") { <span class="material-symbols-outlined text-[12px] text-green-600">smart_toy</span> }
-                        <div>Người báo cáo</div>
+                        <div>Reporter</div>
                     </div>
                     <div class="flex items-center gap-2">
                         <div class="w-6 h-6 rounded-full bg-slate-200 text-[#515f74] flex items-center justify-center text-[10px] font-bold">@report.Reporter.Substring(0, 1)</div>
@@ -106,7 +106,7 @@
 
                 <!-- Bị báo cáo -->
                 <div class="w-48">
-                    <div class="text-[10px] font-bold text-[#515f74] uppercase tracking-widest mb-1.5">Người bị tố</div>
+                    <div class="text-[10px] font-bold text-[#515f74] uppercase tracking-widest mb-1.5">Accused User</div>
                     <div class="flex items-center gap-2">
                         <div class="w-6 h-6 rounded-full bg-red-100 text-red-600 flex items-center justify-center text-[10px] font-bold">@report.Accused.Substring(0, 1)</div>
                         <div class="text-xs font-bold text-red-600">@report.Accused</div>
@@ -115,7 +115,7 @@
 
                 <!-- Reason -->
                 <div class="flex-grow pr-4">
-                    <div class="text-[10px] font-bold text-[#515f74] uppercase tracking-widest mb-1.5">Lý do chi tiết</div>
+                    <div class="text-[10px] font-bold text-[#515f74] uppercase tracking-widest mb-1.5">Detailed Reason</div>
                     <div class="text-xs font-semibold text-[#171c1f] dark:text-slate-300 line-clamp-1">@report.Reason</div>
                 </div>
 
@@ -125,10 +125,10 @@
                         <span class="material-symbols-outlined text-[18px]">close</span>
                     </button>
                     <button @onclick="() => WarnUser(report)" class="px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-[#515f74] text-xs font-bold uppercase tracking-widest rounded transition-colors shadow-sm">
-                        Cảnh cáo
+                        Warn
                     </button>
                     <button @onclick="() => BlockUser(report)" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold uppercase tracking-widest rounded transition-colors shadow-sm shadow-red-500/30">
-                        Khóa User
+                        Block User
                     </button>
                 </div>
             </div>
@@ -138,8 +138,8 @@
         {
             <div class="bg-slate-50 border outline-dashed outline-2 outline-slate-200 p-12 rounded-xl text-center">
                 <span class="material-symbols-outlined text-4xl text-emerald-500 mb-2">task_alt</span>
-                <h3 class="text-lg font-bold text-[#171c1f]">Hàng đợi đã trống</h3>
-                <p class="text-sm text-[#515f74] mt-1">Bạn đã giải quyết tất cả các báo cáo hiện có. Chúc một ngày làm việc vui vẻ!</p>
+                <h3 class="text-lg font-bold text-[#171c1f]">Queue is empty</h3>
+                <p class="text-sm text-[#515f74] mt-1">You have resolved all existing reports. Have a great day!</p>
             </div>
         }
     </div>
@@ -156,9 +156,9 @@
 @code {
     private List<ReportMock> reports = new()
     {
-        new ReportMock { Severity = "Mức cao", Category = "Lừa đảo", Reporter = "Nguyễn Hằng", Accused = "Nhatro_Danang_99", Reason = "Phòng trọ không giống ảnh, đòi cọc 100% trước khi xem phòng", IsVisible = true },
-        new ReportMock { Severity = "Mức độ Vừa", Category = "Toxic", Reporter = "Trần Kha", Accused = "Lyli_Cute", Reason = "Sử dụng từ ngữ xúc phạm dân tộc trong phần chat", IsVisible = true },
-        new ReportMock { Severity = "Mức cao", Category = "Gian lận", Reporter = "System Audit", Accused = "Urban_Properties", Reason = "Hệ thống phát hiện tài khoản đăng 15 tin trọ giả mạo giống nhau", IsVisible = true }
+        new ReportMock { Severity = "High", Category = "Fraud", Reporter = "Alice Johnson", Accused = "Nhatro_Danang_99", Reason = "Room doesn't match photos, demands 100% deposit before viewing", IsVisible = true },
+        new ReportMock { Severity = "Medium", Category = "Toxic", Reporter = "Bob Smith", Accused = "Lyli_Cute", Reason = "Used offensive language in chat", IsVisible = true },
+        new ReportMock { Severity = "High", Category = "Abuse", Reporter = "System Audit", Accused = "Urban_Properties", Reason = "System detected 15 duplicate fake listing postings", IsVisible = true }
     };
 
     public class ReportMock
