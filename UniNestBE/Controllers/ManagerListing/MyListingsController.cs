@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using System.Linq;
 using UniNestBE.DTOs;
+using UniNestBE.Services;
 
 namespace UniNestBE.Controllers
 {
@@ -13,10 +14,12 @@ namespace UniNestBE.Controllers
     public class MyListingsController : ControllerBase
     {
         private readonly UniNestDbContext _context;
+        private readonly IPremiumCheckService _premiumCheckService;
 
-        public MyListingsController(UniNestDbContext context)
+        public MyListingsController(UniNestDbContext context, IPremiumCheckService premiumCheckService)
         {
             _context = context;
+            _premiumCheckService = premiumCheckService;
         }
 
         [HttpGet]
@@ -75,6 +78,11 @@ namespace UniNestBE.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateListing(CreateListingDto dto)
         {
+            // Kiểm tra nếu người dùng không phải Premium, tự động trả về 403 Forbidden
+            var premiumCheck = _premiumCheckService.CheckPremiumAndRedirect(User, this);
+            if (premiumCheck != null)
+                return premiumCheck;
+
             var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
             // 1. Tạo mới Address trước
@@ -126,6 +134,11 @@ namespace UniNestBE.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateListing(int id, UpdateListingDto dto)
         {
+            // Kiểm tra nếu người dùng không phải Premium, tự động trả về 403 Forbidden
+            var premiumCheck = _premiumCheckService.CheckPremiumAndRedirect(User, this);
+            if (premiumCheck != null)
+                return premiumCheck;
+
             var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
             var listing = await _context.Listings

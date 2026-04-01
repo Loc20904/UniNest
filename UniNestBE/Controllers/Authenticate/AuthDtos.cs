@@ -51,4 +51,10 @@ namespace UniNestBE.DTOs
         public string? Role { get; set; }
         public int UserId { get; set; }
     }
+
+    public class PremiumSubscriptionDto
+    {
+        public bool IsPremium { get; set; }
+        public DateTime? PremiumExpiryDate { get; set; }
+    }
 }

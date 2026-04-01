@@ -40,7 +40,7 @@ public class UniNestDbContext : DbContext
         // SEED DATA (Dữ liệu mẫu để test Map ngay lập tức)
         // Tạo 1 User mẫu
         modelBuilder.Entity<User>().HasData(
-            new User { UserId = 1, FullName = "Admin Demo", Email = "admin@udn.vn", PasswordHash = "123", Role = "admin" }
+            new User { UserId = 1, FullName = "Admin Demo", Email = "admin@udn.vn", PasswordHash = "123", Role = "admin", IsPremium = true, PremiumExpiryDate = DateTime.Now.AddYears(1) }
         );
 
         // Tạo 2 Listing mẫu
@@ -77,6 +77,11 @@ public class UniNestDbContext : DbContext
         // Khởi tạo tên miền hợp lệ mặc định (Seed data cho AllowedEmailDomains)
         modelBuilder.Entity<AllowedEmailDomain>().HasData(
             new AllowedEmailDomain { DomainId = 1, DomainName = "edu.vn", Description = "Email Sinh viên Toàn quốc" }
+        );
+
+        // Corrected seed data for premium user
+        modelBuilder.Entity<User>().HasData(
+            new User { UserId = 1001, FullName = "Premium User", Email = "premium@domain.com", PasswordHash = "hashed_password", IsPremium = true, PremiumExpiryDate = DateTime.UtcNow.AddMonths(1) }
         );
 
         modelBuilder.Entity<Conversation>()

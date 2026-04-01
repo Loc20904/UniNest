@@ -145,19 +145,10 @@
         ErrorMessage = "";
         WarningMessage = "";
         IsLoading = true;
-        
-        // Mock Admin Login
-        if (item.Email == "admin@udn.vn" && item.Password == "123")
-        {
-            await JSRuntime.InvokeVoidAsync("localStorage.setItem", "authToken", "admin-demo-token");
-            await JSRuntime.InvokeVoidAsync("localStorage.setItem", "userFullName", "Administrator");
-            NavManager.NavigateTo("/admin/dashboard", forceLoad: true);
-            IsLoading = false;
-            return;
-        }
 
         try
         {
+            // Gửi request login tới API
             var response = await Http.PostAsJsonAsync("api/Auth/login", item);
             
             if (response.IsSuccessStatusCode)
@@ -165,9 +156,26 @@
                 var result = await response.Content.ReadFromJsonAsync<AuthResponseDto>();
                 if (result != null)
                 {
+                    // Lưu thông tin đăng nhập vào LocalStorage
                     await JSRuntime.InvokeVoidAsync("localStorage.setItem", "authToken", result.Token);
                     await JSRuntime.InvokeVoidAsync("localStorage.setItem", "userFullName", result.FullName);
-                    NavManager.NavigateTo("/", forceLoad: true);
+                    
+                    // Lưu Role để sử dụng cho các mục đích kiểm tra quyền ở Client (nếu cần)
+                    if (!string.IsNullOrEmpty(result.Role))
+                    {
+                        await JSRuntime.InvokeVoidAsync("localStorage.setItem", "userRole", result.Role);
+                    }
+
+                    // KIỂM TRA ROLE ĐỂ ĐIỀU HƯỚNG
+                    // So sánh không phân biệt chữ hoa chữ thường để tránh lỗi logic
+                    if (string.Equals(result.Role, "Admin", StringComparison.OrdinalIgnoreCase))
+                    {
+                        NavManager.NavigateTo("/admin/dashboard", forceLoad: true);
+                    }
+                    else
+                    {
+                        NavManager.NavigateTo("/", forceLoad: true);
+                    }
                 }
             }
             else
@@ -199,3 +207,4 @@
         }
     }
 }
+

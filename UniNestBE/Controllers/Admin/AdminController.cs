@@ -263,11 +263,13 @@ namespace UniNestBE.Controllers.Admin
         {
             try
             {
+                // Prioritize premium listings
                 var listings = await _context.Listings
                     .Include(l => l.Owner)
                     .Include(l => l.Address)
                     .Include(l => l.Images)
-                    .OrderByDescending(l => l.CreatedAt)
+                    .OrderByDescending(l => l.Owner.IsPremium) // Premium listings first
+                    .ThenByDescending(l => l.CreatedAt) // Then by creation date
                     .Select(l => new DashboardListingDto
                     {
                         ListingId = l.ListingId,

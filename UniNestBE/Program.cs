@@ -8,6 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddScoped<IAiMatchingService, AiMatchingService>();
 builder.Services.AddTransient<IEmailService, EmailService>();
 builder.Services.AddSingleton<IAiModerationService, GroqModerationService>();
+builder.Services.AddScoped<IPremiumCheckService, PremiumCheckService>();
 // Add services to the container.
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
@@ -84,6 +85,7 @@ builder.Services.AddAuthentication(options =>
 
 
 
+builder.Services.AddHttpClient();
 builder.Services.AddDbContext<UniNestDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddCors(options =>

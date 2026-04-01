@@ -102,4 +102,8 @@ public class User
 
     [InverseProperty("Admin")]
     public virtual ICollection<StudentVerificationRequest>? VerificationRequestsReviewed { get; set; }
+
+    // Premium subscription fields
+    public bool IsPremium { get; set; } = false;
+    public DateTime? PremiumExpiryDate { get; set; }
 }

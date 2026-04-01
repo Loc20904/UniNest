@@ -48,7 +48,7 @@
                 <span class="material-symbols-outlined mr-3" data-icon="help">help</span>
                 <span class="text-sm font-medium">Help Center</span>
             </a>
-            <a href="/" class="flex items-center text-[#515f74] dark:text-slate-400 hover:text-[#004ac6] pl-5 py-3 transition-colors text-[#ba1a1a]">
+            <a @onclick="Logout" class="flex items-center text-[#515f74] dark:text-slate-400 hover:text-[#004ac6] pl-5 py-3 transition-colors text-[#ba1a1a]">
                 <span class="material-symbols-outlined mr-3 text-[#ba1a1a]" data-icon="logout">logout</span>
                 <span class="text-sm font-medium text-[#ba1a1a]">Logout</span>
             </a>
@@ -124,5 +124,15 @@
     {
         IsDarkMode = !IsDarkMode;
         await JSRuntime.InvokeVoidAsync("uniNestMap.toggleTheme", IsDarkMode);
+    }
+ [Inject] NavigationManager NavManager { get; set; }
+    private async Task Logout()
+    {
+        // 2. Clear Storage
+        await JSRuntime.InvokeVoidAsync("localStorage.removeItem", "authToken");
+        await JSRuntime.InvokeVoidAsync("localStorage.removeItem", "userFullName");
+        
+        // 3. Force Reload to Login
+        NavManager.NavigateTo("/login", forceLoad: true);
     }
 }

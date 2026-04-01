@@ -48,6 +48,12 @@ namespace UniNestBE.Controllers
                     return Unauthorized(new { message = "Tài khoản của bạn đang chờ quản trị viên xét duyệt thẻ sinh viên. Vui lòng thử lại sau." });
                 }
 
+                // Check if the user is premium
+                if (user.IsPremium && user.PremiumExpiryDate > DateTime.UtcNow)
+                {
+                    // Handle premium-specific logic
+                }
+
                 // 3. Tạo Token
                 var token = GenerateJwtToken(user);
 
@@ -335,7 +341,9 @@ namespace UniNestBE.Controllers
                 new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
                 new Claim(ClaimTypes.Email, user.Email),
                 new Claim(ClaimTypes.Role, user.Role ?? "Student"), // Ví dụ role
-                new Claim("FullName", user.FullName) // Custom claim
+                new Claim("FullName", user.FullName), // Custom claim
+                new Claim("IsPremium", user.IsPremium.ToString()),
+                new Claim("PremiumExpiryDate", user.PremiumExpiryDate?.ToString("o") ?? string.Empty)
             };
 
             var tokenDescriptor = new SecurityTokenDescriptor

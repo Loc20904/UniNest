@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using UniNestBE.DTOs;
+using UniNestBE.Services;
 
 [Route("api/[controller]")]
 [ApiController]
@@ -10,10 +11,12 @@ using UniNestBE.DTOs;
 public class FavoritesController : ControllerBase
 {
     private readonly UniNestDbContext _context;
+    private readonly IPremiumCheckService _premiumCheckService;
 
-    public FavoritesController(UniNestDbContext context)
+    public FavoritesController(UniNestDbContext context, IPremiumCheckService premiumCheckService)
     {
         _context = context;
+        _premiumCheckService = premiumCheckService;
     }
 
     // ✅ Lấy UserId từ JWT
@@ -28,6 +31,11 @@ public class FavoritesController : ControllerBase
     [HttpPost("{listingId}")]
     public async Task<IActionResult> SaveListing(int listingId)
     {
+        // Kiểm tra nếu người dùng không phải Premium, tự động trả về 403 Forbidden
+        var premiumCheck = _premiumCheckService.CheckPremiumAndRedirect(User, this);
+        if (premiumCheck != null)
+            return premiumCheck;
+
         var userId = GetUserId();
 
         // Check đã save chưa
@@ -55,6 +63,11 @@ public class FavoritesController : ControllerBase
     [HttpDelete("{listingId}")]
     public async Task<IActionResult> UnsaveListing(int listingId)
     {
+        // Kiểm tra nếu người dùng không phải Premium, tự động trả về 403 Forbidden
+        var premiumCheck = _premiumCheckService.CheckPremiumAndRedirect(User, this);
+        if (premiumCheck != null)
+            return premiumCheck;
+
         var userId = GetUserId();
 
         var favorite = await _context.Favorites
@@ -75,6 +88,11 @@ public class FavoritesController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetMyFavorites()
     {
+        // Kiểm tra nếu người dùng không phải Premium, tự động trả về 403 Forbidden
+        var premiumCheck = _premiumCheckService.CheckPremiumAndRedirect(User, this);
+        if (premiumCheck != null)
+            return premiumCheck;
+
         var userId = GetUserId();
 
         var favorites = await _context.Favorites

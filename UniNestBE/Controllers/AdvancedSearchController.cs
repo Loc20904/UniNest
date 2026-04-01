@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 using UniNestBE.DTOs;
 using UniNestBE.Entities;
+using UniNestBE.Services;
 namespace UniNestBE.Controllers
 {
     [Route("api/[controller]")]
@@ -11,14 +12,16 @@ namespace UniNestBE.Controllers
     {
         private readonly UniNestDbContext _context;
         private readonly IHttpClientFactory _httpClientFactory;
+        private readonly IPremiumCheckService _premiumCheckService;
 
         // Bổ sung IHttpClientFactory vào Program.cs nếu chưa có (thực ra mặc định .NET 8 có thể inject thẳng hoặc tạo mới)
         // Để đơn giản ta dùng tĩnh cho OSRM public API
         private static readonly HttpClient _httpClient = new HttpClient();
 
-        public AdvancedSearchController(UniNestDbContext context)
+        public AdvancedSearchController(UniNestDbContext context, IPremiumCheckService premiumCheckService)
         {
             _context = context;
+            _premiumCheckService = premiumCheckService;
         }
 
         [HttpGet("filters")]
@@ -62,6 +65,11 @@ namespace UniNestBE.Controllers
             [FromQuery] bool autoMatch = false,
             [FromQuery] int autoMatchUserId = 0)
         {
+            // Kiểm tra nếu người dùng không phải Premium, tự động trả về 403 Forbidden
+            var premiumCheck = _premiumCheckService.CheckPremiumAndRedirect(User, this);
+            if (premiumCheck != null)
+                return premiumCheck;
+
             var pTypeIds = ParseIds(propertyTypeIds);
             var amIds = ParseIds(amenityIds);
             var hbIds = ParseIds(habitIds);

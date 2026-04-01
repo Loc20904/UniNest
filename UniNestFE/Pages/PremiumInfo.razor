@@ -1,0 +1,152 @@
+﻿@page "/premium-info"
+@using Microsoft.JSInterop
+@using UniNestFE.Services
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavManager
+@inject IApiService ApiService
+@using PayOS.Services
+@inject PayOSService PayOSService
+
+<div class="max-w-6xl mx-auto mt-10 p-4">
+    <div class="text-center mb-12">
+        <div class="inline-flex items-center justify-center size-16 bg-amber-100 rounded-full mb-4">
+            <span class="material-icons-round text-amber-600 text-3xl">workspace_premium</span>
+        </div>
+        <h1 class="text-3xl font-extrabold mb-2 text-slate-900 dark:text-white">Nâng cấp Premium</h1>
+        <p class="text-slate-500 dark:text-slate-400">Trải nghiệm tính năng AI Matching giúp tìm phòng trọ và bạn ở cùng phù hợp nhất.</p>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-8 mb-8">
+        <!-- Monthly Package -->
+        <div class="bg-white dark:bg-[#1c2126] p-8 rounded-3xl shadow-xl border border-slate-200 dark:border-[#27353a] hover:shadow-2xl transition-shadow">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h2 class="text-xl font-bold">Gói Tháng</h2>
+                    <p class="text-sm text-slate-500">Trả phí hàng tháng</p>
+                </div>
+                <div class="text-right">
+                    <span class="text-3xl font-black text-primary">50.000đ</span>
+                    <p class="text-xs text-slate-500">/tháng</p>
+                </div>
+            </div>
+
+            <div class="space-y-4 mb-8">
+                <div class="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-300">
+                    <span class="material-icons-round text-emerald-500 text-sm">check_circle</span>
+                    Mở khóa tính năng AI Matching
+                </div>
+                <div class="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-300">
+                    <span class="material-icons-round text-emerald-500 text-sm">check_circle</span>
+                    Ưu tiên hiển thị bài đăng
+                </div>
+                <div class="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-300">
+                    <span class="material-icons-round text-emerald-500 text-sm">check_circle</span>
+                    Hỗ trợ khách hàng 24/7
+                </div>
+                <div class="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-300">
+                    <span class="material-icons-round text-emerald-500 text-sm">check_circle</span>
+                    Có thể hủy bất cứ lúc nào
+                </div>
+            </div>
+
+            <button @onclick='() => HandlePayment("monthly")'
+                    disabled="@isProcessing"
+                    class="w-full px-4 py-4 bg-primary text-white font-bold rounded-2xl hover:brightness-110 transition-all shadow-lg shadow-primary/20 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+                @if (isProcessing)
+                {
+                    <span class="material-icons-round animate-spin">progress_activity</span>
+                }
+                else
+                {
+                    <span>Thanh toán PayOS</span>
+                }
+            </button>
+        </div>
+
+        <!-- Yearly Package -->
+        <div class="bg-white dark:bg-[#1c2126] p-8 rounded-3xl shadow-xl border-2 border-primary dark:border-primary hover:shadow-2xl transition-shadow relative">
+            <div class="absolute -top-3 -right-3 bg-primary text-white px-3 py-1 rounded-full text-xs font-bold">
+                Tiết kiệm 17%
+            </div>
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h2 class="text-xl font-bold">Gói Năm</h2>
+                    <p class="text-sm text-slate-500">Thanh toán một lần</p>
+                </div>
+                <div class="text-right">
+                    <span class="text-3xl font-black text-primary">500.000đ</span>
+                    <p class="text-xs text-slate-500">/năm</p>
+                </div>
+            </div>
+
+            <div class="space-y-4 mb-8">
+                <div class="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-300">
+                    <span class="material-icons-round text-emerald-500 text-sm">check_circle</span>
+                    Mở khóa tính năng AI Matching
+                </div>
+                <div class="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-300">
+                    <span class="material-icons-round text-emerald-500 text-sm">check_circle</span>
+                    Ưu tiên hiển thị bài đăng
+                </div>
+                <div class="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-300">
+                    <span class="material-icons-round text-emerald-500 text-sm">check_circle</span>
+                    Hỗ trợ khách hàng 24/7
+                </div>
+                <div class="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-300">
+                    <span class="material-icons-round text-emerald-500 text-sm">check_circle</span>
+                    Tiết kiệm 50.000đ so với gói tháng
+                </div>
+            </div>
+
+            <button @onclick='() => HandlePayment("yearly")'
+                    disabled="@isProcessing"
+                    class="w-full px-4 py-4 bg-primary text-white font-bold rounded-2xl hover:brightness-110 transition-all shadow-lg shadow-primary/20 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+                @if (isProcessing)
+                {
+                    <span class="material-icons-round animate-spin">progress_activity</span>
+                }
+                else
+                {
+                    <span>Thanh toán PayOS</span>
+                }
+            </button>
+        </div>
+    </div>
+
+    <div class="mt-8 text-center">
+        <button @onclick='() => NavManager.NavigateTo("/")' class="text-sm font-medium text-slate-500 hover:text-primary flex items-center justify-center gap-1 mx-auto">
+            <span class="material-icons-round text-sm">arrow_back</span> Quay lại trang chủ
+        </button>
+    </div>
+</div>
+
+@code {
+    private bool isProcessing = false;
+
+    public class CreateCheckoutSessionDto
+    {
+        public string PlanType { get; set; }
+        public int Amount { get; set; }
+        public string PriceId { get; set; }
+    }
+
+    private async Task HandlePayment(string planType)
+{
+        isProcessing = true;
+        try
+        {
+            int amount = planType == "monthly" ? 500 : 600;
+            string checkoutUrl = await _payOSService.CreatePaymentSessionAsync(planType, amount);
+
+            NavManager.NavigateTo(checkoutUrl, true);
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Error: {ex.Message}");
+        }
+        finally
+        {
+            isProcessing = false;
+        }
+    }
+}
