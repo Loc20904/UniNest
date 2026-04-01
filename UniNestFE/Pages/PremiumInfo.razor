@@ -1,0 +1,133 @@
+﻿@page "/premium-info"
+@using Microsoft.JSInterop
+@using UniNestFE.Services
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavManager
+@inject IApiService ApiService
+
+<div class="max-w-6xl mx-auto mt-10 p-4 relative">
+    <div class="text-center mb-12">
+        <div class="inline-flex items-center justify-center size-16 bg-amber-100 rounded-full mb-4">
+            <span class="material-icons-round text-amber-600 text-3xl">workspace_premium</span>
+        </div>
+        <h1 class="text-3xl font-extrabold mb-2 text-slate-900 dark:text-white">Nâng cấp Premium</h1>
+        <p class="text-slate-500 dark:text-slate-400">Trải nghiệm tính năng AI Matching giúp tìm phòng trọ và bạn ở cùng phù hợp nhất.</p>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-8 mb-8">
+        <div class="bg-white dark:bg-[#1c2126] p-8 rounded-3xl shadow-xl border border-slate-200 dark:border-[#27353a] hover:shadow-2xl transition-shadow">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h2 class="text-xl font-bold">Gói Tháng</h2>
+                    <p class="text-sm text-slate-500">Trải nghiệm ngắn hạn</p>
+                </div>
+                <div class="text-right">
+                    <span class="text-3xl font-black text-primary">50.000đ</span>
+                    <p class="text-xs text-slate-500">/tháng</p>
+                </div>
+            </div>
+            <button @onclick='() => HandlePayment("monthly")' disabled="@isProcessing"
+                    class="w-full px-4 py-4 bg-primary text-white font-bold rounded-2xl hover:brightness-110 transition-all active:scale-95 disabled:opacity-50">
+                @if (isProcessing)
+                {
+                    <span class="material-icons-round animate-spin">progress_activity</span>
+                }
+                else
+                {
+                    <span>Kích hoạt ngay</span>
+                }
+            </button>
+        </div>
+
+        <div class="bg-white dark:bg-[#1c2126] p-8 rounded-3xl shadow-xl border-2 border-primary hover:shadow-2xl transition-shadow relative">
+            <div class="absolute -top-3 -right-3 bg-primary text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">Tiết kiệm 17%</div>
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h2 class="text-xl font-bold">Gói Năm</h2>
+                    <p class="text-sm text-slate-500">Lựa chọn tiết kiệm nhất</p>
+                </div>
+                <div class="text-right">
+                    <span class="text-3xl font-black text-primary">500.000đ</span>
+                    <p class="text-xs text-slate-500">/năm</p>
+                </div>
+            </div>
+            <button @onclick='() => HandlePayment("yearly")' disabled="@isProcessing"
+                    class="w-full px-4 py-4 bg-primary text-white font-bold rounded-2xl hover:brightness-110 transition-all active:scale-95 disabled:opacity-50">
+                @if (isProcessing)
+                {
+                    <span class="material-icons-round animate-spin">progress_activity</span>
+                }
+                else
+                {
+                    <span>Kích hoạt ngay</span>
+                }
+            </button>
+        </div>
+    </div>
+
+    @if (showSuccessModal)
+    {
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+            <div class="bg-white dark:bg-[#1c2126] max-w-sm w-full rounded-3xl p-8 shadow-2xl text-center animate-in zoom-in duration-300">
+                <div class="size-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <span class="material-icons-round text-5xl">check_circle</span>
+                </div>
+                <h2 class="text-2xl font-bold mb-2">Thanh toán hoàn tất!</h2>
+                <p class="text-slate-500 mb-6">Tài khoản của bạn đã được nâng cấp lên <b>Premium</b>. Vui lòng đăng nhập lại để cập nhật quyền hạn mới.</p>
+
+                <button @onclick="LogoutAndRedirect"
+                        class="w-full py-4 bg-slate-900 dark:bg-white dark:text-slate-900 text-white font-bold rounded-2xl hover:opacity-90 transition-all">
+                    Đăng nhập lại ngay
+                </button>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private bool isProcessing = false;
+    private bool showSuccessModal = false;
+
+    private async Task HandlePayment(string planType)
+    {
+        isProcessing = true;
+        try
+        {
+            string fakeOrderCode = $"TEST_{planType.ToUpper()}_{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}";
+
+            // Gọi endpoint test ở backend
+            var response = await ApiService.PostAsync<PaymentSuccessResponse>("/api/payment/confirm-payment", fakeOrderCode);
+
+            if (response != null && response.Success)
+            {
+                // Thay vì alert, ta hiện Modal
+                showSuccessModal = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            // Có thể làm thêm một Toast thông báo lỗi ở đây nếu muốn
+            Console.WriteLine(ex.Message);
+        }
+        finally
+        {
+            isProcessing = false;
+        }
+    }
+
+    private async Task LogoutAndRedirect()
+    {
+        // 1. Xóa Token cũ trong localStorage
+        await JSRuntime.InvokeVoidAsync("localStorage.removeItem", "authToken");
+
+        // 2. Chuyển hướng về trang Login
+        NavManager.NavigateTo("/login", forceLoad: true);
+    }
+
+    public class PaymentSuccessResponse
+    {
+        public bool Success { get; set; }
+        public string Message { get; set; }
+        public DateTime ExpiresAt { get; set; }
+    }
+}

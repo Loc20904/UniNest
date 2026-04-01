@@ -1,0 +1,828 @@
+@page "/listing/{Id:int}"
+@using System.Net.Http.Json
+@using System.Text.Json
+@using UniNestFE.DTOs
+@inject HttpClient Http
+@inject NavigationManager NavManager
+@inject AuthenticationStateProvider AuthStateProvider
+@inject IJSRuntime JS
+@inject IConfiguration Configuration
+
+<div class="listing-detail flex flex-col items-center bg-[#fafaf9] dark:bg-slate-900 min-h-[calc(100vh-64px)] py-10 w-full relative text-slate-800 dark:text-slate-200">
+    @if (showMessage)
+    {
+        <div class="fixed top-5 right-5 z-50 px-6 py-3 rounded-xl shadow-lg text-white
+                            @(messageType == "success" ? "bg-green-500" : "bg-red-500")">
+            @message
+        </div>
+    }
+    @if (isLoading)
+    {
+        <!-- Skeleton -->
+        <div class="w-full max-w-full px-6 flex flex-col gap-6 animate-pulse">
+            <div class="h-10 bg-slate-200 rounded w-1/3"></div>
+            <div class="flex gap-4 h-[400px]">
+                <div class="w-1/2 bg-slate-200 rounded-2xl"></div>
+                <div class="w-1/2 grid grid-cols-2 gap-4">
+                    <div class="bg-slate-200 rounded-xl"></div>
+                    <div class="bg-slate-200 rounded-xl"></div>
+                    <div class="bg-slate-200 rounded-xl"></div>
+                    <div class="bg-slate-200 rounded-xl"></div>
+                </div>
+            </div>
+        </div>
+    }
+    else if (listing == null)
+    {
+        <div class="text-center p-20">
+            <h1 class="text-4xl text-slate-300 font-bold">Listing not found</h1>
+            <button @onclick='() => NavManager.NavigateTo("/search")' class="mt-4 px-6 py-2 bg-primary text-white rounded-lg">Return to Search</button>
+        </div>
+    }
+    else
+    {
+        <div class="w-full max-w-full px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-[1fr_350px] gap-6 lg:gap-10">
+            <!-- Left Column: Details -->
+            <div class="details-section flex flex-col gap-8">
+
+                <!-- Photos Grid -->
+                <div class="photos-grid relative group">
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 h-[300px] md:h-[450px]">
+                        @{
+                            var primImg = listing.Images.FirstOrDefault() ?? listing.PrimaryImageUrl;
+                            var mainImgUrl = string.IsNullOrEmpty(primImg) ? "default.jpg" : "https://localhost:7045" + primImg;
+                            <div class="md:col-span-2 md:row-span-2 rounded-2xl overflow-hidden cursor-pointer" @onclick="() => showFullGallery = true">
+                                <img src="@mainImgUrl" class="w-full h-full object-cover" />
+                            </div>
+
+                            @for (int i = 1; i < Math.Min(5, listing.Images.Count); i++)
+                            {
+                                var imgUrl = "https://localhost:7045" + listing.Images[i];
+                                bool isLast = i == 4 && listing.Images.Count > 5;
+                                <div class="rounded-2xl overflow-hidden hidden md:block relative cursor-pointer" @onclick="() => showFullGallery = true">
+                                    <img src="@imgUrl" class="w-full h-full object-cover" />
+                                    @if (isLast)
+                                    {
+                                        <div class="absolute inset-0 bg-black/50 flex flex-col items-center justify-center text-white font-bold transition-all group-hover:bg-black/40">
+                                            <span class="text-2xl">+ @(listing.Images.Count - 5)</span>
+                                            <span class="text-xs uppercase tracking-widest">Show more</span>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        }
+                    </div>
+
+                    @if (listing.Images.Count > 5)
+                    {
+                        <button @onclick="() => showFullGallery = true" class="absolute bottom-4 right-4 bg-white/90 backdrop-blur-md text-slate-800 font-bold px-4 py-2 rounded-xl shadow-lg border border-slate-100 hover:bg-white transition-all transform active:scale-95 flex items-center gap-2">
+                            <i class="material-icons-round">apps</i> Show all @listing.Images.Count photos
+                        </button>
+                    }
+                </div>
+
+
+                <!-- Full Gallery Modal -->
+                @if (showFullGallery)
+                {
+                    <div class="fixed inset-0 z-[100] bg-white dark:bg-slate-900 overflow-y-auto animate-fade-in-up">
+                        <div class="max-w-4xl mx-auto py-10 px-6">
+                            <div class="flex justify-between items-center mb-8 sticky top-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md z-10 py-4 text-slate-800 dark:text-slate-100">
+                                <h2 class="text-2xl font-extrabold">Photo Gallery</h2>
+                                <button @onclick="() => showFullGallery = false" class="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                                    <i class="material-icons-round text-3xl">close</i>
+                                </button>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                @foreach (var img in listing.Images)
+                                {
+                                    <div class="rounded-3xl overflow-hidden shadow-lg mb-4">
+                                        <img src="@("https://localhost:7045" + img)" class="w-full h-auto object-cover" />
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+
+
+                <!-- Title & Basic Info -->
+                <div class="header flex justify-between items-start">
+                    <div>
+                        <h1 class="text-3xl font-extrabold text-slate-900 dark:text-slate-100 mb-2">@listing.Title</h1>
+                        <span class="text-primary font-bold text-xl block sm:inline-block sm:mr-4">@listing.Price.ToString("N0") VNĐ <span class="text-sm text-slate-400">/ month</span></span>
+                        <span class="bg-green-100 text-green-700 text-xs font-bold px-3 py-1 rounded-full"><i class="material-icons-round text-[12px] align-middle">verified</i> Verified</span>
+                    </div>
+                    <div class="flex gap-2 relative z-20">
+                        <button class="w-10 h-10 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center hover:bg-slate-200 transition-colors shadow-sm"><i class="material-icons-round">share</i></button>
+                        <button @onclick="ToggleSave"
+                                class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center transition-colors shadow-sm
+                                @(isSaved ? "text-red-500 bg-red-50" : "text-slate-500 hover:bg-red-50 hover:text-red-500")">
+
+                            <i class="material-icons-round transition-transform duration-200 @(isSaved ? "scale-110" : "")">
+                                @(isSaved ? "favorite" : "favorite_border")
+                            </i>
+                        </button>
+                        <button @onclick="OpenReportListingModal" class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center hover:bg-slate-200 text-slate-500 transition-colors shadow-sm" title="Report this listing">
+                            <i class="material-icons-round">flag</i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Property Features -->
+                <div class="flex gap-4 flex-wrap">
+                    <div class="flex-1 min-w-[120px] bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 p-4 rounded-xl flex flex-col items-center justify-center text-center">
+                        <i class="material-icons-round text-primary text-2xl mb-1">home</i>
+                        <span class="text-xs font-bold text-slate-400 uppercase">Type</span>
+                        <span class="font-bold text-slate-700 dark:text-slate-100">@listing.PropertyTypeName</span>
+                    </div>
+                    <div class="flex-1 min-w-[120px] bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 p-4 rounded-xl flex flex-col items-center justify-center text-center">
+                        <i class="material-icons-round text-primary text-2xl mb-1">square_foot</i>
+                        <span class="text-xs font-bold text-slate-400 uppercase">Area</span>
+                        <span class="font-bold text-slate-700 dark:text-slate-100">@listing.AreaSquareMeters m²</span>
+                    </div>
+                    <div class="flex-1 min-w-[120px] bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 p-4 rounded-xl flex flex-col items-center justify-center text-center">
+                        <i class="material-icons-round text-primary text-2xl mb-1">wc</i>
+                        <span class="text-xs font-bold text-slate-400 uppercase">Gender</span>
+                        <span class="font-bold text-slate-700 dark:text-slate-100">@listing.GenderPreference</span>
+                    </div>
+                    <div class="flex-1 min-w-[120px] bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 p-4 rounded-xl flex flex-col items-center justify-center text-center">
+                        <i class="material-icons-round text-primary text-2xl mb-1">calendar_today</i>
+                        <span class="text-xs font-bold text-slate-400 uppercase">Posted</span>
+                        <span class="font-bold text-slate-700 dark:text-slate-100">@listing.CreatedAt.ToString("MMM dd, yyyy")</span>
+                    </div>
+                </div>
+
+                <!-- Protected Content Area (Description, Amenities, Location) -->
+                <div class="protected-content relative mt-6 transition-all duration-500">
+
+                    <!-- Description -->
+                    <div class="mb-8">
+                        <h2 class="text-xl font-bold mb-4">Description</h2>
+                        <p class="text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">@listing.Description</p>
+                    </div>
+
+                    <!-- Amenities -->
+                    <div class="mb-8">
+                        <h2 class="text-xl font-bold mb-4">What this place offers</h2>
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-y-4 gap-x-6">
+                            @foreach (var amenity in listing.Amenities)
+                            {
+                                <div class="flex items-center gap-3 text-slate-600 dark:text-slate-300">
+                                    <i class="material-symbols-outlined text-xl text-primary">@amenity.Icon</i>
+                                    <span>@amenity.Name</span>
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Habits -->
+                    <div class="mb-8">
+                        <h2 class="text-xl font-bold mb-4">Roommate Preferences</h2>
+                        <div class="flex flex-wrap gap-2">
+                            @foreach (var habit in listing.LifestyleHabits)
+                            {
+                                <div class="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-4 py-2 rounded-full font-medium text-sm">
+                                    <i class="material-icons-round text-sm text-slate-400">@(string.IsNullOrEmpty(habit.Icon) ? "check_circle" : habit.Icon)</i> @habit.Name
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Location -->
+                    <div class="mb-10">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-xl font-bold">Location</h2>
+                            @if (!showLargeMap)
+                            {
+                                <button @onclick="OpenLargeMap" disabled="@isMapLoading" class="text-primary hover:underline font-bold text-sm flex items-center gap-1">
+                                    <i class="material-icons-round text-lg">open_in_full</i>
+                                    @(isMapLoading ? "Connecting..." : "Expand Map")
+                                </button>
+                            }
+                        </div>
+                        <div class="bg-slate-200 w-full h-80 rounded-2xl relative overflow-hidden flex items-center justify-center group">
+                            <!-- JS Interop ReadOnly Map -->
+                            <div id="detailMap" class="w-full h-full z-10"></div>
+
+                            @if (!showLargeMap)
+                            {
+                                <div class="absolute bg-white/80 backdrop-blur-md px-4 py-3 rounded-xl shadow-lg font-bold flex items-center gap-2 z-[400] border border-white/40 text-slate-700 top-3 right-3 pointer-events-none transition-opacity duration-300">
+                                    <i class="material-icons-round text-primary text-lg">location_on</i> @listing.FullAddress
+                                </div>
+                            }
+
+                            <!-- Overlay Button on hover -->
+                            @if (!showLargeMap)
+                            {
+                                <div class="absolute inset-0 z-[401] bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                                    <button class="bg-white text-slate-800 font-extrabold px-6 py-2.5 rounded-full shadow-2xl pointer-events-auto transform transition-transform active:scale-95"
+                                            @onclick="OpenLargeMap" disabled="@isMapLoading">
+                                        @(isMapLoading ? "Loading map..." : "Show Large Map")
+                                    </button>
+                                </div>
+                            }
+                        </div>
+
+                        <div class="mt-8 flex items-center justify-start">
+                            <button @onclick="GoBack" class="flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold hover:bg-slate-50 hover:border-slate-300 hover:text-primary transition-all shadow-sm active:scale-95 group">
+                                <i class="material-icons-round text-slate-400 group-hover:text-primary transition-colors">arrow_back</i>
+                                Back to listings
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Large Map Modal -->
+                    @if (showLargeMap)
+                    {
+                        <div class="fixed inset-0 z-[200] bg-white dark:bg-slate-900 flex flex-col animate-fade-in-up">
+                            <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-white dark:bg-slate-900">
+                                <div>
+                                    <h2 class="text-xl font-extrabold text-slate-800 dark:text-slate-100">Location Map</h2>
+                                    <p class="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-0.5"><i class="material-icons-round text-sm">location_on</i> @listing.FullAddress</p>
+                                </div>
+                                <button @onclick="() => showLargeMap = false" class="p-2 rounded-full hover:bg-slate-100 transition-colors">
+                                    <i class="material-icons-round text-3xl">close</i>
+                                </button>
+                            </div>
+                            <div class="flex-1 relative">
+                                <div id="largeDetailMap" class="w-full h-full"></div>
+
+                                <div class="absolute bottom-6 left-6 right-6 z-[400] bg-white/90 dark:bg-slate-800/90 backdrop-blur-md p-4 rounded-2xl shadow-2xl border border-white dark:border-slate-700 flex items-center justify-between">
+                                    <div class="flex items-center gap-4">
+                                        <div class="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center text-primary">
+                                            <i class="material-icons-round text-2xl">map</i>
+                                        </div>
+                                        <div>
+                                            <span class="block font-extrabold text-slate-800 dark:text-slate-100">Approximate location</span>
+                                            <span class="text-sm text-slate-500 dark:text-slate-400 font-medium">Coordinate: @listing.Latitude, @listing.Longitude</span>
+                                        </div>
+                                    </div>
+                                    <button @onclick='() => JS.InvokeVoidAsync("open", $"https://www.google.com/maps?q={listing.Latitude},{listing.Longitude}", "_blank")'
+                                            class="bg-slate-900 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-black transition-colors flex items-center gap-2">
+                                        <i class="material-icons-round">navigation</i> Open in Google Maps
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Right Column: Host & Action Card -->
+            <div class="sidebar relative">
+                <div class="sticky top-24 bg-white border border-slate-100 shadow-xl shadow-slate-200/50 rounded-3xl p-6 flex flex-col gap-6">
+
+                    <!-- Host Info -->
+                    <div class="flex items-center gap-4">
+                        <div class="w-16 h-16 rounded-full bg-slate-200 overflow-hidden shrink-0 ring-4 ring-primary/10 bg-center bg-cover cursor-pointer hover:ring-primary/30 transition-all hover:scale-105" 
+                             @onclick="OpenHostProfileModal"
+                             style="background-image: url('@(string.IsNullOrEmpty(listing.HostAvatar) ? "https://ui-avatars.com/api/?name=User" : listing.HostAvatar)')">
+                        </div>
+                        <div>
+                            <h3 class="font-extrabold @(listing.HostIsWarned ? "text-red-600" : "text-slate-800") text-lg">
+                                @listing.HostName
+                                @if(listing.HostIsWarned) { <span class="material-icons-round text-red-500 text-[16px] align-middle" title="Host này nằm trong danh sách theo dõi vi phạm">warning</span> }
+                            </h3>
+                            <p class="text-xs text-slate-500 font-medium tracking-wide">· @listing.HostTotalListings.ToString() Listings</p>
+                            
+                            @if (hostReputation != null && hostReputation.TotalReviews > 0)
+                            {
+                                <div class="flex items-center gap-1 mt-1.5 text-amber-500 bg-amber-50 px-2 py-0.5 rounded-full w-max text-xs font-bold ring-1 ring-amber-500/30">
+                                    <span class="material-icons-round text-[14px]">star</span>
+                                    @hostReputation.AverageRating.ToString("0.0") (@hostReputation.TotalReviews reviews)
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    @if (hostReputation != null && hostReputation.RecentReviews.Any())
+                    {
+                        <div class="border-t border-slate-100 pt-4">
+                            <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Recent Feedback</h4>
+                            <div class="space-y-3">
+                                @foreach (var review in hostReputation.RecentReviews.Take(2))
+                                {
+                                    <div class="bg-slate-50 rounded-xl p-3 border border-slate-100">
+                                        <div class="flex items-center justify-between mb-1">
+                                            <div class="flex items-center gap-2">
+                                                <div class="w-5 h-5 rounded-full bg-cover" style="background-image: url('@(review.ReviewerAvatar)')"></div>
+                                                <span class="text-xs font-bold text-slate-700">@review.ReviewerName</span>
+                                            </div>
+                                            <div class="flex items-center text-amber-500 text-[10px] font-bold">
+                                                <span class="material-icons-round text-[12px]">star</span> @review.Rating
+                                            </div>
+                                        </div>
+                                        @if (!string.IsNullOrEmpty(review.Comment))
+                                        {
+                                            <p class="text-xs text-slate-500 line-clamp-2 mt-1 italic">"@review.Comment"</p>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+
+                    <div class="flex gap-3">
+                        <button @onclick="ContactHostClicked" class="flex-1 py-3.5 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/30 hover:bg-[#05a0d3] transition-all transform active:scale-95 flex items-center justify-center gap-2">
+                            <i class="material-icons-round">chat</i> Contact Host
+                        </button>
+                        <button @onclick="CreateConversationClicked" class="flex-1 py-3.5 bg-blue-500 text-white font-bold rounded-xl shadow-lg shadow-blue-500/30 hover:bg-blue-600 transition-all transform active:scale-95 flex items-center justify-center gap-2" title="Start a new conversation">
+                            <i class="material-icons-round">add_comment</i> Bắt đầu cuộc trò chuyện
+                        </button>
+                    </div>
+                    <button @onclick="ToggleSave"
+                            class="w-full py-3.5 bg-slate-50 border border-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-100 transition-colors flex items-center justify-center gap-2">
+                        <i class="material-icons-round text-slate-400">
+                            @(isSaved ? "favorite" : "favorite_border")
+                        </i>
+                        @(isSaved ? "Saved" : "Save Listing")
+                    </button>
+
+                </div>
+            </div>
+
+            <!-- Guest Mode enabled: No Lock Overlay needed anymore -->
+
+            <!-- Host Profile Modal -->
+            @if (showHostProfileModal)
+            {
+                <div class="fixed inset-0 z-[500] flex items-center justify-center p-4">
+                    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" @onclick="CloseHostProfileModal"></div>
+                    
+                    <div class="relative bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col transform transition-all border border-slate-100 dark:border-slate-800 animate-bounce-in">
+                        
+                        <div class="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50 sticky top-0 z-10 shrink-0">
+                            <h3 class="text-xl font-extrabold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                                <span class="material-icons-round text-primary">badge</span> Host Profile
+                            </h3>
+                            <button @onclick="CloseHostProfileModal" class="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full transition-colors font-bold z-10 text-xl flex items-center justify-center size-10">
+                                <span class="material-icons-round">close</span>
+                            </button>
+                        </div>
+
+                        <div class="overflow-y-auto p-6 flex flex-col gap-6 relative custom-scrollbar flex-1">
+                            @if(isHostProfileLoading) {
+                                <div class="py-10 text-center animate-pulse flex flex-col items-center">
+                                    <div class="w-24 h-24 bg-slate-200 rounded-full mb-4"></div>
+                                    <div class="w-40 h-6 bg-slate-200 rounded mb-2"></div>
+                                    <div class="w-24 h-4 bg-slate-200 rounded"></div>
+                                </div>
+                            } else if (hostProfile != null) {
+                                <!-- Header Info -->
+                                <div class="flex flex-col md:flex-row items-center md:items-start gap-6">
+                                    <div class="w-32 h-32 rounded-full bg-slate-200 ring-4 ring-primary/20 bg-center bg-cover shadow-lg shrink-0" 
+                                         style="background-image: url('@(string.IsNullOrEmpty(hostProfile.Profile.ProfileImageUrl) ? "https://ui-avatars.com/api/?name=User" : hostProfile.Profile.ProfileImageUrl)')">
+                                    </div>
+                                    <div class="flex-1 text-center md:text-left">
+                                        <h3 class="text-2xl font-extrabold @(hostProfile.Profile.IsWarned ? "text-red-600 dark:text-red-500" : "text-slate-800 dark:text-slate-100") flex items-center justify-center md:justify-start gap-2">
+                                            @hostProfile.Profile.FullName
+                                            @if(hostProfile.Profile.IsWarned) {
+                                                <span class="material-icons-round text-red-500 text-xl" title="Tài khoản có dấu hiệu không an toàn">warning</span>
+                                            }
+                                            @if(hostProfile.Profile.IsVerified) {
+                                                <span class="material-icons-round text-primary text-xl" title="Verified Member">verified</span>
+                                            }
+                                        </h3>
+                                        <p class="text-slate-500 font-medium mb-3">Host on UniNest</p>
+                                        
+                                        <div class="flex items-center justify-center md:justify-start gap-6 mb-4">
+                                            <div class="text-center">
+                                                <span class="block text-xl font-black text-slate-800 dark:text-white">@listing.HostTotalListings</span>
+                                                <span class="text-[10px] text-slate-500 font-extrabold uppercase tracking-widest mt-0.5 block">Listings</span>
+                                            </div>
+                                            @if (hostReputation != null && hostReputation.TotalReviews > 0)
+                                            {
+                                                <div class="text-center">
+                                                    <div class="flex items-center justify-center gap-1 text-amber-500 text-lg font-black">
+                                                        <span class="material-icons-round text-[20px]">star</span>
+                                                        @hostReputation.AverageRating.ToString("0.0")
+                                                    </div>
+                                                    <span class="text-[10px] text-slate-500 font-extrabold uppercase tracking-widest mt-0.5 block">@hostReputation.TotalReviews Reviews</span>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <!-- Personal & Uni details -->
+                                    <div class="bg-slate-50 dark:bg-slate-800/50 p-5 rounded-2xl border border-slate-100 dark:border-slate-800">
+                                        <h4 class="font-bold text-slate-800 dark:text-slate-100 mb-4 flex items-center gap-2 border-b border-slate-200 dark:border-slate-700 pb-2">
+                                            <span class="material-icons-round text-primary">person</span> Personal Info
+                                        </h4>
+                                        <div class="space-y-4">
+                                            <div>
+                                                <p class="text-xs text-slate-500 uppercase font-bold tracking-wider mb-1">Gender</p>
+                                                <p class="font-medium text-slate-800 dark:text-slate-200 text-sm">@hostProfile.Profile.Gender</p>
+                                            </div>
+                                            <div>
+                                                <p class="text-xs text-slate-500 uppercase font-bold tracking-wider mb-1">University</p>
+                                                <p class="font-medium text-slate-800 dark:text-slate-200 text-sm">@hostProfile.Profile.UniversityName</p>
+                                            </div>
+                                            @if(!string.IsNullOrEmpty(hostProfile.Profile.Major))
+                                            {
+                                                <div>
+                                                    <p class="text-xs text-slate-500 uppercase font-bold tracking-wider mb-1">Major & Year</p>
+                                                    <p class="font-medium text-slate-800 dark:text-slate-200 text-sm">@hostProfile.Profile.Major - @hostProfile.Profile.YearOfStudy</p>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+
+                                    <!-- Lifestyle -->
+                                    <div class="bg-slate-50 dark:bg-slate-800/50 p-5 rounded-2xl border border-slate-100 dark:border-slate-800">
+                                        <h4 class="font-bold text-slate-800 dark:text-slate-100 mb-4 flex items-center gap-2 border-b border-slate-200 dark:border-slate-700 pb-2">
+                                            <span class="material-icons-round text-primary">nature_people</span> Lifestyle
+                                        </h4>
+                                        @if(hostProfile.Lifestyle.IsComplete) 
+                                        {
+                                            <div class="space-y-4">
+                                                <div class="flex flex-wrap gap-2">
+                                                    <span class="px-3 py-1 bg-white dark:bg-slate-700 rounded-lg text-[11px] font-bold text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600 flex items-center gap-1 shadow-sm"><i class="material-icons-round text-[14px] text-primary">bedtime</i>@hostProfile.Lifestyle.SleepSchedule</span>
+                                                    <span class="px-3 py-1 bg-white dark:bg-slate-700 rounded-lg text-[11px] font-bold text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600 flex items-center gap-1 shadow-sm"><i class="material-icons-round text-[14px] text-primary">cleaning_services</i>Cleanliness: @hostProfile.Lifestyle.CleanlinessLevel/5</span>
+                                                    @if(hostProfile.Lifestyle.Smoking) { <span class="px-3 py-1 bg-white dark:bg-slate-700 rounded-lg text-[11px] font-bold text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600 flex items-center gap-1 shadow-sm"><i class="material-icons-round text-[14px] text-red-500">smoking_rooms</i>Smokes</span> }
+                                                    @if(hostProfile.Lifestyle.HasPet) { <span class="px-3 py-1 bg-white dark:bg-slate-700 rounded-lg text-[11px] font-bold text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600 flex items-center gap-1 shadow-sm"><i class="material-icons-round text-[14px] text-primary">pets</i>Has Pet</span> }
+                                                </div>
+                                                <div>
+                                                    <p class="text-xs text-slate-500 uppercase font-bold tracking-wider mb-1">Guest Frequency</p>
+                                                    <p class="font-medium text-slate-800 dark:text-slate-200 text-sm">@hostProfile.Lifestyle.GuestFrequency</p>
+                                                </div>
+                                            </div>
+                                        } 
+                                        else 
+                                        {
+                                            <p class="text-sm text-slate-500 font-medium italic mt-2">This host has not completed their lifestyle profile.</p>
+                                        }
+                                    </div>
+                                </div>
+                                
+                                @if (hostReputation != null && hostReputation.RecentReviews.Any())
+                                {
+                                    <div class="w-full text-left mt-2">
+                                        <h4 class="text-sm font-bold text-slate-800 dark:text-slate-100 mb-3 flex items-center gap-2">
+                                            <span class="material-icons-round text-slate-400 text-lg">format_quote</span> 
+                                            Recent Feedback
+                                        </h4>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            @foreach (var review in hostReputation.RecentReviews)
+                                            {
+                                                <div class="bg-slate-50 dark:bg-slate-800/80 rounded-xl p-4 border border-slate-100 dark:border-slate-700/50 flex flex-col justify-between">
+                                                    <div class="flex items-center justify-between mb-2">
+                                                        <div class="flex items-center gap-2">
+                                                            <div class="w-8 h-8 rounded-full bg-cover shadow-sm ring-1 ring-slate-200 dark:ring-slate-600 bg-center" style="background-image: url('@(string.IsNullOrEmpty(review.ReviewerAvatar) ? $"https://ui-avatars.com/api/?name={Uri.EscapeDataString(review.ReviewerName ?? "User")}" : review.ReviewerAvatar)')"></div>
+                                                            <span class="text-xs font-bold text-slate-900 dark:text-white">@review.ReviewerName</span>
+                                                        </div>
+                                                        <div class="flex items-center text-amber-500 text-[11px] font-bold bg-amber-50 dark:bg-amber-900/40 px-2 py-0.5 rounded-full">
+                                                            <span class="material-icons-round text-[13px] mr-1">star</span> @review.Rating
+                                                        </div>
+                                                    </div>
+                                                    @if (!string.IsNullOrEmpty(review.Comment))
+                                                    {
+                                                        <p class="text-[13px] text-slate-600 dark:text-slate-300 italic mt-1 leading-relaxed">"@review.Comment"</p>
+                                                    }
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                            } else {
+                                <div class="py-10 text-center text-slate-500">Could not load profile information.</div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+
+        </div>
+    }
+
+    @if (showReportListingModal)
+    {
+        <ReportModal TargetListingId="@listing.ListingId" TargetName="@listing.Title" OnClose="CloseReportListingModal" />
+    }
+
+    <UniNestFE.Layout.ScrollButton />
+</div>
+<link href="css/ListingDetail.css" rel="stylesheet" />
+
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private DetailListingDto listing;
+    private UserReputationDto? hostReputation;
+    private bool isLoading = true;
+    private bool isLoggedIn = false;
+    private bool showLargeMap = false;
+    private bool isMapLoading = false;
+    private bool mapInitialized = false;
+
+    bool isSaved = false;
+    private string? message;
+    private string messageType = "success"; // success | error
+
+    private bool showFullGallery = false;
+    private bool showMessage = false;
+    private bool showHostProfileModal = false;
+    private bool showReportListingModal = false;
+
+    private void OpenReportListingModal()
+    {
+        if (!isLoggedIn)
+        {
+            ShowMessage("Please sign in to report.", "error");
+            return;
+        }
+        showReportListingModal = true;
+    }
+
+    private void CloseReportListingModal()
+    {
+        showReportListingModal = false;
+    }
+
+    private async Task GoBack()
+    {
+        await JS.InvokeVoidAsync("history.back");
+    }
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        isLoggedIn = authState.User.Identity.IsAuthenticated;
+
+        if (isLoggedIn)
+        {
+            var token = await JS.InvokeAsync<string>("localStorage.getItem", "authToken");
+
+            if (!string.IsNullOrEmpty(token))
+            {
+                Http.DefaultRequestHeaders.Authorization =
+                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+                try
+                {
+                    isSaved = await Http.GetFromJsonAsync<bool>($"api/favorites/check/{Id}");
+                }
+                catch
+                {
+                    isSaved = false;
+                }
+            }
+        }
+
+        await LoadListingDetail();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (listing != null && !isLoading && !mapInitialized)
+        {
+            mapInitialized = true;
+
+            var mapKey = Configuration["GoongSettings:MapKey"];
+            var apiKey = Configuration["GoongSettings:ApiKey"];
+            await JS.InvokeVoidAsync("listingGoongMap.setKeys", mapKey, apiKey);
+
+            await JS.InvokeVoidAsync("listingGoongMap.initReadOnlyMap", "detailMap", listing.Latitude, listing.Longitude, 15);
+            await DrawPois();
+        }
+    }
+
+    private async Task OpenLargeMap()
+    {
+        if (isMapLoading || showLargeMap) return;
+
+        isMapLoading = true;
+        showLargeMap = true;
+        StateHasChanged();
+
+        // Wait for modal to render element
+        await Task.Delay(400);
+
+        try
+        {
+            await JS.InvokeVoidAsync("listingGoongMap.initReadOnlyMap", "largeDetailMap", listing.Latitude, listing.Longitude, 16);
+            await DrawPois();
+        }
+        finally
+        {
+            isMapLoading = false;
+            StateHasChanged();
+        }
+    }
+    private async Task LoadListingDetail()
+    {
+        isLoading = true;
+        try
+        {
+            listing = await Http.GetFromJsonAsync<DetailListingDto>($"api/DetailListings/{Id}");
+            if (listing != null && listing.OwnerId > 0)
+            {
+                try {
+                    hostReputation = await Http.GetFromJsonAsync<UserReputationDto>($"api/Review/user/{listing.OwnerId}/stats");
+                } catch { } // fail silently
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error loading listing detail: " + ex.Message);
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+    private async void ShowMessage(string msg, string type)
+    {
+        message = msg;
+        messageType = type;
+        showMessage = true;
+
+        StateHasChanged();
+
+        await Task.Delay(2500); // 2.5s tự biến mất
+
+        showMessage = false;
+        StateHasChanged();
+    }
+    private void ContactHostClicked()
+    {
+        if (!isLoggedIn)
+        {
+            ShowMessage("Please sign in to contact the host.", "error");
+            return;
+        }
+
+        NavManager.NavigateTo($"/chat?partnerId={listing.OwnerId}&listingId={listing.ListingId}");
+    }
+
+    private async Task CreateConversationClicked()
+    {
+        if (!isLoggedIn)
+        {
+            ShowMessage("Please sign in to start a conversation.", "error");
+            return;
+        }
+
+        await CreateConversationAsync();
+    }
+
+    private async Task CreateConversationAsync()
+    {
+        try
+        {
+            ShowMessage("Creating conversation...", "success");
+            
+            var response = await Http.PostAsync($"api/chat/create-conversation/{listing.OwnerId}", null);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var json = await response.Content.ReadAsStringAsync();
+                var conversationDto = JsonSerializer.Deserialize<ConversationDto>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                ShowMessage("Conversation created! Redirecting...", "success");
+                await Task.Delay(500);
+                NavManager.NavigateTo($"/chat?partnerId={listing.OwnerId}&listingId={listing.ListingId}");
+            }
+            else
+            {
+                ShowMessage("Failed to create conversation. Please try again.", "error");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error creating conversation: {ex.Message}");
+            ShowMessage("An error occurred. Please try again.", "error");
+        }
+    }
+
+    private async Task ToggleSave()
+    {
+        if (!isLoggedIn)
+        {
+            ShowMessage("Please sign in to save listings.", "error");
+            return;
+        }
+
+        try
+        {
+            if (isSaved)
+            {
+                var res = await Http.DeleteAsync($"api/favorites/{Id}");
+
+                if (res.IsSuccessStatusCode)
+                {
+                    isSaved = false;
+                    ShowMessage("Removed from favorites", "success");
+                }
+                else
+                {
+                    ShowMessage("Failed to remove. Please try again.", "error");
+                }
+            }
+            else
+            {
+                var res = await Http.PostAsync($"api/favorites/{Id}", null);
+
+                if (res.IsSuccessStatusCode)
+                {
+                    isSaved = true;
+                    ShowMessage("Saved successfully", "success");
+                }
+                else
+                {
+                    ShowMessage("Could not save. Please login again.", "error");
+                }
+            }
+        }
+        catch
+        {
+            ShowMessage("Network error. Please check your connection.", "error");
+        }
+    }
+    public class PoiDto { public string Name { get; set; } = ""; public double Lat { get; set; } public double Lng { get; set; } public string Type { get; set; } = "other"; }
+
+    List<PoiDto> ReferencePois = new()
+    {
+        new PoiDto { Name = "ĐH Bách Khoa (DUT)", Lat = 16.0738, Lng = 108.1499, Type = "university" },
+        new PoiDto { Name = "ĐH Kinh Tế (DUE)", Lat = 16.0469, Lng = 108.2430, Type = "university" },
+        new PoiDto { Name = "ĐH Sư Phạm (UED)", Lat = 16.0604, Lng = 108.1585, Type = "university" },
+        new PoiDto { Name = "ĐH Duy Tân", Lat = 16.0604, Lng = 108.2222, Type = "university" },
+        new PoiDto { Name = "ĐH Kiến Trúc (DAU)", Lat = 16.0543, Lng = 108.2219, Type = "university" },
+        new PoiDto { Name = "ĐH FPT Đà Nẵng", Lat = 15.9686, Lng = 108.2607, Type = "university" },
+        new PoiDto { Name = "Vincom Plaza Da Nang", Lat = 16.0717, Lng = 108.2281, Type = "shopping" },
+        new PoiDto { Name = "Siêu thị GO! (Big C)", Lat = 16.0632, Lng = 108.2163, Type = "shopping" },
+        new PoiDto { Name = "Lotte Mart Da Nang", Lat = 16.0354, Lng = 108.2281, Type = "shopping" }
+    };
+
+    async Task DrawPois()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("listingGoongMap.addPoiMarkers", ReferencePois);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error drawing POIs: " + ex.Message);
+        }
+    }
+    // Host Profile Methods and Models
+    public class PublicProfileResponse
+    {
+        public ProfileModel Profile { get; set; } = new();
+        public LifestyleProfileModel Lifestyle { get; set; } = new();
+    }
+    public class ProfileModel
+    {
+        public string ProfileImageUrl { get; set; } = "";
+        public string FullName { get; set; } = "";
+        public string Gender { get; set; } = "";
+        public string UniversityName { get; set; } = "";
+        public bool IsVerified { get; set; }
+        public string Major { get; set; } = "";
+        public string YearOfStudy { get; set; } = "";
+        public bool IsWarned { get; set; }
+    }
+    public class LifestyleProfileModel
+    {
+        public string SleepSchedule { get; set; } = "Normal"; 
+        public int CleanlinessLevel { get; set; } = 3;
+        public bool Smoking { get; set; } = false;
+        public bool HasPet { get; set; } = false;
+        public string CookingHabit { get; set; } = "Sometimes";
+        public string GuestFrequency { get; set; } = "Occasional";
+        public bool IsComplete { get; set; } = false;
+    }
+
+    private PublicProfileResponse? hostProfile;
+    private bool isHostProfileLoading = false;
+
+    private async Task OpenHostProfileModal()
+    {
+        showHostProfileModal = true;
+        if (hostProfile == null && listing?.OwnerId > 0) 
+        {
+            isHostProfileLoading = true;
+            StateHasChanged();
+            try 
+            {
+                hostProfile = await Http.GetFromJsonAsync<PublicProfileResponse>($"api/Profile/public/{listing.OwnerId}");
+            }
+            catch (Exception ex)
+            {
+                 Console.WriteLine("Error loading profile: " + ex.Message);
+            }
+            finally 
+            {
+                 isHostProfileLoading = false;
+                 StateHasChanged();
+            }
+        }
+    }
+
+    private void CloseHostProfileModal() {
+        showHostProfileModal = false;
+    }
+}
+

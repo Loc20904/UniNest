@@ -1,0 +1,86 @@
+﻿/* Listing Detail Styles */
+.listing-detail {
+    width: 100%;
+    max-width: none; /* bỏ giới hạn */
+    margin: 0 auto;
+}
+
+    .listing-detail .content-container {
+        width: 100%;
+        max-width: 1400px; /* hoặc none nếu muốn full 100% */
+        margin: 0 auto;
+        padding-left: 1.5rem; /* 24px */
+        padding-right: 1.5rem;
+    }
+
+.text-primary {
+    color: #00BAF2;
+}
+
+.bg-primary {
+    background-color: #00BAF2;
+}
+
+.animate-fade-in-up {
+    animation: ListingDetail_fadeInUp 0.5s ease-out forwards;
+}
+
+@keyframes ListingDetail_fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@screen lg {
+    .listing-detail .content-container {
+        padding-left: 2.5rem;
+        padding-right: 2.5rem;
+        /* max-width: 1152px; */ /* bỏ comment nếu muốn quay lại max-w-6xl */
+    }
+}
+
+/* Photos, sidebar... giữ nguyên hoặc điều chỉnh gap nếu cần */
+.listing-detail .photos-grid img {
+    transition: opacity 0.3s ease;
+}
+
+.listing-detail .photos-grid > div:hover img {
+    opacity: 0.9;
+}
+
+/* Blur protected content */
+.listing-detail .protected-content.blur-active {
+    filter: blur(12px);
+    pointer-events: none;
+    user-select: none;
+    max-height: 400px;
+    overflow: hidden;
+}
+
+/* Additional specific styles for ListingDetail page */
+/*.listing-detail .photos-grid img {
+    transition: opacity 0.3s ease-in-out;
+}
+
+.listing-detail .photos-grid div:hover img {
+    opacity: 0.85;
+}
+
+.listing-detail .sidebar .sticky {
+    top: 6rem;
+}*/
+
+/* Ensure the blur effect works even if tailwind classes are not picked up correctly in CSS */
+/*.listing-detail .protected-content.blur-md {
+    filter: blur(12px);
+    pointer-events: none;
+    user-select: none;
+    height: 400px;
+    overflow: hidden;
+}*/

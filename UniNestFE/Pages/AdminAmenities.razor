@@ -1,0 +1,126 @@
+@page "/admin/amenities"
+@inject HttpClient Http
+@inject IJSRuntime JS
+
+<link href="css/AdminAmenities.css" rel="stylesheet" />
+
+<div class="admin-container">
+    <h2 class="admin-title">Manage Amenities (Admin Master Data)</h2>
+
+    <div class="add-form">
+        <div class="form-group-admin">
+            <label>Amenity Name (e.g. Balcony, Gym)</label>
+            <input @bind="newAmenity.Name" placeholder="Enter name..." />
+        </div>
+        <div class="form-group-admin">
+            <label>Material Icon Code (e.g. balcony, fitness_center)</label>
+            <input @bind="newAmenity.Icon" placeholder="Google icon name..." />
+        </div>
+        <button class="btn-add" @onclick="AddAmenity">
+            + Add New
+        </button>
+    </div>
+
+    <table class="amenity-table">
+        <thead>
+            <tr>
+                <th class="th-id">ID</th>
+                <th class="th-icon">Icon</th>
+                <th>Name</th>
+                <th>Icon Code</th>
+                <th class="th-actions">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @{
+                int index = 1;
+            }
+            @foreach (var amenity in amenities)
+            {
+                <tr>
+                    <td>#@index</td>
+                    <td>
+                        <div class="table-icon-preview">
+                            <i class="material-symbols-outlined">@amenity.Icon</i>
+                        </div>
+                    </td>
+                    <td class="font-medium-name">@amenity.Name</td>
+                    <td class="text-icon-code">@amenity.Icon</td>
+                    <td class="td-actions">
+                        <button class="btn-delete" @onclick="() => DeleteAmenity(amenity)">
+                            Delete
+                        </button>
+                    </td>
+                </tr>
+                index++;
+            }
+            @if (amenities.Count == 0)
+            {
+                <tr>
+                    <td colspan="5" class="empty-state-text">
+                        No amenities found in database.
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <UniNestFE.Layout.ScrollButton />
+</div>
+<link href="css/AdminAmenities.css" rel="stylesheet" />
+@code {
+    public class AmenityDto { public int AmenityId { get; set; } public string Name { get; set; } public string Icon { get; set; } }
+    List<AmenityDto> amenities = new();
+    AmenityDto newAmenity = new();
+
+    private async Task AttachTokenAsync()
+    {
+        var token = await JS.InvokeAsync<string>("localStorage.getItem", "authToken");
+        if (!string.IsNullOrEmpty(token))
+        {
+            Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var res = await Http.GetFromJsonAsync<List<AmenityDto>>("https://localhost:7045/api/Amenities");
+            if (res != null) amenities = res;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+    }
+
+    async Task AddAmenity()
+    {
+        if (string.IsNullOrWhiteSpace(newAmenity.Name) || string.IsNullOrWhiteSpace(newAmenity.Icon))
+            return;
+
+        await AttachTokenAsync();
+        var response = await Http.PostAsJsonAsync("https://localhost:7045/api/Amenities", newAmenity);
+
+        if (response.IsSuccessStatusCode)
+        {
+            var added = await response.Content.ReadFromJsonAsync<AmenityDto>();
+            if (added != null)
+            {
+                amenities.Add(added);
+                newAmenity = new AmenityDto(); // Reset form
+            }
+        }
+    }
+
+    async Task DeleteAmenity(AmenityDto amenity)
+    {
+        await AttachTokenAsync();
+        var response = await Http.DeleteAsync($"https://localhost:7045/api/Amenities/{amenity.AmenityId}");
+
+        if (response.IsSuccessStatusCode)
+        {
+            amenities.Remove(amenity);
+        }
+    }
+}

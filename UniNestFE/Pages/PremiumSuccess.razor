@@ -1,0 +1,77 @@
+@page "/premium-success"
+@using Microsoft.JSInterop
+@using UniNestFE.Services
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavManager
+@inject IApiService ApiService
+
+<div class="max-w-md mx-auto mt-10 p-4">
+    <div class="text-center mb-8">
+        <div class="inline-flex items-center justify-center size-16 bg-emerald-100 rounded-full mb-4">
+            <span class="material-icons-round text-emerald-600 text-3xl">check_circle</span>
+        </div>
+        <h1 class="text-3xl font-extrabold mb-2 text-slate-900 dark:text-white">Thanh toán thành công!</h1>
+        <p class="text-slate-500 dark:text-slate-400">Cảm ơn bạn đã nâng cấp lên Premium. Tính năng AI Matching đã được mở khóa.</p>
+    </div>
+
+    <div class="bg-white dark:bg-[#1c2126] p-8 rounded-3xl shadow-xl border border-slate-200 dark:border-[#27353a]">
+        <div class="space-y-4 mb-8">
+            <div class="flex items-center gap-3">
+                <span class="material-icons-round text-emerald-500">check_circle</span>
+                <div>
+                    <p class="font-semibold text-slate-900 dark:text-white">Mở khóa tính năng AI Matching</p>
+                    <p class="text-sm text-slate-500">Tìm bạn ở phù hợp nhất</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <span class="material-icons-round text-emerald-500">check_circle</span>
+                <div>
+                    <p class="font-semibold text-slate-900 dark:text-white">Ưu tiên hiển thị bài đăng</p>
+                    <p class="text-sm text-slate-500">Bài đăng của bạn được ưu tiên</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <span class="material-icons-round text-emerald-500">check_circle</span>
+                <div>
+                    <p class="font-semibold text-slate-900 dark:text-white">Hỗ trợ khách hàng 24/7</p>
+                    <p class="text-sm text-slate-500">Liên hệ với đội hỗ trợ bất cứ lúc nào</p>
+                </div>
+            </div>
+        </div>
+
+        <button @onclick='() => NavManager.NavigateTo("/")'
+                class="w-full px-4 py-4 bg-primary text-white font-bold rounded-2xl hover:brightness-110 transition-all shadow-lg shadow-primary/20 active:scale-95">
+            Về trang chủ
+        </button>
+    </div>
+
+    <div class="mt-8 text-center text-sm text-slate-500">
+        @* Hiển thị OrderCode lấy từ URL *@
+        <p>Mã đơn hàng: @(OrderCode ?? "...")</p>
+    </div>
+</div>
+
+@code {
+    // Tự động bắt tham số ?orderCode= trên URL
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "orderCode")]
+    public string? OrderCode { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(OrderCode))
+        {
+            try
+            {
+                // Gọi API xác nhận thanh toán với Backend
+                // Lưu ý: Nếu Backend nhận string thì để nguyên,
+                // nếu nhận object hãy dùng: new { orderCode = OrderCode }
+                await ApiService.PostAsync<dynamic>("/api/payment/confirm-payos-payment", OrderCode);
+            }
+            catch (Exception ex)
+            {
+                await JSRuntime.InvokeVoidAsync("console.error", $"Payment confirmation failed: {ex.Message}");
+            }
+        }
+    }
+}

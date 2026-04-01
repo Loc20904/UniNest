@@ -1,0 +1,879 @@
+@page "/edit-listing/{id:int}"
+@using UniNestFE.DTOs
+@inject HttpClient Http
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+@inject IConfiguration Configuration
+
+<div class="edit-listing-container">
+    <!-- Header -->
+    <div class="edit-listing-header">
+        <div class="header-subtitle">
+            <i class="material-icons">edit</i> Edit A Listing
+        </div>
+        <h1 class="header-title">Edit Your Listing</h1>
+        <p class="header-desc">Update your space details to find the perfect room mate in Da Nang.</p>
+    </div>
+
+    <!-- Progress / Step -->
+    @if (listing == null)
+    {
+        <div class="loader-container">
+            <div class="spinner"></div>
+        </div>
+    }
+    else
+    {
+        <!-- Form Content -->
+        <div>
+            <!-- 1. General Information -->
+            <div class="section-card">
+                
+                
+                <div class="section-header">
+                    <div class="section-icon info">
+                        <i class="material-icons">info</i>
+                    </div>
+                    <h2>General Information</h2>
+                </div>
+
+                <div class="form-group-space">
+                   
+                    <div class="form-group">
+                        <label class="form-label">Listing Title <span class="text-red-500 text-lg" title="Information must be entered">*</span></label>
+                        <input type="text" @bind="listing.Title" class="form-input" placeholder="e.g. Modern Studio near Duy Tan University" />
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Monthly Rent (VND) <span class="text-red-500 text-lg" title="Information must be entered">*</span></label>
+                            <div class="form-input-container">
+                                <input type="number" @bind="listing.Price" class="form-input" placeholder="3,500,000" />
+                                <span class="form-input-suffix">VND</span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Area (M²) <span class="text-red-500 text-lg" title="Information must be entered">*</span></label>
+                            <div class="form-input-container" style="justify-content: flex-end;">
+                                <input type="number" @bind="listing.AreaSquareMeters" class="form-input" placeholder="25" />
+                                <span class="form-input-suffix">m²</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Description </label>
+                        <textarea @bind="listing.Description" rows="4" class="form-textarea" placeholder="Describe the room, furniture, and surroundings..."></textarea>
+                    </div>
+                    <div class="form-group mb-4">
+                        <label class="form-label">Property Type <span class="text-red-500 text-lg" title="Information must be entered">*</span></label>
+                        <div class="property-type-grid">
+                            @foreach (var type in propertyTypes)
+                            {
+                                <div class="type-card @(listing.PropertyTypeId == type.PropertyTypeId ? "active" : "")" 
+                                     @onclick="() => listing.PropertyTypeId = type.PropertyTypeId">
+                                    <span class="type-name">@type.Name</span>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. Location & Views -->
+            <div class="section-card">
+                <div class="section-header">
+                    <div class="section-icon location">
+                        <i class="material-icons">location_on</i>
+                    </div>
+                    <h2>Location</h2>
+                </div>
+                
+                @if(!string.IsNullOrEmpty(locationErrorMessage))
+                {
+                    <div class="error-msg" style="color: red; margin-bottom: 16px; background-color: #fee2e2; padding: 12px; border-radius: 8px;">
+                        <i class="material-icons" style="vertical-align: middle;">error</i> <strong>@locationErrorMessage</strong>
+                    </div>
+                }
+
+                <div class="form-row" style="margin-bottom: 24px;">
+                    <div class="form-group">
+                        <label class="form-label">District <span class="text-red-500 text-lg" title="Information must be entered">*</span></label>
+                        <div class="form-input-container">
+                            <input type="text"
+                                   class="form-input"
+                                   @bind="listing.District" placeholder="Enter district..." title="District can be auto-filled or entered manually" />
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Address <span class="text-red-500 text-lg" title="Information must be entered">*</span></label>
+                        <div class="flex gap-2">
+                            <input type="text" @bind="listing.Address" 
+                                   @onkeyup='(e) => { if (e.Key == "Enter") SearchAddressOnMap(); }'
+                                   placeholder="Enter address or click map..." class="form-input flex-1" title="Specific address can be auto-filled or entered manually" />
+                            <button type="button" class="bg-[#00BAF2] text-white px-4 rounded-xl hover:bg-[#05a0d3] transition-all active:scale-95 shadow-md flex items-center justify-center" 
+                                    @onclick="SearchAddressOnMap" title="Update map from entered address">
+                                <i class="material-icons">search</i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-between items-center mb-4">
+                    <label class="form-label mb-0">Select on Map</label>
+                    @if (!showLargeMap)
+                    {
+                        <button type="button" @onclick="OpenLargeMap" disabled="@isMapLoading" class="text-[#00BAF2] hover:underline font-bold text-sm flex items-center gap-1">
+                            <i class="material-icons-round text-lg">open_in_full</i> 
+                            @(isMapLoading ? "Connecting..." : "Expand Selection Map")
+                        </button>
+                    }
+                </div>
+
+                <div class="relative group">
+                    <!-- MAP REAL -->
+                    <div id="map" style="height: 350px; border-radius: 12px; border: 1px solid #e2e8f0;"></div>
+                    
+                    @if (!showLargeMap)
+                    {
+                        <div class="absolute inset-0 z-[401] bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none rounded-xl">
+                            <button type="button" class="bg-white text-slate-800 font-extrabold px-6 py-2.5 rounded-full shadow-2xl pointer-events-auto transform transition-transform active:scale-95" @onclick="OpenLargeMap">
+                                Show Large Map
+                            </button>
+                        </div>
+                    }
+                </div>
+
+                </div>
+            </div>
+    
+            <!-- Portalled Modal to end of file -->
+
+            <!-- 3. Amenities -->
+            <div class="section-card">
+                <div class="section-header">
+                    <div class="section-icon amenities">
+                        <i class="material-icons">grid_view</i>
+                    </div>
+                    <h2>Amenities</h2>
+                </div>
+
+                <div class="amenities-grid">
+                    @foreach (var amenity in AvailableAmenities)
+                    {
+                        var isChecked = listing.Amenities.Any(a => a.AmenityId == amenity.AmenityId);
+                        <label class="amenity-card @(isChecked ? "checked" : "")" @onclick="() => ToggleAmenity(amenity)">
+                            <div class="checkbox-box"><i class="material-icons">check</i></div>
+                            <i class="material-symbols-outlined amenity-icon">@amenity.Icon</i>
+                            <span class="amenity-name">@amenity.Name</span>
+                        </label>
+                    }
+                </div>
+            </div>
+
+            <!-- 4. Roommate Preferences -->
+            <div class="section-card">
+                <div class="section-header">
+                    <div class="section-icon roommate">
+                        <i class="material-icons">group</i>
+                    </div>
+                    <h2>Roommate Preferences</h2>
+                </div>
+                
+                <div class="form-row roommate-prefs">
+                    <div class="form-group">
+                        <label class="form-label">Preferred Gender</label>
+                        <div class="segmented-control">
+                            <button type="button" class="segmented-btn @(listing.GenderPreference == "Any" ? "active" : "")" @onclick="@(() => listing.GenderPreference = "Any")">Any</button>
+                            <button type="button" class="segmented-btn @(listing.GenderPreference == "Male" ? "active" : "")" @onclick="@(() => listing.GenderPreference = "Male")">Male</button>
+                            <button type="button" class="segmented-btn @(listing.GenderPreference == "Female" ? "active" : "")" @onclick="@(() => listing.GenderPreference = "Female")">Female</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Lifestyle Habits</label>
+                        <div class="habits-list">
+                        @foreach (var habit in AvailableHabits)
+                        {
+                            var isChecked = listing.LifestyleHabits.Any(a => a.LifestyleHabitId == habit.LifestyleHabitId);
+                            <label class="habit-item @(isChecked ? "checked" : "")" @onclick="() => ToggleHabit(habit)">
+                                <div class="flex items-center gap-3">
+                                    @if (!string.IsNullOrEmpty(habit.Icon))
+                                    {
+                                        <i class="material-icons-round @(isChecked ? "text-[#00BAF2]" : "text-slate-400")" style="font-size: 20px;">@habit.Icon</i>
+                                    }
+                                    <span class="habit-name">@habit.Name</span>
+                                </div>
+                                <div class="checkbox-box"><i class="material-icons">check</i></div>
+                            </label>
+                        }
+                    </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. Media Upload -->
+            <div class="section-card">
+                <div class="section-header">
+                    <div class="section-icon media">
+                        <i class="material-icons">image</i>
+                    </div>
+                    <h2>Media Upload</h2>
+                </div>
+                
+                <div class="upload-zone" onclick="document.getElementById('fileInput').click()">
+                    <div class="upload-icon">
+                        <i class="material-icons">cloud_upload</i>
+                    </div>
+                    <h3 class="upload-title">Click to upload photos</h3>
+                    <p class="upload-desc">High-quality images get 5x more views. (Max 10 files)</p>
+                    <InputFile id="fileInput" OnChange="HandleFileSelected" multiple accept="image/*" style="display: none;" />
+                    <button type="button" class="btn-upload">Browse Files</button>
+                </div>
+
+                <div class="media-grid">
+                    @foreach (var img in listing.Images)
+                    {
+                        var fullUrl = "https://localhost:7045" + img.ImageUrl;
+                        <div class="media-item @(img.IsPrimary ? "primary" : "")" style="background-image: url('@fullUrl'); background-size: cover; background-position: center;">
+                            @if (img.IsPrimary)
+                            {
+                                <div class="primary-badge">Primary</div>
+                            }
+                            else
+                            {
+                                <button type="button" class="btn-set-primary" @onclick="() => SetExistingPrimary(img)" @onclick:stopPropagation="true" style="position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,0.5); color: white; border: none; border-radius: 4px; padding: 4px 8px; font-size: 10px; cursor: pointer;">Set Primary</button>
+                            }
+                            
+                            <button type="button" class="btn-remove-img" @onclick="() => DeleteExistingImage(img)" @onclick:stopPropagation="true" style="position: absolute; top: 8px; right: 8px; background: rgba(255,0,0,0.7); color: white; border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                                <i class="material-icons" style="font-size: 14px;">close</i>
+                            </button>
+                        </div>
+                    }
+
+                    @foreach (var preview in selectedImagePreviews)
+                    {
+                        <div class="media-item @(preview.IsPrimary ? "primary" : "")" style="background-image: url('@preview.Base64'); background-size: cover; background-position: center; border: 2px dashed #00BAF2;">
+                            @if (preview.IsPrimary)
+                            {
+                                <div class="primary-badge" style="background-color: #00BAF2; opacity: 0.8;">New Primary</div>
+                            }
+                            else
+                            {
+                                <button type="button" class="btn-set-primary" @onclick="() => SetUploadPrimary(preview)" @onclick:stopPropagation="true" style="position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,0.5); color: white; border: none; border-radius: 4px; padding: 4px 8px; font-size: 10px; cursor: pointer;">Set Primary (New)</button>
+                                <div class="primary-badge" style="background-color: #64748B; opacity: 0.8;">New</div>
+                            }
+                            
+                            <button type="button" class="btn-remove-img" @onclick="() => RemoveUploadImage(preview)" @onclick:stopPropagation="true" style="position: absolute; top: 8px; right: 8px; background: rgba(255,0,0,0.7); color: white; border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                                <i class="material-icons" style="font-size: 14px;">close</i>
+                            </button>
+                        </div>
+                    }
+                    
+                    @if (listing.Images.Count + selectedImagePreviews.Count < 10)
+                    {
+                        <div class="media-item add-new" onclick="document.getElementById('fileInput').click()">
+                            <i class="material-icons">add</i>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Footer Actions -->
+            <div class="footer-actions">
+                <button type="button" class="btn-prev" @onclick="Cancel">
+                    <i class="material-icons">arrow_back</i> Previous Section
+                </button>
+                <div class="footer-right">
+                    @if (!string.IsNullOrEmpty(uploadErrorMessage))
+                    {
+                        <div class="error-msg text-red-600 dark:text-red-400 mb-4 flex items-center gap-2">
+                            <i class="material-icons text-[18px]">error</i>
+                            <span>@uploadErrorMessage</span>
+                        </div>
+                    }
+                    <span class="auto-save-text">All changes automatically saved</span>
+                    @if (listing.ApprovalStatus == "Draft")
+                    {
+                        <button type="button" class="btn-post-up" @onclick='() => SubmitWithStatus("Pending")' style="background-color: #00BAF2; color: white; padding: 10px 20px; border-radius: 12px; font-weight: bold; display: flex; align-items: center; gap: 8px; transition: all 0.2s; box-shadow: 0 4px 12px rgba(0, 186, 242, 0.2);">
+                            Post Up <i class="material-icons">publish</i>
+                        </button>
+                    }
+                    <button type="button" class="btn-save-main" @onclick="() => UpdateListing()">
+                        Save Changes <i class="material-icons">check</i>
+                    </button>
+                </div>
+            </div>
+        
+    }
+
+    @if (showSuccessAlert)
+    {
+        <div class="fixed top-5 right-5 z-[9999] bg-green-500 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 animate-fade-in-up">
+            <i class="material-icons">check_circle</i>
+            <div class="font-bold">Listing updated successfully! Redirecting...</div>
+        </div>
+    }
+
+    <!-- Large Map Modal for Selection (Placed at root to avoid stacking context issues) -->
+    @if (showLargeMap)
+    {
+        <div class="fixed inset-0 z-[9999] bg-white flex flex-col animate-fade-in-up">
+            <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white shadow-sm z-10">
+                <div>
+                    <h2 class="text-xl font-extrabold text-slate-800">Adjust Location</h2>
+                    <p class="text-xs text-slate-500 flex items-center gap-1 mt-0.5"><i class="material-icons-round text-sm text-[#00BAF2]">info</i> Click on the map to update the property location</p>
+                </div>
+                <button type="button" @onclick="CloseLargeMap" class="p-2 rounded-full hover:bg-slate-100 transition-colors">
+                    <i class="material-icons-round text-3xl text-slate-400">close</i>
+                </button>
+            </div>
+            <div class="flex-1 relative">
+                <div id="largeSelectionMap" class="w-full h-full"></div>
+                
+                <div class="absolute bottom-6 left-6 right-6 z-[400] bg-white/95 backdrop-blur-md p-6 rounded-2xl shadow-2xl border border-white max-w-2xl mx-auto">
+                    <div class="flex items-start gap-4 mb-4">
+                        <div class="w-10 h-10 bg-[#00BAF2]/10 rounded-full flex items-center justify-center text-[#00BAF2] shrink-0">
+                            <i class="material-icons-round text-xl">location_on</i>
+                        </div>
+                        <div class="flex-1">
+                            <span class="block font-extrabold text-slate-800 text-sm">Selected Address</span>
+                            <p class="text-sm text-slate-600 leading-snug">@(string.IsNullOrEmpty(listing.Address) ? "No location selected yet. Click on the map." : listing.Address)</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-3">
+                        <button type="button" @onclick="CloseLargeMap" 
+                                class="flex-1 bg-[#00BAF2] text-white py-3 rounded-xl font-bold hover:bg-[#05a0d3] shadow-lg shadow-[#00BAF2]/20 transition-all active:scale-95">
+                            Confirm Location
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+<link href="css/EditListing.css" rel="stylesheet" />
+@code {
+    [Parameter]
+    public int id { get; set; }
+
+    ListingEditDto listing;
+    public class ListingEditDto
+    {
+        public int ListingId { get; set; }
+        public string Title { get; set; }
+        public string Description { get; set; }
+        public decimal Price { get; set; }
+        public double AreaSquareMeters { get; set; }
+        public bool IsAvailable { get; set; }
+        public string GenderPreference { get; set; }
+        public string District { get; set; }
+        public string Address { get; set; }
+        public string ApprovalStatus { get; set; }
+        public int? PropertyTypeId { get; set; }
+        public double Latitude { get; set; }
+        public double Longitude { get; set; }
+        public List<int> AmenityIds { get; set; } = new();
+        public List<int> LifestyleHabitIds { get; set; } = new();
+        public List<AmenityItem> Amenities { get; set; } = new();
+        public List<HabitItem> LifestyleHabits { get; set; } = new();
+        public List<ListingImageDto> Images { get; set; } = new();
+    }
+
+    public class ListingImageDto
+    {
+        public int ImageId { get; set; }
+        public string ImageUrl { get; set; }
+        public bool IsPrimary { get; set; }
+    }
+
+    public class AmenityItem { public int AmenityId { get; set; } public string Name { get; set; } public string Icon { get; set; } }
+    List<AmenityItem> AvailableAmenities = new();
+    
+    public class HabitItem { public int LifestyleHabitId { get; set; } public string Name { get; set; } public string? Icon { get; set; } }
+    public class PropertyType { public int PropertyTypeId { get; set; } public string Name { get; set; } }
+    List<HabitItem> AvailableHabits = new();
+    List<PropertyType> propertyTypes = new();
+
+    void ToggleAmenity(AmenityItem amenity)
+    {
+        var existing = listing.Amenities.FirstOrDefault(a => a.AmenityId == amenity.AmenityId);
+        if (existing != null)
+        {
+            listing.Amenities.Remove(existing);
+        }
+        else
+        {
+            listing.Amenities.Add(amenity);
+        }
+    }
+    
+    void ToggleHabit(HabitItem habit)
+    {
+        var existing = listing.LifestyleHabits.FirstOrDefault(a => a.LifestyleHabitId == habit.LifestyleHabitId);
+        if (existing != null)
+        {
+            listing.LifestyleHabits.Remove(existing);
+        }
+        else
+        {
+            listing.LifestyleHabits.Add(habit);
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var token = await JS.InvokeAsync<string>("localStorage.getItem", "authToken");
+            if (!string.IsNullOrEmpty(token)) {
+                 Http.DefaultRequestHeaders.Authorization =
+                     new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+            }
+            
+            listing = await Http.GetFromJsonAsync<ListingEditDto>(
+                $"https://localhost:7045/api/MyListings/{id}"
+            );
+
+            var res = await Http.GetFromJsonAsync<List<AmenityItem>>("https://localhost:7045/api/Amenities");
+            if (res != null) AvailableAmenities = res;
+            
+            var habitsRes = await Http.GetFromJsonAsync<List<HabitItem>>("https://localhost:7045/api/LifestyleHabits");
+            if (habitsRes != null) AvailableHabits = habitsRes;
+
+            var typesRes = await Http.GetFromJsonAsync<List<PropertyType>>("api/PropertyTypes");
+            if (typesRes != null) propertyTypes = typesRes;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+    }
+
+    public class ImagePreview
+    {
+        public string Base64 { get; set; }
+        public byte[] FileBytes { get; set; }
+        public string FileName { get; set; }
+        public string ContentType { get; set; }
+        public bool IsPrimary { get; set; }
+    }
+    List<ImagePreview> selectedImagePreviews = new();
+    string uploadErrorMessage = "";
+
+    async Task HandleFileSelected(InputFileChangeEventArgs e)
+    {
+        uploadErrorMessage = "";
+        var totalCount = listing.Images.Count + selectedImagePreviews.Count;
+        var files = e.GetMultipleFiles(10);
+        foreach (var file in files)
+        {
+            if (totalCount >= 10) break;
+            totalCount++;
+            
+            try 
+            {
+                using var ms = new MemoryStream();
+                await file.OpenReadStream(15 * 1024 * 1024).CopyToAsync(ms);
+                var fileBytes = ms.ToArray();
+
+                var resized = await file.RequestImageFileAsync("image/jpeg", 800, 800);
+                using var stream = resized.OpenReadStream(10 * 1024 * 1024);
+                var buffer = new byte[resized.Size];
+                await stream.ReadAsync(buffer);
+                string base64 = $"data:image/jpeg;base64,{Convert.ToBase64String(buffer)}";
+                
+                selectedImagePreviews.Add(new ImagePreview { 
+                    Base64 = base64, 
+                    FileBytes = fileBytes,
+                    FileName = file.Name,
+                    ContentType = file.ContentType,
+                    IsPrimary = false 
+                });
+            }
+            catch(Exception ex) 
+            {
+                Console.WriteLine("Error reading file: " + ex.Message);
+            }
+        }
+    }
+
+    void RemoveUploadImage(ImagePreview preview)
+    {
+        selectedImagePreviews.Remove(preview);
+    }
+    
+    async Task DeleteExistingImage(ListingImageDto img)
+    {
+        if (listing.Images.Count + selectedImagePreviews.Count <= 1)
+        {
+            uploadErrorMessage = "You must have at least one image!";
+            return;
+        }
+        try 
+        {
+            var res = await Http.DeleteAsync($"https://localhost:7045/api/MyListings/{listing.ListingId}/images/{img.ImageId}");
+            if (res.IsSuccessStatusCode)
+            {
+                listing.Images.Remove(img);
+                if (img.IsPrimary && listing.Images.Count > 0)
+                {
+                    listing.Images[0].IsPrimary = true;
+                }
+            }
+            else
+            {
+                uploadErrorMessage = "Could not delete image from server.";
+            }
+        }
+        catch(Exception ex)
+        {
+            uploadErrorMessage = ex.Message;
+        }
+    }
+
+    async Task SetExistingPrimary(ListingImageDto img)
+    {
+        try 
+        {
+            var res = await Http.PutAsync($"https://localhost:7045/api/MyListings/{listing.ListingId}/images/{img.ImageId}/primary", null);
+            if (res.IsSuccessStatusCode)
+            {
+                foreach(var i in listing.Images) i.IsPrimary = false;
+                foreach(var p in selectedImagePreviews) p.IsPrimary = false;
+                img.IsPrimary = true;
+            }
+            else
+            {
+                uploadErrorMessage = "Could not set primary image on server.";
+            }
+        }
+        catch(Exception ex)
+        {
+            uploadErrorMessage = ex.Message;
+        }
+    }
+
+    void SetUploadPrimary(ImagePreview preview)
+    {
+        foreach(var i in listing.Images) i.IsPrimary = false;
+        foreach(var p in selectedImagePreviews) p.IsPrimary = false;
+        preview.IsPrimary = true;
+    }
+
+    async Task SubmitWithStatus(string status)
+    {
+        await UpdateListing(status);
+    }
+
+    async Task UpdateListing(string targetStatus = null)
+    {
+        uploadErrorMessage = "";
+        
+        // Populate IDs for serialization
+        listing.AmenityIds = listing.Amenities.Select(a => a.AmenityId).ToList();
+        listing.LifestyleHabitIds = listing.LifestyleHabits.Select(h => h.LifestyleHabitId).ToList();
+
+        // Use the target status for validation, or the current status if not provided
+        var effectiveStatus = targetStatus ?? listing.ApprovalStatus;
+
+        if (effectiveStatus != "Draft")
+        {
+            if (string.IsNullOrWhiteSpace(listing.Title) ||
+                listing.Price <= 0 ||
+                listing.AreaSquareMeters <= 0 ||
+                listing.PropertyTypeId == null || listing.PropertyTypeId == 0 ||
+                string.IsNullOrWhiteSpace(listing.District) ||
+                string.IsNullOrWhiteSpace(listing.Address))
+            {
+                uploadErrorMessage = "Information must be entered for all required fields (*).";
+                return;
+            }
+
+            if (listing.Images.Count + selectedImagePreviews.Count == 0)
+            {
+                uploadErrorMessage = "Information must be entered: You must upload at least one image before saving!";
+                return;
+            }
+        }
+        
+        // Only set the status if validation passes
+        if (targetStatus != null)
+        {
+            listing.ApprovalStatus = targetStatus;
+        }
+
+        try
+        {
+            Console.WriteLine($"Updating listing {listing.ListingId} to status {listing.ApprovalStatus}...");
+            var response = await Http.PutAsJsonAsync(
+                $"https://localhost:7045/api/MyListings/{listing.ListingId}",
+                listing
+            );
+
+            if (response.IsSuccessStatusCode)
+            {
+                // Tiết kiệm: upload các file mới lên server
+                if (selectedImagePreviews.Count > 0)
+                {
+                    using var content = new MultipartFormDataContent();
+                    
+                    var primaryImg = selectedImagePreviews.FirstOrDefault(p => p.IsPrimary);
+                    if (primaryImg != null)
+                    {
+                        content.Add(new StringContent(primaryImg.FileName), "primaryFileName");
+                    }
+
+                    foreach(var p in selectedImagePreviews)
+                    {
+                        var streamContent = new ByteArrayContent(p.FileBytes);
+                        streamContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(p.ContentType);
+                        content.Add(streamContent, "files", p.FileName);
+                    }
+                    
+                    await Http.PostAsync($"https://localhost:7045/api/MyListings/{listing.ListingId}/images", content);
+                }
+
+                showSuccessAlert = true;
+                StateHasChanged();
+                Console.WriteLine("Update success!");
+                await Task.Delay(1500); 
+                Nav.NavigateTo("/mylistings");
+            }
+            else
+            {
+                var errorText = await response.Content.ReadAsStringAsync();
+                uploadErrorMessage = $"Update failed: {response.StatusCode} - {errorText}";
+                Console.WriteLine(uploadErrorMessage);
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            uploadErrorMessage = "Connection error: " + ex.Message;
+            Console.WriteLine(ex.Message);
+            StateHasChanged();
+        }
+    }
+
+    bool showSuccessAlert = false;
+
+    void Cancel()
+    {
+        Nav.NavigateTo("/mylistings");
+    }
+
+    DotNetObjectReference<EditListing> objRef;
+    bool showLargeMap = false;
+    bool isMapLoading = false;
+    bool mapInitialized = false;
+
+
+    private async Task CloseLargeMap()
+    {
+        showLargeMap = false;
+        StateHasChanged();
+        // Re-init small map to reflect changes
+        await Task.Delay(400);
+        if (objRef == null) objRef = DotNetObjectReference.Create(this);
+        
+        await JS.InvokeVoidAsync("listingGoongMap.initMap", objRef, "map", listing.Latitude, listing.Longitude, 14);
+        await DrawPois();
+    }
+    
+    private async Task OpenLargeMap()
+    {
+        if (isMapLoading || showLargeMap) return;
+        
+        isMapLoading = true;
+        showLargeMap = true;
+        StateHasChanged();
+        
+        // Wait for modal to render element
+        await Task.Delay(400); 
+        
+        try 
+        {
+            if (objRef == null) objRef = DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("listingGoongMap.initMap", objRef, "largeSelectionMap", listing.Latitude, listing.Longitude, 16);
+            await DrawPois();
+        }
+        finally
+        {
+            isMapLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (listing != null && !mapInitialized)
+        {
+            mapInitialized = true;
+            objRef = DotNetObjectReference.Create(this);
+
+            var mapKey = Configuration["GoongSettings:MapKey"];
+            var apiKey = Configuration["GoongSettings:ApiKey"];
+            await JS.InvokeVoidAsync("listingGoongMap.setKeys", mapKey, apiKey);
+
+            await JS.InvokeVoidAsync("listingGoongMap.initMap", objRef, "map", listing.Latitude, listing.Longitude, 14);
+            await DrawPois();
+        }
+    }
+    public class NominatimLocation { public string lat { get; set; } public string lon { get; set; } }
+
+    async Task SearchAddressOnMap()
+    {
+        if(string.IsNullOrWhiteSpace(listing.Address)) 
+        {
+            uploadErrorMessage = "Please enter an address to search.";
+            return;
+        }
+        
+        try {
+            locationErrorMessage = "";
+            var addressText = listing.Address ?? "";
+            var districtText = listing.District ?? "";
+            
+            var searchStr = addressText;
+            if (!string.IsNullOrWhiteSpace(districtText) && !addressText.Contains(districtText, StringComparison.OrdinalIgnoreCase))
+            {
+                searchStr += $", {districtText}";
+            }
+            if (!addressText.Contains("Da Nang", StringComparison.OrdinalIgnoreCase) && !addressText.Contains("Đà Nẵng", StringComparison.OrdinalIgnoreCase))
+            {
+                searchStr += ", Da Nang, Vietnam";
+            }
+            
+            var url = $"https://nominatim.openstreetmap.org/search?q={Uri.EscapeDataString(searchStr)}&format=json&limit=1&email=uninest.noreply@gmail.com";
+            
+            using var client = new HttpClient();
+            client.DefaultRequestHeaders.Add("User-Agent", "UniNestApp/1.0");
+            var result = await client.GetFromJsonAsync<List<NominatimLocation>>(url);
+            
+            // Fallback: nếu không tìm thấy địa chỉ cụ thể như số nhà dài, thử tìm Phường/Quận
+            if (result == null || result.Count == 0)
+            {
+                var fallbackStr = districtText;
+                if (!fallbackStr.Contains("Da Nang", StringComparison.OrdinalIgnoreCase) && !fallbackStr.Contains("Đà Nẵng", StringComparison.OrdinalIgnoreCase))
+                {
+                    fallbackStr += ", Da Nang, Vietnam";
+                }
+                
+                var fallbackUrl = $"https://nominatim.openstreetmap.org/search?q={Uri.EscapeDataString(fallbackStr)}&format=json&limit=1&email=uninest.noreply@gmail.com";
+                result = await client.GetFromJsonAsync<List<NominatimLocation>>(fallbackUrl);
+                
+                if (result != null && result.Count > 0)
+                {
+                    locationErrorMessage = "Không tìm thấy số nhà chính xác, bản đồ tạm hiển thị trung tâm khu vực. Bạn hãy nhấp chuột lên bản đồ để chọn lại vị trí đúng nhất nhé!";
+                }
+            }
+            
+            if(result != null && result.Count > 0)
+            {
+                var loc = result[0];
+                listing.Latitude = double.Parse(loc.lat, System.Globalization.CultureInfo.InvariantCulture);
+                listing.Longitude = double.Parse(loc.lon, System.Globalization.CultureInfo.InvariantCulture);
+                
+                await JS.InvokeVoidAsync("listingGoongMap.updateMarker", listing.Latitude, listing.Longitude, listing.Address);
+                StateHasChanged();
+            }
+            else {
+                 locationErrorMessage = "Could not find location on map. Try adjusting your address text.";
+            }
+        } catch(Exception e) { 
+            Console.WriteLine(e); 
+            locationErrorMessage = "Error requesting location: Bạn đang bị chặn IP do nhấn quá nhanh. Vui lòng đợi 5 phút.";
+        }
+    }
+
+    private bool isGeocoding = false;
+    private string locationErrorMessage = "";
+
+    [JSInvokable]
+    public async Task OnMapClick(double lat, double lng)
+    {
+        if (isGeocoding) return;
+
+        try
+        {
+            isGeocoding = true;
+            locationErrorMessage = "";
+            listing.Latitude = lat;
+            listing.Longitude = lng;
+
+            var latStr = lat.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            var lonStr = lng.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            var url = $"https://nominatim.openstreetmap.org/reverse?lat={latStr}&lon={lonStr}&format=json&email=uninest.noreply@gmail.com";
+
+            // Khởi tạo HttpClient mới thay vì dùng Http đang chứa Bearer Token 
+            // Điều này phòng tránh Nominatim từ chối request do header lạ và CORS
+            using var nominatimClient = new HttpClient();
+            nominatimClient.DefaultRequestHeaders.Add("User-Agent", "UniNestApp/1.0");
+            var result = await nominatimClient.GetFromJsonAsync<NominatimResponse>(url);
+
+            if (result != null)
+            {
+                string rawAddress = result.display_name;
+                listing.Address = rawAddress.Replace(" Ward", "").Trim();
+
+                string rawDistrict = result.address?.city_district ?? result.address?.suburb ?? result.address?.city ?? "Unknown";
+                listing.District = rawDistrict.Replace(" Ward", "").Trim();
+
+                // Cập nhật marker
+                await JS.InvokeVoidAsync("listingGoongMap.updateMarker", lat, lng, listing.Address);
+
+                StateHasChanged(); // refresh UI
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            locationErrorMessage = "Không thể tải địa chỉ! IP mạng của bạn đang bị chặn tạm thời vì thao tác quá nhanh. Xin vui lòng chờ 5 phút rồi thử lại!";
+            StateHasChanged();
+        }
+        finally
+        {
+            isGeocoding = false;
+        }
+    }
+
+
+    public class PoiDto { public string Name { get; set; } = ""; public double Lat { get; set; } public double Lng { get; set; } public string Type { get; set; } = "other"; }
+    
+    // Reference list of POIs in Da Nang
+    List<PoiDto> ReferencePois = new()
+    {
+        new PoiDto { Name = "ĐH Bách Khoa (DUT)", Lat = 16.0738, Lng = 108.1499, Type = "university" },
+        new PoiDto { Name = "ĐH Kinh Tế (DUE)", Lat = 16.0469, Lng = 108.2430, Type = "university" },
+        new PoiDto { Name = "ĐH Sư Phạm (UED)", Lat = 16.0604, Lng = 108.1585, Type = "university" },
+        new PoiDto { Name = "ĐH Duy Tân", Lat = 16.0604, Lng = 108.2222, Type = "university" },
+        new PoiDto { Name = "ĐH Kiến Trúc (DAU)", Lat = 16.0543, Lng = 108.2219, Type = "university" },
+        new PoiDto { Name = "ĐH FPT Đà Nẵng", Lat = 15.9686, Lng = 108.2607, Type = "university" },
+        new PoiDto { Name = "Vincom Plaza Da Nang", Lat = 16.0717, Lng = 108.2281, Type = "shopping" },
+        new PoiDto { Name = "Siêu thị GO! (Big C)", Lat = 16.0632, Lng = 108.2163, Type = "shopping" },
+        new PoiDto { Name = "Lotte Mart Da Nang", Lat = 16.0354, Lng = 108.2281, Type = "shopping" }
+    };
+
+    async Task DrawPois()
+    {
+        try {
+            await JS.InvokeVoidAsync("listingGoongMap.addPoiMarkers", ReferencePois);
+        } catch (Exception ex) {
+            Console.WriteLine("Error drawing POIs: " + ex.Message);
+        }
+    }
+
+    public class NominatimResponse
+    {
+        public string display_name { get; set; }
+        public AddressDetail address { get; set; }
+    }
+
+    public class AddressDetail
+    {
+        public string city { get; set; }
+        public string suburb { get; set; }
+        public string city_district { get; set; }
+    }
+}

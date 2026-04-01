@@ -1,7 +1,14 @@
-﻿@inject IJSRuntime JSRuntime
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.WebAssembly
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Components.Routing
+@using System.Security.Claims
+
+@inject IJSRuntime JSRuntime
 @inject NavigationManager NavManager
 
 <header class="flex items-center justify-between border-b border-solid border-slate-200 dark:border-[#27353a] px-6 py-3 bg-background-light dark:bg-background-dark z-50">
+    @* Logo Section *@
     <div class="flex items-center gap-4 cursor-pointer" @onclick='() => NavManager.NavigateTo("/")'>
         <div class="size-8 text-primary">
             <svg fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
@@ -14,36 +21,61 @@
     </div>
 
     <div class="flex items-center gap-8">
+        @* Navigation Links *@
         <nav class="hidden md:flex items-center gap-8">
+            <NavLink href="advanced-search" class="text-slate-500 hover:text-primary transition-transform hover:scale-110 flex items-center gap-1" title="Advanced Search">
+                <span class="material-icons-round text-xl">search</span>
+            </NavLink>
+            
             <NavLink href="" Match="NavLinkMatch.All" class="text-sm font-semibold hover:text-primary transition-colors">
                 Explore
             </NavLink>
+
+            <AuthorizeView>
+    <Authorized>
+        @if (context.User.Claims.FirstOrDefault(c => c.Type == "IsPremium")?.Value == "True")
+        {
+            @* Người dùng đã có Premium: Đi đến trang AI *@
             <NavLink href="ai-matching" class="text-sm font-semibold hover:text-primary transition-colors flex items-center gap-1">
                 AI Matching
                 <span class="text-[10px] bg-primary/20 text-primary px-1.5 py-0.5 rounded-full uppercase tracking-widest">New</span>
             </NavLink>
-            <NavLink href="chat" class="text-sm font-semibold hover:text-primary transition-colors flex items-center gap-1">
-                Messages
+        }
+        else
+        {
+            @* Người dùng ĐÃ đăng nhập nhưng CHƯA có Premium: Chuyển hướng đến trang nạp tiền *@
+            <NavLink href="premium-info" class="text-sm font-semibold text-slate-500 hover:text-primary transition-colors flex items-center gap-1" title="Upgrade to use this feature">
+                AI Matching
+                <span class="text-[10px] bg-amber-100 text-amber-600 px-1.5 py-0.5 rounded-full uppercase tracking-widest">Upgrade</span>
             </NavLink>
+        }
+        
+        <NavLink href="chat" class="text-sm font-semibold hover:text-primary transition-colors flex items-center gap-1">
+            Messages
+        </NavLink>
+    </Authorized>
+    <NotAuthorized>
+        @* Người dùng CHƯA đăng nhập: Cũng cho click nhưng dẫn đến trang giới thiệu Premium *@
+        <NavLink href="premium-info" class="text-sm font-semibold text-slate-500 hover:text-primary transition-colors flex items-center gap-1">
+            AI Matching
+            <span class="text-[10px] bg-gray-200 text-gray-500 px-1.5 py-0.5 rounded-full uppercase tracking-widest">Premium</span>
+        </NavLink>
+    </NotAuthorized>
+</AuthorizeView>
         </nav>
 
         <div class="h-6 w-px bg-slate-200 dark:bg-[#27353a] mx-2"></div>
 
         @* Theme Toggle *@
         <button @onclick="ToggleTheme" class="p-2 rounded-full bg-slate-100 dark:bg-[#27353a] text-slate-500 dark:text-emerald-400 hover:scale-110 transition-transform">
-            @if (IsDarkMode)
-            {
-                <span class="material-icons-round text-xl">light_mode</span>
-            }
-            else
-            {
-                <span class="material-icons-round text-xl">dark_mode</span>
-            }
+            <span class="material-icons-round text-xl">@(IsDarkMode ? "light_mode" : "dark_mode")</span>
         </button>
 
+        @* Authentication Section *@
         <AuthorizeView>
             <Authorized>
-                <button class="flex items-center justify-center rounded-xl h-10 px-5 bg-primary text-background-dark text-sm font-bold transition-transform active:scale-95 hover:brightness-110">
+                <button class="flex items-center justify-center rounded-xl h-10 px-5 bg-primary text-background-dark text-sm font-bold transition-transform active:scale-95 hover:brightness-110" 
+                        @onclick='() => NavManager.NavigateTo("/create-listing")'>
                     List Your Room
                 </button>
                 
@@ -64,17 +96,39 @@
                                 <span class="material-icons-round text-slate-400 text-lg">person</span>
                                 <span>My Profile</span>
                             </a>
-                            <a href="my-listings" class="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-gray-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-center gap-3">
+                            <a href="myListings" class="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-gray-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-center gap-3">
                                 <span class="material-icons-round text-slate-400 text-lg">list_alt</span>
                                 <span>My Listings</span>
                             </a>
+                            <a href="favorites" class="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-gray-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-center gap-3">
+                                <span class="material-icons-round text-slate-400 text-lg">favorite_border</span>
+                                <span>Save Listing</span>
+                            </a>
+
+                            @if (context.User.IsInRole("Admin") || context.User.IsInRole("admin"))
+                            {
+                                <div class="h-px bg-slate-100 dark:bg-[#27353a] my-1 mx-2"></div>
+                                <a href="admin/amenities" class="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-gray-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-center gap-3">
+                                    <span class="material-icons-round text-slate-400 text-lg">bolt</span>
+                                    <span>Add Amenities</span>
+                                </a>
+                                <a href="admin/habits" class="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-gray-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-center gap-3">
+                                    <span class="material-icons-round text-slate-400 text-lg">accessibility</span>
+                                    <span>Add Lifestyle Habits</span>
+                                </a>
+                                <a href="admin/property-types" class="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-gray-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-center gap-3">
+                                    <span class="material-icons-round text-slate-400 text-lg">category</span>
+                                    <span>Manage Property Types</span>
+                                </a>
+                            }
+
+                            <div class="h-px bg-slate-200 dark:bg-[#27353a] my-1 mx-2"></div>
+
                             <a href="settings" class="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-gray-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-center gap-3">
                                 <span class="material-icons-round text-slate-400 text-lg">settings</span>
                                 <span>Settings</span>
                             </a>
                                 
-                            <div class="h-px bg-slate-200 dark:bg-[#27353a] my-1 mx-2"></div>
-
                             <button @onclick="Logout" class="w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center gap-3">
                                 <span class="material-icons-round text-red-500/70 text-lg">logout</span>
                                 <span>Logout</span>
@@ -92,6 +146,7 @@
         </AuthorizeView>
     </div>
 </header>
+
 @code {
     private bool isUserMenuOpen = false;
     private bool IsDarkMode = false;
@@ -100,7 +155,7 @@
     {
         if (firstRender)
         {
-            var theme = await JSRuntime.InvokeAsync<string>("eval", "localStorage.getItem('theme')");
+            var theme = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "theme");
             if (theme == "dark")
             {
                 IsDarkMode = true;
@@ -113,25 +168,21 @@
     private void ToggleUserMenu()
     {
         isUserMenuOpen = !isUserMenuOpen;
-        StateHasChanged();
     }
 
     private async Task Logout()
     {
-        // 1. Close Menu
         isUserMenuOpen = false;
-        
-        // 2. Clear Storage
         await JSRuntime.InvokeVoidAsync("localStorage.removeItem", "authToken");
         await JSRuntime.InvokeVoidAsync("localStorage.removeItem", "userFullName");
-        
-        // 3. Force Reload to Login
         NavManager.NavigateTo("/login", forceLoad: true);
     }
 
     private async Task ToggleTheme()
     {
         IsDarkMode = !IsDarkMode;
+        var themeValue = IsDarkMode ? "dark" : "light";
+        await JSRuntime.InvokeVoidAsync("localStorage.setItem", "theme", themeValue);
         await JSRuntime.InvokeVoidAsync("uniNestMap.toggleTheme", IsDarkMode);
     }
 }

@@ -37,6 +37,45 @@
         70% { box-shadow: 0 0 0 15px rgba(6, 181, 239, 0); }
         100% { box-shadow: 0 0 0 0 rgba(6, 181, 239, 0); }
     }
+    
+    /* Ghi đè CSS cho Popup của Mapbox/Goong */
+    .mapboxgl-popup {
+        z-index: 9999 !important;
+    }
+    .mapboxgl-popup-content {
+        background: transparent !important;
+        padding: 0 !important;
+        border-radius: 12px;
+        box-shadow: none !important;
+    }
+    .mapboxgl-popup-close-button {
+        display: none !important;
+    }
+    .mapboxgl-popup-tip {
+        border-top-color: #121416 !important;
+    }
+
+    /* Map Loading Animations */
+    @@keyframes mapPinBounce {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-8px); }
+    }
+    @@keyframes mapPulseRing {
+        0% { transform: scale(0.8); opacity: 1; }
+        100% { transform: scale(1.6); opacity: 0; }
+    }
+    @@keyframes mapDotBlink {
+        0%, 100% { opacity: 0.2; }
+        50% { opacity: 1; }
+    }
+    @@keyframes mapShimmer {
+        0% { transform: translateX(-200%); }
+        100% { transform: translateX(400%); }
+    }
+    @@keyframes mapGridSlide {
+        0% { background-position: 0 0; }
+        100% { background-position: 40px 40px; }
+    }
 </style>
 
 @* --- 2. LAYOUT CHÍNH (Full màn hình) --- *@
@@ -53,12 +92,6 @@
                         <h1 class="text-2xl font-extrabold tracking-tight">Find Your Base</h1>
                         <p class="text-slate-500 dark:text-[#9bb3bb] text-sm">Campus-centric living in Da Nang</p>
                     </div>
-                <div class="flex justify-between items-start">
-                    <div>
-                        <h1 class="text-2xl font-extrabold tracking-tight">Find Your Base</h1>
-                        <p class="text-slate-500 dark:text-[#9bb3bb] text-sm">Campus-centric living in Da Nang</p>
-                    </div>
-                </div>
                 </div>
                 
                 @* Search Bar *@
@@ -277,7 +310,19 @@
                     <p class="text-xs font-bold text-slate-400 mb-4">SHOWING @FilteredRooms.Count ROOMS</p>
                     @if (IsLoading)
                     {
-                         <div class="flex justify-center py-4"><span class="text-slate-400 text-sm">Loading listings...</span></div>
+                        <div class="flex flex-col gap-3">
+                            @for (int i = 0; i < 4; i++)
+                            {
+                                <div class="flex gap-3 p-2 rounded-lg animate-pulse">
+                                    <div class="size-16 rounded-lg bg-slate-200 dark:bg-[#27353a] shrink-0"></div>
+                                    <div class="flex flex-col justify-center gap-2 flex-1">
+                                        <div class="h-3 bg-slate-200 dark:bg-[#27353a] rounded w-3/4"></div>
+                                        <div class="h-2.5 bg-slate-100 dark:bg-[#1c2126] rounded w-full"></div>
+                                        <div class="h-3 bg-slate-200 dark:bg-[#27353a] rounded w-1/3"></div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
                     }
                     else
                     {
@@ -306,13 +351,41 @@
             @* Container chứa Map *@
             <div id="google-map" class="absolute inset-0 w-full h-full z-0"></div>
 
-            @* Loading Overlay *@
+            @* Loading Overlay - Premium *@
             @if (!IsMapLoaded)
             {
-                <div class="absolute inset-0 flex items-center justify-center bg-[#1c2126] z-50">
-                    <div class="flex flex-col items-center gap-2">
-                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                        <span class="text-slate-400 text-sm">Loading Map...</span>
+                <div class="absolute inset-0 flex items-center justify-center z-50" style="background: linear-gradient(135deg, #121416 0%, #1a2028 50%, #121416 100%);">
+                    @* Animated grid background *@
+                    <div class="absolute inset-0 opacity-10" style="
+                        background-image: linear-gradient(rgba(0,186,242,0.15) 1px, transparent 1px), linear-gradient(90deg, rgba(0,186,242,0.15) 1px, transparent 1px);
+                        background-size: 40px 40px;
+                        animation: mapGridSlide 4s linear infinite;
+                    "></div>
+
+                    <div class="flex flex-col items-center gap-4 relative z-10">
+                        @* Pulsing pin icon *@
+                        <div class="relative" style="width:64px;height:64px;">
+                            <div class="absolute inset-0 rounded-full border-2 border-primary/30" style="animation: mapPulseRing 2s ease-out infinite;"></div>
+                            <div class="absolute inset-2 rounded-full border-2 border-primary/20" style="animation: mapPulseRing 2s 0.5s ease-out infinite;"></div>
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <span class="material-icons-round text-primary" style="font-size:32px; animation: mapPinBounce 1.5s ease-in-out infinite;">location_on</span>
+                            </div>
+                        </div>
+
+                        @* Text with animated dots *@
+                        <div class="flex items-center gap-1">
+                            <span class="text-slate-400 text-sm font-medium">Đang tải bản đồ</span>
+                            <span class="flex gap-0.5">
+                                <span class="text-primary text-sm" style="animation: mapDotBlink 1.4s 0s infinite;">.</span>
+                                <span class="text-primary text-sm" style="animation: mapDotBlink 1.4s 0.2s infinite;">.</span>
+                                <span class="text-primary text-sm" style="animation: mapDotBlink 1.4s 0.4s infinite;">.</span>
+                            </span>
+                        </div>
+
+                        @* Shimmer bar *@
+                        <div style="width:140px; height:2px; background: rgba(255,255,255,0.05); border-radius:4px; overflow:hidden;">
+                            <div style="height:100%; width:40%; background: linear-gradient(90deg, transparent, #00BAF2, transparent); animation: mapShimmer 1.5s ease-in-out infinite;"></div>
+                        </div>
                     </div>
                 </div>
             }
@@ -352,55 +425,6 @@
                 </div>
             </div> *@
 
-            @* --- POPUP CARD --- *@
-            @if (SelectedRoom != null)
-            {
-                <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 animate-fade-in-up">
-                    <div class="w-80 bg-[#121416] border border-[#27353a] rounded-xl overflow-hidden shadow-2xl relative">
-                        <button @onclick="ClosePopup" class="absolute top-2 right-2 z-20 w-7 h-7 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80 transition-colors backdrop-blur-sm">
-                            <span class="material-icons-round text-sm">close</span>
-                        </button>
-                        
-                        <div class="relative h-40 w-full bg-cover bg-center bg-gray-700" 
-                             style="background-image: url('@(string.IsNullOrEmpty(SelectedRoom.Image) ? "https://via.placeholder.com/300" : SelectedRoom.Image)');">
-                             <div class="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-[#121416] via-[#121416]/80 to-transparent"></div>
-                             
-                             @if(SelectedRoom.IsVerified)
-                             {
-                                 <div class="absolute top-2 left-2 bg-emerald-500/90 backdrop-blur-md text-white text-[10px] font-bold px-2 py-1 rounded-lg flex items-center gap-1 shadow-lg">
-                                     <span class="material-icons-round text-[12px]">verified</span>
-                                     VERIFIED HOST
-                                 </div>
-                             }
-                        </div>
-
-                        <div class="p-5 -mt-2 relative z-10">
-                            <h3 class="text-base font-bold text-white truncate leading-tight">@SelectedRoom.Title</h3>
-                            
-                            <div class="flex items-center gap-2 mt-2 text-xs text-slate-400">
-                                <span class="material-icons-round text-sm shrink-0">location_on</span>
-                                <span class="truncate">@SelectedRoom.Address</span>
-                            </div>
-
-                            @* Distance (Placeholder - updated via JS) *@
-                            <div class="flex items-center gap-2 mt-1 text-xs text-emerald-400">
-                                <span class="material-icons-round text-sm shrink-0">near_me</span>
-                                <span class="font-bold">@CurrentDistance</span>
-                            </div>
-
-                            <div class="flex justify-between items-center mt-4 pt-3 border-t border-[#27353a]">
-                                <div>
-                                    <p class="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Price/Month</p>
-                                    <p class="text-primary font-extrabold text-xl">@FormatPrice(SelectedRoom.Price)</p>
-                                </div>
-                                <button class="text-xs bg-primary hover:bg-primary/90 text-[#121416] px-4 py-2 rounded-lg font-bold transition-all shadow-lg shadow-primary/20 hover:shadow-primary/40 transform hover:-translate-y-0.5">
-                                    View Details
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            }
         </section>
     </main>
 </div>
@@ -411,8 +435,8 @@
     // Giá trị: "Any", "Male", "Female"
     private string SelectedGender = "Any"; 
     private bool IsStudentVerified = false;
-    private double MinPrice = 1500000;
-    private double MaxPrice = 4000000;
+    private double MinPrice = 0;
+    private double MaxPrice = 10000000;
 
     private bool IsMapLoaded = false;
     private bool IsLoading = true;
@@ -521,6 +545,7 @@ private List<UniversityDto> Universities = new()
         // --- BỔ SUNG PROPERTIES CHO FILTER ---
         public string Gender { get; set; } = "Any"; // Value: Male, Female, Any
         public bool IsVerified { get; set; } = false;
+        public int OwnerID { get; set; }
     }
     public class UniversityDto { public string Name { get; set; } = ""; public double Lat { get; set; } public double Lng { get; set; } }
 
@@ -631,6 +656,12 @@ private List<UniversityDto> Universities = new()
         }
     }
 
+    public class FlyToOptionsDto
+    {
+        public double[] center { get; set; }
+        public double zoom { get; set; }
+    }
+
     private async Task SelectPlace(GoongPrediction item)
     {
         // 1. Ẩn gợi ý
@@ -650,7 +681,7 @@ private List<UniversityDto> Universities = new()
                 var lng = detail.result.geometry.location.lng;
 
                 // 3. Bay tới đó
-                await JSRuntime.InvokeVoidAsync("uniNestMap.map.flyTo", new { center = new[] { lng, lat }, zoom = 16 });
+                await JSRuntime.InvokeVoidAsync("uniNestMap.map.flyTo", new FlyToOptionsDto { center = new[] { lng, lat }, zoom = 16 });
 
                 // 4. Vẽ Marker Đỏ (Search Marker)
                 await JSRuntime.InvokeVoidAsync("uniNestMap.addSearchMarker", lat, lng, item.description);
@@ -721,12 +752,37 @@ private List<UniversityDto> Universities = new()
         _areMarkersDrawn = true;
     }
 
+    public class MarkerDataDto
+    {
+        public int id { get; set; }
+        public double lat { get; set; }
+        public double lng { get; set; }
+        public string title { get; set; }
+        public string priceStr { get; set; }
+        public string address { get; set; }
+        public string image { get; set; }
+        public bool isVerified { get; set; }
+        public int ownerId { get; set; }
+    }
+
     private async Task DrawMarkers()
     {
         // Chỉ vẽ những room trong FilteredRooms
         foreach (var room in FilteredRooms)
         {
-            await JSRuntime.InvokeVoidAsync("uniNestMap.addMarker", objRef, room.Id, room.Lat, room.Lng, room.Title, FormatPrice(room.Price), room.Address);
+            var roomData = new MarkerDataDto
+            {
+                id = room.Id,
+                lat = room.Lat,
+                lng = room.Lng,
+                title = room.Title,
+                priceStr = FormatPrice(room.Price),
+                address = room.Address,
+                image = room.Image,
+                isVerified = room.IsVerified,
+                ownerId = room.OwnerID
+            };
+            await JSRuntime.InvokeVoidAsync("uniNestMap.addMarker", objRef, roomData);
         }
     }
 
@@ -745,7 +801,7 @@ private List<UniversityDto> Universities = new()
     private async Task PanToRoom(RoomDto room)
     {
         SelectedRoom = room;
-        await JSRuntime.InvokeVoidAsync("uniNestMap.map.flyTo", new { center = new[] { room.Lng, room.Lat }, zoom = 15.5 });
+        await JSRuntime.InvokeVoidAsync("uniNestMap.map.flyTo", new FlyToOptionsDto { center = new[] { room.Lng, room.Lat }, zoom = 15.5 });
         await JSRuntime.InvokeVoidAsync("uniNestMap.triggerMarkerPopup", room.Id);
     }
 

@@ -1,0 +1,457 @@
+@page "/admin/student-verification"
+@layout Layout.AdminLayout
+@inject HttpClient Http
+@using UniNestFE.DTOs
+@using System.Net.Http.Json
+
+<PageTitle>Student Verification | UniNest Admin</PageTitle>
+
+<div class="flex flex-col space-y-8 animate-fade-in-up pb-10">
+    <!-- Header -->
+    <div class="flex justify-between items-end">
+        <div>
+            <h2 class="text-3xl font-extrabold text-[#171c1f] dark:text-white tracking-tight">Student Verification</h2>
+            <p class="text-sm text-[#515f74] dark:text-slate-400 mt-2">Review and verify student identities to maintain a safe community.</p>
+        </div>
+        <div class="text-right">
+            <div class="text-4xl font-black text-[#171c1f] dark:text-white leading-none">@requests.Count(r => r.Status == "Pending")</div>
+            <div class="text-xs font-bold text-[#515f74] uppercase tracking-widest mt-1">Pending Requests</div>
+        </div>
+    </div>
+
+    @if (IsLoading)
+    {
+        <div class="flex justify-center items-center py-20">
+            <div class="w-10 h-10 border-4 border-[#004ac6]/30 border-t-[#004ac6] rounded-full animate-spin"></div>
+        </div>
+    }
+    else
+    {
+        <!-- Stats & Filters -->
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-100 dark:border-slate-700 flex gap-8 shadow-sm">
+            <div class="flex-1 space-y-3">
+                <label class="text-[10px] font-bold text-[#515f74] uppercase tracking-widest">Filter Status</label>
+                <div class="flex flex-wrap gap-2">
+                    <button @onclick='() => FilterStatus("All")' class="px-4 py-2 @(CurrentFilter == "All" ? "bg-[#004ac6] text-white shadow-md" : "bg-slate-100 dark:bg-slate-700 text-[#515f74] dark:text-slate-300 hover:bg-slate-200") text-xs font-bold rounded transition-all">All</button>
+                    <button @onclick='() => FilterStatus("Pending")' class="px-3 py-2 @(CurrentFilter == "Pending" ? "bg-[#d97706] text-white shadow-md" : "bg-slate-100 dark:bg-slate-700 text-[#515f74] dark:text-slate-300 hover:bg-slate-200") text-xs font-semibold rounded transition-all">Pending</button>
+                    <button @onclick='() => FilterStatus("Verified")' class="px-3 py-2 @(CurrentFilter == "Verified" ? "bg-[#059669] text-white shadow-md" : "bg-slate-100 dark:bg-slate-700 text-[#515f74] dark:text-slate-300 hover:bg-slate-200") text-xs font-semibold rounded transition-all">Verified</button>
+                    <button @onclick='() => FilterStatus("Rejected")' class="px-3 py-2 @(CurrentFilter == "Rejected" ? "bg-red-600 text-white shadow-md" : "bg-slate-100 dark:bg-slate-700 text-[#515f74] dark:text-slate-300 hover:bg-slate-200") text-xs font-semibold rounded transition-all">Rejected</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Table -->
+        <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 overflow-hidden shadow-sm">
+            <table class="w-full text-left">
+                <thead>
+                    <tr class="bg-slate-50 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-700">
+                        <th class="px-6 py-4 text-[10px] uppercase tracking-widest font-extrabold text-[#515f74]">Student Profile</th>
+                        <th class="px-6 py-4 text-[10px] uppercase tracking-widest font-extrabold text-[#515f74]">University</th>
+                        <th class="px-6 py-4 text-[10px] uppercase tracking-widest font-extrabold text-[#515f74]">Uploaded Date</th>
+                        <th class="px-6 py-4 text-[10px] uppercase tracking-widest font-extrabold text-[#515f74]">Status</th>
+                        <th class="px-6 py-4 text-[10px] uppercase tracking-widest font-extrabold text-[#515f74] text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+                    @if (!FilteredRequests.Any())
+                    {
+                        <tr>
+                            <td colspan="5" class="px-6 py-12 text-center text-slate-500">
+                                <span class="material-symbols-outlined text-4xl text-slate-300 block mb-2">inbox</span>
+                                No profiles match the current filter.
+                            </td>
+                        </tr>
+                    }
+                    @foreach(var req in FilteredRequests)
+                    {
+                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors group">
+                            <td class="px-6 py-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-100 to-indigo-100 flex items-center justify-center text-blue-600 font-bold">
+                                        @(string.IsNullOrEmpty(req.StudentName) ? "?" : req.StudentName.Substring(0, 1))
+                                    </div>
+                                    <div>
+                                        <div class="font-bold text-sm text-[#171c1f] dark:text-white">@req.StudentName</div>
+                                        <div class="text-[10px] text-[#515f74] lowercase tracking-wide font-medium mt-0.5"><span class="material-symbols-outlined text-[10px] align-middle mr-1">mail</span>@req.Email</div>
+                                        <div class="text-[10px] text-[#515f74] uppercase mt-0.5">ID: STU-@req.UserId</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="text-sm font-semibold text-[#171c1f] dark:text-slate-300">@req.UniversityName</div>
+                                <div class="text-[10px] text-[#515f74]">@req.CurrentSemester</div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="text-sm text-[#171c1f] dark:text-slate-300 font-medium">@req.SubmittedAt.ToString("dd/MM/yyyy")</div>
+                                <div class="text-[10px] text-[#515f74]">@req.SubmittedAt.ToString("HH:mm")</div>
+                            </td>
+                            <td class="px-6 py-4">
+                                @if(req.Status == "Pending")
+                                {
+                                    <span class="px-3 py-1 bg-[#ffeed2] text-[#d97706] text-[10px] font-bold uppercase rounded-full tracking-wider">Pending</span>
+                                }
+                                else if(req.Status == "Verified")
+                                {
+                                    <span class="px-3 py-1 bg-[#d1fae5] text-[#059669] text-[10px] font-bold uppercase rounded-full tracking-wider">Verified</span>
+                                }
+                                else
+                                {
+                                    <span class="px-3 py-1 bg-red-100 text-red-600 text-[10px] font-bold uppercase rounded-full tracking-wider">Rejected</span>
+                                }
+                            </td>
+                            <td class="px-6 py-4 text-right space-x-2">
+                                @if(req.Status == "Pending")
+                                {
+                                    <button @onclick="() => RevealImageModal(req)" class="text-[#004ac6] hover:bg-blue-50 dark:hover:bg-slate-700 px-3 py-1.5 rounded text-xs font-bold transition-colors">View Card</button>
+                                    <button @onclick="() => VerifyStudent(req.RequestId, true)" disabled="@IsProcessing" class="bg-[#004ac6] hover:bg-blue-700 disabled:opacity-50 text-white px-3 py-1.5 rounded text-xs font-bold transition-colors shadow">Approve</button>
+                                    <button @onclick="() => PromptRejectModal(req)" disabled="@IsProcessing" class="bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white px-3 py-1.5 rounded text-xs font-bold transition-colors shadow">Reject</button>
+                                }
+                                else
+                                {
+                                    <button @onclick="() => RevealImageModal(req)" class="text-[#515f74] hover:bg-slate-100 px-3 py-1.5 rounded text-xs font-semibold transition-colors">View Card</button>
+                                    <button @onclick="() => RevertPending(req.RequestId)" disabled="@IsProcessing" class="text-orange-600 hover:bg-orange-50 px-3 py-1.5 rounded text-xs font-semibold transition-colors">Revert</button>
+                                    @if(req.Status == "Rejected")
+                                    {
+                                        <button @onclick="() => DeleteAccount(req.RequestId)" disabled="@IsProcessing" class="text-red-600 hover:bg-red-50 px-3 py-1.5 rounded text-xs font-semibold transition-colors">Delete Acc</button>
+                                    }
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+
+    <!-- Image Viewer Modal -->
+    @if(ShowImageModal && SelectedRequest != null)
+    {
+        <div class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+            <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-6xl h-[85vh] flex flex-col shadow-2xl relative">
+                
+                <!-- Modal Header -->
+                <div class="flex justify-between items-center px-6 py-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 z-10">
+                    <div>
+                        <h3 class="font-bold text-lg text-slate-800 dark:text-white">ID Card of: @SelectedRequest.StudentName</h3>
+                    </div>
+                    
+                    <!-- Controls -->
+                    <div class="flex items-center gap-1">
+                        <button @onclick="ZoomIn" class="w-10 h-10 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full transition-colors flex items-center justify-center text-slate-600 dark:text-slate-300" title="Zoom In">
+                            <span class="material-symbols-outlined text-xl">zoom_in</span>
+                        </button>
+                        <button @onclick="ZoomOut" class="w-10 h-10 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full transition-colors flex items-center justify-center text-slate-600 dark:text-slate-300" title="Zoom Out">
+                            <span class="material-symbols-outlined text-xl">zoom_out</span>
+                        </button>
+                        <button @onclick="RotateLeft" class="w-10 h-10 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full transition-colors flex items-center justify-center text-slate-600 dark:text-slate-300" title="Rotate Left">
+                            <span class="material-symbols-outlined text-xl">rotate_left</span>
+                        </button>
+                        <button @onclick="RotateRight" class="w-10 h-10 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full transition-colors flex items-center justify-center text-slate-600 dark:text-slate-300" title="Rotate Right">
+                            <span class="material-symbols-outlined text-xl">rotate_right</span>
+                        </button>
+                        <div class="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-2"></div>
+                        <button @onclick="CloseImageModal" class="w-10 h-10 hover:bg-red-50 hover:text-red-600 rounded-full transition-colors flex items-center justify-center text-slate-400">
+                            <span class="material-symbols-outlined text-2xl">close</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Modal Body (Images) -->
+                <div class="flex-1 overflow-auto bg-slate-200 dark:bg-slate-950 p-8 flex items-center justify-center gap-10">
+                    
+                    <!-- Front Image Wrapper -->
+                    <div class="flex-1 flex flex-col items-center">
+                        <span class="text-sm font-bold text-slate-500 mb-4 bg-white/50 dark:bg-slate-800/50 px-4 py-1 rounded-full uppercase tracking-widest backdrop-blur">ID Front</span>
+                        <div class="bg-white/5 rounded-xl border-4 border-white/20 dark:border-slate-700/50 shadow-lg">
+                             <img src="https://localhost:7045@(SelectedRequest.FrontIdImageUrl)" 
+                                  style="transform: scale(@ImageScale) rotate(@(ImageRotation)deg); transition: transform 0.3s ease;" 
+                                  class="max-w-full max-h-[60vh] object-contain origin-center" 
+                                  alt="Mặt trước" />
+                        </div>
+                    </div>
+
+                    <!-- Back Image Wrapper -->
+                    <div class="flex-1 flex flex-col items-center">
+                        <span class="text-sm font-bold text-slate-500 mb-4 bg-white/50 dark:bg-slate-800/50 px-4 py-1 rounded-full uppercase tracking-widest backdrop-blur">ID Back</span>
+                        <div class="bg-white/5 rounded-xl border-4 border-white/20 dark:border-slate-700/50 shadow-lg">
+                             <img src="https://localhost:7045@(SelectedRequest.BackIdImageUrl)" 
+                                  style="transform: scale(@ImageScale) rotate(@(ImageRotation)deg); transition: transform 0.3s ease;" 
+                                  class="max-w-full max-h-[60vh] object-contain origin-center" 
+                                  alt="Mặt sau" />
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Reject Reason Modal -->
+    @if(ShowRejectModal && SelectedRequest != null)
+    {
+        <div class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+            <div class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl p-6 w-full max-w-md animate-fade-in-up">
+                <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">Reject Verification</h3>
+                <p class="text-sm text-slate-500 mb-4">You are rejecting the verification for <b>@SelectedRequest.StudentName</b>. Please provide a reason to help the student update their information.</p>
+                
+                <textarea @bind="RejectReasonInput" @bind:event="oninput" rows="3" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg p-3 text-sm focus:ring-2 focus:ring-red-500 outline-none text-slate-800 dark:text-white mb-4" placeholder="e.g.: Blurry image, Student ID not visible... Required field"></textarea>
+                
+                <div class="flex justify-end gap-3">
+                    <button @onclick="CloseRejectModal" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold rounded-lg text-sm transition-colors">Cancel</button>
+                    <button @onclick="ConfirmReject" disabled="@(IsProcessing || string.IsNullOrWhiteSpace(RejectReasonInput))" class="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-semibold rounded-lg text-sm transition-colors shadow">
+                        @if (IsProcessing)
+                        {
+                            <span class="material-symbols-outlined animate-spin text-sm block">progress_activity</span>
+                        }
+                        else
+                        {
+                            <span>Confirm Reject</span>
+                        }
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Notification Toast -->
+    @if(ShowNotification)
+    {
+        <div class="fixed bottom-10 right-10 bg-[#171c1f] text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-4 animate-fade-in-up z-50 border border-slate-700">
+            <div class="w-8 h-8 rounded-full @NotificationIconBg text-emerald-400 flex justify-center items-center">
+                <span class="material-symbols-outlined text-sm">@NotificationIcon</span>
+            </div>
+            <div>
+                <h4 class="font-bold text-sm">@NotificationTitle</h4>
+                <p class="text-[11px] text-slate-400">@NotificationDesc</p>
+            </div>
+        </div>
+    }
+</div>
+
+<style>
+    .animate-fade-in-up { animation: fadeInUp 0.4s ease-out forwards; }
+    @@keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+
+@code {
+    private List<DashboardVerificationRequestDto> requests = new();
+    private List<DashboardVerificationRequestDto> FilteredRequests => 
+        CurrentFilter == "All" ? requests : requests.Where(r => r.Status == CurrentFilter).ToList();
+    
+    private bool IsLoading = true;
+    private bool IsProcessing = false;
+    private string CurrentFilter = "Pending";
+    
+    // Notification variables
+    private bool ShowNotification = false;
+    private string NotificationTitle = "";
+    private string NotificationDesc = "";
+    private string NotificationIcon = "mark_email_read";
+    private string NotificationIconBg = "bg-emerald-500/20";
+    
+    // Modal Variables
+    private bool ShowImageModal = false;
+    private DashboardVerificationRequestDto? SelectedRequest = null;
+    
+    private bool ShowRejectModal = false;
+    private string RejectReasonInput = "";
+    
+    // Image Controls
+    private double ImageScale = 1.0;
+    private int ImageRotation = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        IsLoading = true;
+        try
+        {
+            var res = await Http.GetFromJsonAsync<List<DashboardVerificationRequestDto>>("api/Admin/student-verifications");
+            if (res != null)
+            {
+                requests = res;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error loading verifications: " + ex.Message);
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private void FilterStatus(string status)
+    {
+        CurrentFilter = status;
+    }
+
+    // -- IMAGE VIEWER MODAL LOGIC --
+    private void RevealImageModal(DashboardVerificationRequestDto req)
+    {
+        SelectedRequest = req;
+        ImageScale = 1.0;
+        ImageRotation = 0;
+        ShowImageModal = true;
+    }
+
+    private void CloseImageModal()
+    {
+        ShowImageModal = false;
+        SelectedRequest = null;
+    }
+
+    private void ZoomIn() => ImageScale = Math.Min(ImageScale + 0.25, 3.0);
+    private void ZoomOut() => ImageScale = Math.Max(ImageScale - 0.25, 0.5);
+    private void RotateLeft() => ImageRotation -= 90;
+    private void RotateRight() => ImageRotation += 90;
+
+    // -- REJECT MODAL LOGIC --
+    private void PromptRejectModal(DashboardVerificationRequestDto req)
+    {
+        SelectedRequest = req;
+        RejectReasonInput = "";
+        ShowRejectModal = true;
+    }
+
+    private void CloseRejectModal()
+    {
+        ShowRejectModal = false;
+        SelectedRequest = null;
+    }
+
+    private async Task ConfirmReject()
+    {
+        if (SelectedRequest == null) return;
+        await VerifyStudent(SelectedRequest.RequestId, false, RejectReasonInput);
+        CloseRejectModal();
+    }
+
+    // -- API ACTION LOGIC --
+    private async Task VerifyStudent(int requestId, bool approve, string? reason = null)
+    {
+        IsProcessing = true;
+        
+        var requestBody = new 
+        {
+            RequestId = requestId,
+            IsApproved = approve,
+            RejectReason = reason
+        };
+
+        try
+        {
+            var response = await Http.PostAsJsonAsync("api/Admin/verify-student", requestBody);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                // Thay đổi tạm thời UI chờ LoadData
+                var target = requests.FirstOrDefault(r => r.RequestId == requestId);
+                if (target != null) target.Status = approve ? "Verified" : "Rejected";
+                
+                TriggerNotification(
+                    approve ? "Verified Successfully" : "Rejected Successfully",
+                    "The system automatically notified the student via Email.",
+                    approve ? "check_circle" : "cancel",
+                    approve ? "bg-emerald-500/20 text-emerald-400" : "bg-red-500/20 text-red-500"
+                );
+                
+                await LoadData(); // Reload from db to be safe
+            }
+            else
+            {
+                 TriggerNotification("Update Error", "Could not process the request at this time.", "error", "bg-amber-500/20 text-amber-500");
+            }
+        }
+        catch(Exception ex)
+        {
+            Console.WriteLine("API Error: " + ex.Message);
+             TriggerNotification("Connection Error", ex.Message, "error", "bg-amber-500/20 text-amber-500");
+        }
+        finally
+        {
+            IsProcessing = false;
+        }
+    }
+
+    private async Task RevertPending(int requestId)
+    {
+        IsProcessing = true;
+        try
+        {
+            var response = await Http.PostAsync($"api/Admin/revert-pending/{requestId}", null);
+            if (response.IsSuccessStatusCode)
+            {
+                var target = requests.FirstOrDefault(r => r.RequestId == requestId);
+                if (target != null) target.Status = "Pending";
+                
+                TriggerNotification("Action Reverted", "The request has been returned to Pending status.", "undo", "bg-blue-500/20 text-blue-500");
+                await LoadData();
+            }
+            else
+            {
+                TriggerNotification("Lỗi cập nhật", "Không thể hoàn tác hồ sơ.", "error", "bg-amber-500/20 text-amber-500");
+            }
+        }
+        catch(Exception ex)
+        {
+            TriggerNotification("Connection Error", ex.Message, "error", "bg-amber-500/20 text-amber-500");
+        }
+        finally
+        {
+            IsProcessing = false;
+        }
+    }
+
+    private async Task DeleteAccount(int requestId)
+    {
+        // Ideally should prompt a confirm dialog here. For demo, we delete directly.
+        IsProcessing = true;
+        try
+        {
+            var response = await Http.DeleteAsync($"api/Admin/delete-rejected-account/{requestId}");
+            if (response.IsSuccessStatusCode)
+            {
+                requests.RemoveAll(r => r.RequestId == requestId);
+                TriggerNotification("Account Deleted", "The account and associated records have been permanently deleted.", "delete_forever", "bg-emerald-500/20 text-emerald-400");
+                await LoadData();
+            }
+            else
+            {
+                TriggerNotification("Lỗi cập nhật", "Không thể xóa hồ sơ lúc này.", "error", "bg-amber-500/20 text-amber-500");
+            }
+        }
+        catch(Exception ex)
+        {
+            TriggerNotification("Connection Error", ex.Message, "error", "bg-amber-500/20 text-amber-500");
+        }
+        finally
+        {
+            IsProcessing = false;
+        }
+    }
+    
+    private void TriggerNotification(string title, string desc, string icon, string bgClass)
+    {
+        NotificationTitle = title;
+        NotificationDesc = desc;
+        NotificationIcon = icon;
+        NotificationIconBg = bgClass;
+        ShowNotification = true;
+        StateHasChanged();
+        
+        Task.Run(async () => {
+            await Task.Delay(4000);
+            ShowNotification = false;
+            InvokeAsync(StateHasChanged);
+        });
+    }
+}

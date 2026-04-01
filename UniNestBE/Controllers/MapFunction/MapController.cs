@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -34,7 +34,7 @@ public class MapController : ControllerBase
 
                 // 2. Sửa lỗi CRASH khi không có ảnh:
                 // Cách viết này an toàn: Nếu không tìm thấy ảnh Primary, trả về null, sau đó lấy ảnh mặc định
-                Image = l.Images.Where(i => i.IsPrimary).Select(i => i.ImageUrl).FirstOrDefault() ?? "default.jpg",
+                Image = l.Images.Where(i => i.IsPrimary).Select(i => i.ImageUrl).FirstOrDefault() ?? l.Images.Select(i => i.ImageUrl).FirstOrDefault() ?? "default.jpg",
 
                 Gender = l.GenderPreference,
 

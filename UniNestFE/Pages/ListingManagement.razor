@@ -1,0 +1,342 @@
+@page "/admin/listings"
+@layout Layout.AdminLayout
+@using UniNestFE.DTOs
+@inject HttpClient Http
+@inject IJSRuntime JS
+@inject NavigationManager Navigation
+
+<PageTitle>Listing Management | UniNest Admin</PageTitle>
+
+<div class="flex flex-col space-y-8 animate-fade-in-up">
+    <!-- Header -->
+    <div class="flex justify-between items-end">
+        <div>
+            <h3 class="text-xs font-bold text-[#515f74] uppercase tracking-widest mb-1">MANAGEMENT HUB</h3>
+            <h2 class="text-3xl font-extrabold text-[#171c1f] dark:text-white tracking-tight">Listing Management</h2>
+            <p class="text-sm text-[#515f74] dark:text-slate-400 mt-2">Oversee the student housing ecosystem. Moderate existing property listings.</p>
+        </div>
+        <div class="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 px-6 py-4 rounded-xl flex items-center gap-6 shadow-sm">
+            <div>
+                <div class="text-[10px] font-bold text-[#515f74] uppercase tracking-widest mb-1">Total Active</div>
+                <div class="text-3xl font-black text-[#171c1f] dark:text-white">@listings.Count(l => l.ApprovalStatus == "Published" && l.IsAvailable)</div>
+            </div>
+            <!-- Mock Line Graph -->
+            <svg width="60" height="30" viewBox="0 0 60 30" fill="none" class="text-[#004ac6]">
+                <path d="M0,25 C10,25 15,10 25,15 C35,20 40,5 50,20 C55,25 60,10 60,10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-100 dark:border-slate-700 flex gap-4">
+        <div class="flex-1 space-y-1.5">
+            <label class="text-[10px] font-bold text-[#515f74] uppercase tracking-widest pl-1">Filter by Area</label>
+            <div class="relative">
+                <select @onchange="OnDistrictChanged" class="w-full bg-white dark:bg-slate-800 border-none rounded-lg px-4 py-3 outline-none text-sm font-semibold tracking-wide text-[#171c1f] dark:text-white shadow-sm appearance-none focus:ring-2 focus:ring-[#004ac6]">
+                    <option value="">All Da Nang Districts</option>
+                    <option value="Hải Châu">Hai Chau District</option>
+                    <option value="Liên Chiểu">Lien Chieu District</option>
+                    <option value="Ngũ Hành Sơn">Ngu Hanh Son</option>
+                    <option value="Sơn Trà">Son Tra</option>
+                </select>
+                <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[#515f74]">expand_more</span>
+            </div>
+        </div>
+
+        <div class="flex-1 space-y-1.5">
+            <label class="text-[10px] font-bold text-[#515f74] uppercase tracking-widest pl-1">Approval Status</label>
+            <div class="relative">
+                <select @onchange="OnStatusChanged" class="w-full bg-white dark:bg-slate-800 border-none rounded-lg px-4 py-3 outline-none text-sm font-semibold tracking-wide text-[#171c1f] dark:text-white shadow-sm appearance-none focus:ring-2 focus:ring-[#004ac6]">
+                    <option value="">All Statuses</option>
+                    <option value="Pending">Pending Approval</option>
+                    <option value="Published">Published (Active)</option>
+                    <option value="Not Approved">Rejected</option>
+                    <option value="Blocked">Blocked</option>
+                </select>
+                <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[#515f74]">expand_more</span>
+            </div>
+        </div>
+
+        <div class="flex items-end">
+            <button @onclick="ResetFilters" class="bg-slate-200 dark:bg-slate-700 text-[#515f74] dark:text-slate-300 px-6 py-3 rounded-lg font-bold text-sm hover:bg-slate-300 transition-colors">Reset</button>
+        </div>
+    </div>
+
+    <!-- Data List -->
+    <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden flex flex-col sm:flex-row relative">
+        <div class="flex-1">
+            @if (isLoading)
+            {
+                <div class="flex justify-center items-center p-20">
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-[#004ac6]"></div>
+                </div>
+            }
+            else
+            {
+                <table class="w-full text-left">
+                    <thead>
+                        <tr class="bg-slate-50 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-700">
+                            <th class="px-6 py-4 text-[10px] uppercase tracking-widest font-extrabold text-[#515f74]">Listing Details</th>
+                            <th class="px-6 py-4 text-[10px] uppercase tracking-widest font-extrabold text-[#515f74]">Host</th>
+                            <th class="px-6 py-4 text-[10px] uppercase tracking-widest font-extrabold text-[#515f74]">Location</th>
+                            <th class="px-6 py-4 text-[10px] uppercase tracking-widest font-extrabold text-[#515f74]">Rent Price</th>
+                            <th class="px-6 py-4 text-[10px] uppercase tracking-widest font-extrabold text-[#515f74]">Status</th>
+                            <th class="px-6 py-4 text-[10px] uppercase tracking-widest font-extrabold text-[#515f74] text-right">Moderation</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+                        @foreach(var item in filteredListings)
+                        {
+                            <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors group">
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center gap-4">
+                                        <div class="w-16 h-16 rounded overflow-hidden shadow-sm bg-slate-200 flex-shrink-0">
+                                            @if (!string.IsNullOrEmpty(item.ImageUrl))
+                                            {
+                                                <img src="@item.ImageUrl" alt="room" class="w-full h-full object-cover">
+                                            }
+                                            else
+                                            {
+                                                <div class="w-full h-full flex items-center justify-center text-slate-400">
+                                                    <span class="material-symbols-outlined">image</span>
+                                                </div>
+                                            }
+                                        </div>
+                                        <div>
+                                            <div class="font-bold text-sm text-[#171c1f] dark:text-white line-clamp-1 max-w-[200px]" title="@item.Title">@item.Title</div>
+                                            <div class="text-[10px] text-[#515f74] uppercase tracking-widest mt-1">Room Posting • ID: @item.ListingId</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="flex flex-col gap-0.5">
+                                        <div class="flex items-center gap-2">
+                                            <div class="w-6 h-6 rounded-full bg-blue-100 text-[#004ac6] flex items-center justify-center text-[10px] font-black">
+                                                @(!string.IsNullOrEmpty(item.OwnerName) ? item.OwnerName.Substring(0, 1) : "?")
+                                            </div>
+                                            <div class="text-xs font-bold text-[#171c1f] dark:text-slate-300">@item.OwnerName</div>
+                                        </div>
+                                        <div class="text-[9px] text-slate-400 ml-8">@item.OwnerEmail</div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center gap-1.5 text-xs font-semibold text-[#515f74] dark:text-slate-400">
+                                        <span class="material-symbols-outlined text-sm text-[#004ac6]">location_on</span>
+                                        @item.District
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="text-xs font-black text-[#171c1f] dark:text-white">@string.Format("{0:N0}", item.Price) <span class="text-[10px] text-[#515f74] font-semibold uppercase">VND/mo</span></div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    @if(item.ApprovalStatus == "Pending")
+                                    {
+                                        <span class="px-2.5 py-1 bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-black uppercase tracking-widest rounded-full">Pending</span>
+                                    }
+                                    else if (item.ApprovalStatus == "Published" && item.IsAvailable)
+                                    {
+                                        <span class="px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-black uppercase tracking-widest rounded-full">Active</span>
+                                    }
+                                    else if (item.ApprovalStatus == "Published" && !item.IsAvailable)
+                                    {
+                                        <span class="px-2.5 py-1 bg-red-50 text-red-700 border border-red-200 text-[10px] font-black uppercase tracking-widest rounded-full">Blocked</span>
+                                    }
+                                    else if (item.ApprovalStatus == "Not Approved")
+                                    {
+                                        <span class="px-2.5 py-1 bg-slate-100 text-slate-600 border border-slate-200 text-[10px] font-black uppercase tracking-widest rounded-full">Not Approved</span>
+                                    }
+                                </td>
+                                <td class="px-6 py-4 text-right">
+                                    <div class="flex justify-end gap-1">
+                                        @if (item.ApprovalStatus == "Pending")
+                                        {
+                                            <button @onclick="() => ApproveListing(item.ListingId)" class="w-8 h-8 rounded bg-emerald-50 hover:bg-emerald-100 text-emerald-600 transition-colors" title="Approve">
+                                                <span class="material-symbols-outlined text-[18px]">check_circle</span>
+                                            </button>
+                                            <button @onclick="() => RejectListing(item.ListingId)" class="w-8 h-8 rounded bg-red-50 hover:bg-red-100 text-red-600 transition-colors" title="Reject">
+                                                <span class="material-symbols-outlined text-[18px]">cancel</span>
+                                            </button>
+                                        }
+                                        else if (item.ApprovalStatus == "Published")
+                                        {
+                                            if (item.IsAvailable)
+                                            {
+                                                <button @onclick="() => BlockListing(item.ListingId)" class="w-8 h-8 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 transition-colors" title="Block Listing">
+                                                    <span class="material-symbols-outlined text-[18px]">visibility_off</span>
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <button @onclick="() => UnblockListing(item.ListingId)" class="w-8 h-8 rounded hover:bg-emerald-100 text-emerald-500 transition-colors" title="Unblock Listing">
+                                                    <span class="material-symbols-outlined text-[18px]">visibility</span>
+                                                </button>
+                                            }
+                                        }
+                                        <button @onclick="() => DeleteListing(item.ListingId)" class="w-8 h-8 rounded hover:bg-red-100 text-red-500 transition-colors" title="Permanently Delete">
+                                            <span class="material-symbols-outlined text-[18px]">delete</span>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+                
+                @if (!filteredListings.Any())
+                {
+                    <div class="p-20 text-center text-slate-400">
+                        <span class="material-symbols-outlined text-4xl mb-2">search_off</span>
+                        <p class="text-sm font-semibold">No matching listings found</p>
+                    </div>
+                }
+
+                <div class="p-4 border-t border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50">
+                    <span class="text-[11px] font-bold text-[#515f74] uppercase tracking-widest">Showing @filteredListings.Count of @listings.Count results</span>
+                    <div class="flex space-x-1">
+                        <button class="w-8 h-8 flex items-center justify-center bg-white border border-slate-200 rounded text-slate-400">
+                            <span class="material-symbols-outlined text-[18px]">chevron_left</span>
+                        </button>
+                        <button class="w-8 h-8 flex items-center justify-center bg-[#004ac6] text-white rounded font-bold text-xs">1</button>
+                        <button class="w-8 h-8 flex items-center justify-center bg-white border border-slate-200 rounded text-slate-600">
+                            <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+                        </button>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<style>
+    .animate-fade-in-up { animation: fadeInUp 0.4s ease-out forwards; }
+    @@keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+
+@code {
+    private List<DashboardListingDto> listings = new();
+    private List<DashboardListingDto> filteredListings => listings.Where(l => 
+        (string.IsNullOrEmpty(filterDistrict) || l.District.Contains(filterDistrict)) &&
+        StatusMatches(l)
+    ).ToList();
+
+    private bool isLoading = true;
+    private string filterDistrict = "";
+    private string filterStatus = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+        try
+        {
+            var result = await Http.GetFromJsonAsync<List<DashboardListingDto>>("api/Admin/listings");
+            if (result != null) listings = result;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private bool StatusMatches(DashboardListingDto l)
+    {
+        if (string.IsNullOrEmpty(filterStatus)) return true;
+        
+        if (filterStatus == "Blocked") return l.ApprovalStatus == "Published" && !l.IsAvailable;
+        if (filterStatus == "Published") return l.ApprovalStatus == "Published" && l.IsAvailable;
+        return l.ApprovalStatus == filterStatus;
+    }
+
+    private void OnDistrictChanged(ChangeEventArgs e)
+    {
+        filterDistrict = e.Value?.ToString() ?? "";
+    }
+
+    private void OnStatusChanged(ChangeEventArgs e)
+    {
+        filterStatus = e.Value?.ToString() ?? "";
+    }
+
+    private void ResetFilters()
+    {
+        filterDistrict = "";
+        filterStatus = "";
+    }
+
+    private async Task ApproveListing(int id)
+    {
+        var confirmed = await JS.InvokeAsync<bool>("confirm", "Are you sure you want to approve this listing?");
+        if (confirmed)
+        {
+            var response = await Http.PostAsync($"api/Admin/approve-listing/{id}", null);
+            if (response.IsSuccessStatusCode)
+            {
+                await LoadData();
+            }
+        }
+    }
+
+    private async Task RejectListing(int id)
+    {
+        var reason = await JS.InvokeAsync<string>("prompt", "Enter the reason for rejecting this listing:");
+        if (!string.IsNullOrWhiteSpace(reason))
+        {
+            var dto = new { ListingId = id, RejectReason = reason };
+            var response = await Http.PostAsJsonAsync("api/Admin/reject-listing", dto);
+            if (response.IsSuccessStatusCode)
+            {
+                await LoadData();
+            }
+        }
+    }
+
+    private async Task BlockListing(int id)
+    {
+        var confirmed = await JS.InvokeAsync<bool>("confirm", "Do you want to block this listing? Users will no longer be able to see it.");
+        if (confirmed)
+        {
+            var response = await Http.PostAsync($"api/Admin/block-listing/{id}", null);
+            if (response.IsSuccessStatusCode)
+            {
+                await LoadData();
+            }
+        }
+    }
+
+    private async Task UnblockListing(int id)
+    {
+        var confirmed = await JS.InvokeAsync<bool>("confirm", "Do you want to unblock this listing?");
+        if (confirmed)
+        {
+            var response = await Http.PostAsync($"api/Admin/unblock-listing/{id}", null);
+            if (response.IsSuccessStatusCode)
+            {
+                await LoadData();
+            }
+        }
+    }
+
+    private async Task DeleteListing(int id)
+    {
+        var confirmed = await JS.InvokeAsync<bool>("confirm", "WARNING: Are you sure you want to PERMANENTLY DELETE this listing? This action cannot be undone.");
+        if (confirmed)
+        {
+            var response = await Http.DeleteAsync($"api/Admin/delete-listing/{id}");
+            if (response.IsSuccessStatusCode)
+            {
+                await LoadData();
+            }
+        }
+    }
+}

@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="UniNestBE/UniNestBE.csproj" />
+  <Project Path="UniNestFE/UniNestFE.csproj" />
+</Solution>

@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
+using UniNestBE.Entities;
 
 public class UniNestDbContext : DbContext
 {
@@ -17,6 +18,15 @@ public class UniNestDbContext : DbContext
     public DbSet<University> Universities { get; set; }
     public DbSet<Favorite> Favorites { get; set; }
     public DbSet<Request> Requests { get; set; }
+    public DbSet<Amenity> Amenities { get; set; }
+    public DbSet<LifestyleHabit> LifestyleHabits { get; set; }
+    public DbSet<StudentVerificationRequest> StudentVerificationRequests { get; set; }
+    public DbSet<Report> Reports { get; set; }
+
+    public DbSet<PropertyType> PropertyTypes { get; set; }
+
+    public DbSet<AllowedEmailDomain> AllowedEmailDomains { get; set; }
+
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -30,7 +40,7 @@ public class UniNestDbContext : DbContext
         // SEED DATA (Dữ liệu mẫu để test Map ngay lập tức)
         // Tạo 1 User mẫu
         modelBuilder.Entity<User>().HasData(
-            new User { UserId = 1, FullName = "Admin Demo", Email = "admin@udn.vn", PasswordHash = "123", Role = "admin" }
+            new User { UserId = 1, FullName = "Admin Demo", Email = "admin@udn.vn", PasswordHash = "123", Role = "admin", IsPremium = true, PremiumExpiryDate = DateTime.Now.AddYears(1) }
         );
 
         // Tạo 2 Listing mẫu
@@ -46,6 +56,34 @@ public class UniNestDbContext : DbContext
             // Gần Cầu Rồng
             new Address { AddressId = 2, ListingId = 2, FullAddress = "Đường Trần Hưng Đạo", Latitude = 16.061735m, Longitude = 108.232372m }
         );
+
+        // Khởi tạo các tiện ích cơ bản (Seed Data cho Amenities)
+        modelBuilder.Entity<Amenity>().HasData(
+            new Amenity { AmenityId = 1, Name = "Wi-Fi", Icon = "wifi" },
+            new Amenity { AmenityId = 2, Name = "Air Conditioning", Icon = "ac_unit" },
+            new Amenity { AmenityId = 3, Name = "Private Bath", Icon = "bathtub" },
+            new Amenity { AmenityId = 4, Name = "Parking", Icon = "directions_car" },
+            new Amenity { AmenityId = 5, Name = "Kitchen", Icon = "kitchen" },
+            new Amenity { AmenityId = 6, Name = "Laundry", Icon = "local_laundry_service" }
+        );
+
+        // Khởi tạo thói quen sinh hoạt cơ bản (Seed Data cho LifestyleHabits)
+        modelBuilder.Entity<LifestyleHabit>().HasData(
+            new LifestyleHabit { LifestyleHabitId = 1, Name = "Non-smoker only" },
+            new LifestyleHabit { LifestyleHabitId = 2, Name = "Pet friendly" },
+            new LifestyleHabit { LifestyleHabitId = 3, Name = "Late-night studying" }
+        );
+
+        // Khởi tạo tên miền hợp lệ mặc định (Seed data cho AllowedEmailDomains)
+        modelBuilder.Entity<AllowedEmailDomain>().HasData(
+            new AllowedEmailDomain { DomainId = 1, DomainName = "edu.vn", Description = "Email Sinh viên Toàn quốc" }
+        );
+
+        // Corrected seed data for premium user
+        modelBuilder.Entity<User>().HasData(
+            new User { UserId = 1001, FullName = "Premium User", Email = "premium@domain.com", PasswordHash = "hashed_password", IsPremium = true, PremiumExpiryDate = DateTime.UtcNow.AddMonths(1) }
+        );
+
         modelBuilder.Entity<Conversation>()
         .HasOne(c => c.ParticipantOne)
         .WithMany() // Hoặc .WithMany(u => u.ConversationsAsPartOne) nếu bạn đã khai báo trong User
@@ -166,5 +204,37 @@ public class UniNestDbContext : DbContext
             .WithOne(a => a.Listing)
             .HasForeignKey<Address>(a => a.ListingId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // --- 9. Cấu hình Report ---
+        modelBuilder.Entity<Report>()
+            .HasOne(r => r.Reporter)
+            .WithMany()
+            .HasForeignKey(r => r.ReporterId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Report>()
+            .HasOne(r => r.TargetUser)
+            .WithMany()
+            .HasForeignKey(r => r.TargetUserId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Report>()
+            .HasOne(r => r.TargetListing)
+            .WithMany()
+            .HasForeignKey(r => r.TargetListingId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // --- 10. Cấu hình StudentVerificationRequest ---
+        modelBuilder.Entity<StudentVerificationRequest>()
+            .HasOne(svr => svr.User)
+            .WithMany(u => u.VerificationRequestsAsUser)
+            .HasForeignKey(svr => svr.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<StudentVerificationRequest>()
+            .HasOne(svr => svr.Admin)
+            .WithMany(u => u.VerificationRequestsReviewed)
+            .HasForeignKey(svr => svr.ReviewedByAdminId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

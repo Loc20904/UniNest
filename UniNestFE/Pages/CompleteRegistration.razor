@@ -1,0 +1,328 @@
+@page "/register-complete"
+@inject HttpClient Http
+@inject NavigationManager NavManager
+@inject IJSRuntime JSRuntime
+@using System.Text.Json
+@using System.Net.Http.Headers
+@using System.ComponentModel.DataAnnotations
+
+<PageTitle>Complete Registration | UniNest</PageTitle>
+
+<div class="w-full min-h-screen bg-[#f0f4f8] dark:bg-slate-900 py-12 px-4 flex justify-center items-start font-body">
+    <div class="w-full max-w-2xl bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8 animate-fade-in-up border border-slate-100 dark:border-slate-700">
+        
+        <div class="text-center mb-8 pb-6 border-b border-slate-100 dark:border-slate-700">
+            <h1 class="text-2xl font-bold text-[#171c1f] dark:text-white mb-2">Complete Your Profile</h1>
+            <p class="text-sm text-[#515f74] dark:text-slate-400">
+                Email: <span class="font-bold text-[#004ac6]">@Email</span>
+                @if (IsEduEmail)
+                {
+                    <span class="inline-flex ml-2 px-2 py-0.5 rounded text-[10px] font-bold bg-[#d1fae5] text-[#059669] uppercase">Verified University</span>
+                }
+                else
+                {
+                    <span class="inline-flex ml-2 px-2 py-0.5 rounded text-[10px] font-bold bg-[#ffeed2] text-[#d97706] uppercase">Verification Required</span>
+                }
+            </p>
+        </div>
+
+        @if (!IsSuccess)
+        {
+            <EditForm Model="@Model" OnValidSubmit="HandleSubmit" class="space-y-6">
+                <DataAnnotationsValidator />
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Personal Info -->
+                    <div class="space-y-4">
+                        <h3 class="text-xs font-bold uppercase tracking-widest text-[#515f74]">Personal Information</h3>
+                        
+                        <div>
+                            <label class="text-[11px] font-bold text-[#171c1f] dark:text-white mb-1 block">Full Name</label>
+                            <InputText @bind-Value="Model.FullName" class="w-full px-4 py-2 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-lg text-sm outline-none focus:border-[#004ac6]" placeholder="e.g. John Doe" />
+                            <ValidationMessage For="@(() => Model.FullName)" class="text-red-500 text-[10px] mt-1" />
+                        </div>
+
+                        <div>
+                            <label class="text-[11px] font-bold text-[#171c1f] dark:text-white mb-1 block">Phone Number</label>
+                            <InputText @bind-Value="Model.PhoneNumber" class="w-full px-4 py-2 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-lg text-sm outline-none focus:border-[#004ac6]" placeholder="0901234567" />
+                            <ValidationMessage For="@(() => Model.PhoneNumber)" class="text-red-500 text-[10px] mt-1" />
+                        </div>
+
+                        <div>
+                            <label class="text-[11px] font-bold text-[#171c1f] dark:text-white mb-1 block">Password</label>
+                            <InputText @bind-Value="Model.Password" type="password" class="w-full px-4 py-2 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-lg text-sm outline-none focus:border-[#004ac6]" placeholder="••••••••" />
+                            <ValidationMessage For="@(() => Model.Password)" class="text-red-500 text-[10px] mt-1" />
+                            <p class="text-[10px] text-slate-400 mt-1">At least 8 characters, including letters and numbers.</p>
+                        </div>
+                    </div>
+
+                    <!-- Student Verification (Only if not edu mail) -->
+                    @if (!IsEduEmail)
+                    {
+                        <div class="space-y-4">
+                            <h3 class="text-xs font-bold uppercase tracking-widest text-[#d97706]">Student Verification</h3>
+                            
+                            <div>
+                                <label class="text-[11px] font-bold text-[#171c1f] dark:text-white mb-1 block">Current Semester</label>
+                                <InputSelect @bind-Value="Model.Semester" class="w-full px-4 py-2 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-lg text-sm outline-none focus:border-[#d97706]">
+                                    <option value="">-- Select Semester --</option>
+                                    <option value="Semester 1 / Year 1">Semester 1 / Year 1</option>
+                                    <option value="Semester 2 / Year 1">Semester 2 / Year 1</option>
+                                    <option value="Year 2 Student">Year 2 Student</option>
+                                    <option value="Year 3 Student">Year 3 Student</option>
+                                    <option value="Year 4+ Student">Year 4+ Student</option>
+                                </InputSelect>
+                                <ValidationMessage For="@(() => Model.Semester)" class="text-red-500 text-[10px] mt-1" />
+                            </div>
+
+                            <div class="p-4 border-2 border-dashed border-slate-200 dark:border-slate-600 rounded-xl bg-slate-50/50 dark:bg-slate-800/50">
+                                <label class="text-[11px] font-bold block mb-2 text-[#515f74]">Student ID Front</label>
+                                <InputFile OnChange="@((e) => HandleFileUpload(e, true))" accept="image/png, image/jpeg" class="w-full text-xs text-slate-500 file:mr-4 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-amber-50 file:text-amber-700 hover:file:bg-amber-100" />
+                                @if (FrontImageSelected) { <span class="text-[10px] text-green-600 mt-1 block">✓ File selected</span> }
+                            </div>
+
+                            <div class="p-4 border-2 border-dashed border-slate-200 dark:border-slate-600 rounded-xl bg-slate-50/50 dark:bg-slate-800/50">
+                                <label class="text-[11px] font-bold block mb-2 text-[#515f74]">Student ID Back</label>
+                                <InputFile OnChange="@((e) => HandleFileUpload(e, false))" accept="image/png, image/jpeg" class="w-full text-xs text-slate-500 file:mr-4 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-amber-50 file:text-amber-700 hover:file:bg-amber-100" />
+                                @if (BackImageSelected) { <span class="text-[10px] text-green-600 mt-1 block">✓ File selected</span> }
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="bg-[#f0f4f8] dark:bg-slate-700/30 rounded-xl flex items-center justify-center p-6 text-center border border-slate-100 dark:border-slate-600">
+                            <div>
+                                <span class="material-symbols-outlined text-[#059669] text-5xl mb-3">verified</span>
+                                <h4 class="font-bold text-sm text-[#171c1f] dark:text-white">Account Auto-Verified</h4>
+                                <p class="text-xs text-[#515f74] mt-2">Skip student ID upload as you are using a university email address.</p>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <!-- Terms & Conditions -->
+                <div class="pt-6 border-t border-slate-100 dark:border-slate-700 flex items-start gap-3">
+                    <input type="checkbox" @bind="AcceptedTerms" id="terms" class="mt-1 w-4 h-4 text-[#004ac6] bg-slate-100 border-slate-300 rounded focus:ring-[#004ac6] cursor-pointer" />
+                    <label for="terms" class="text-xs text-[#515f74] dark:text-slate-400 cursor-pointer">
+                        By clicking "Complete Registration", I agree to UniNest's 
+                        <a href="/terms" target="_blank" class="text-[#004ac6] font-bold hover:underline">Terms of Service</a> and 
+                        <a href="/privacy" target="_blank" class="text-[#004ac6] font-bold hover:underline">Privacy Policy</a>.
+                    </label>
+                </div>
+
+                @if (!string.IsNullOrEmpty(ErrorMessage))
+                {
+                    <div class="p-3 rounded-lg bg-red-50 border border-red-200 text-xs text-red-600 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-sm">error</span> @ErrorMessage
+                    </div>
+                }
+
+                <div class="flex justify-end pt-2">
+                    <button type="submit" disabled="@(IsLoading || !AcceptedTerms)" class="px-8 py-3 bg-[#171c1f] hover:bg-[#2b3338] text-white rounded-xl font-bold text-sm tracking-wide transition-all transform active:scale-95 disabled:opacity-50 flex items-center gap-2 shadow-lg shadow-black/10">
+                        @if (IsLoading)
+                        {
+                            <span class="material-symbols-outlined animate-spin text-sm">progress_activity</span>
+                            <span>Processing...</span>
+                        }
+                        else
+                        {
+                            <span>Complete Registration</span>
+                            <span class="material-symbols-outlined text-sm">arrow_forward</span>
+                        }
+                    </button>
+                </div>
+            </EditForm>
+        }
+        else
+        {
+            <div class="text-center py-10">
+                <div class="w-20 h-20 bg-[#d1fae5] rounded-full flex items-center justify-center mx-auto text-[#059669] mb-6">
+                    <span class="material-symbols-outlined text-4xl">how_to_reg</span>
+                </div>
+                <h2 class="text-2xl font-bold text-[#171c1f] dark:text-white mb-2">Registration Successful!</h2>
+                @if (IsEduEmail)
+                {
+                    <p class="text-[#515f74] text-sm mb-8">Your account has been activated. Experience the UniNest ecosystem right now.</p>
+                }
+                else
+                {
+                    <p class="text-[#515f74] text-sm mb-8">Your profile has been submitted. An administrator will review your student ID within 24 hours. The result (approval or rejection) will be sent to your email.</p>
+                }
+                <a href="/login" class="px-8 py-3 bg-[#004ac6] hover:bg-blue-700 text-white rounded-xl font-bold text-sm transition-all shadow-lg shadow-blue-500/30">
+                    Go to Login
+                </a>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private string Token = "";
+    private string Email = "Loading...";
+    private bool IsEduEmail = false;
+
+    private CompleteFormModel Model = new();
+    private IBrowserFile? FrontIdFile;
+    private IBrowserFile? BackIdFile;
+    private bool FrontImageSelected = false;
+    private bool BackImageSelected = false;
+
+    private bool AcceptedTerms = false;
+    private bool IsLoading = false;
+    private bool IsSuccess = false;
+    private string ErrorMessage = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var uri = NavManager.ToAbsoluteUri(NavManager.Uri);
+        var query = uri.Query;
+
+        if (query.Contains("token="))
+        {
+            var parts = query.Split(new[] { "token=" }, StringSplitOptions.None);
+            if (parts.Length > 1)
+            {
+                Token = parts[1].Split('&')[0];
+                DecodeToken(Token);
+                return;
+            }
+        }
+        
+        NavManager.NavigateTo("/register");
+    }
+
+    private void DecodeToken(string jwt)
+    {
+        try
+        {
+            var parts = jwt.Split('.');
+            if (parts.Length != 3) return;
+
+            var payload = parts[1];
+            payload = payload.Replace('-', '+').Replace('_', '/');
+            switch (payload.Length % 4)
+            {
+                case 2: payload += "=="; break;
+                case 3: payload += "="; break;
+            }
+
+            var jsonBytes = Convert.FromBase64String(payload);
+            var jsonText = System.Text.Encoding.UTF8.GetString(jsonBytes);
+            var jwtData = JsonSerializer.Deserialize<Dictionary<string, object>>(jsonText);
+
+            if (jwtData != null && jwtData.TryGetValue("email", out var emailObj))
+            {
+                Email = emailObj.ToString() ?? "";
+                IsEduEmail = Email.EndsWith(".edu.vn");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error decoding token: " + ex.Message);
+            Email = "Token Error. Please request a new link.";
+        }
+    }
+
+    private void HandleFileUpload(InputFileChangeEventArgs e, bool isFront)
+    {
+        if (e.File == null) return;
+        if (isFront)
+        {
+            FrontIdFile = e.File;
+            FrontImageSelected = true;
+        }
+        else
+        {
+            BackIdFile = e.File;
+            BackImageSelected = true;
+        }
+    }
+
+    private async Task HandleSubmit()
+    {
+        ErrorMessage = "";
+
+        if (string.IsNullOrWhiteSpace(Model.FullName) || string.IsNullOrWhiteSpace(Model.Password))
+        {
+            ErrorMessage = "Full Name and Password are required.";
+            return;
+        }
+
+        if (!IsEduEmail)
+        {
+            if (FrontIdFile == null || BackIdFile == null)
+            {
+                ErrorMessage = "Please upload both front and back images of your student ID.";
+                return;
+            }
+            if (string.IsNullOrWhiteSpace(Model.Semester))
+            {
+                ErrorMessage = "Please select your current semester.";
+                return;
+            }
+        }
+
+        IsLoading = true;
+
+        try
+        {
+            using var content = new MultipartFormDataContent();
+            content.Add(new StringContent(Token), "Token");
+            content.Add(new StringContent(Model.FullName), "FullName");
+            content.Add(new StringContent(Model.Password), "Password");
+            content.Add(new StringContent(Model.PhoneNumber ?? ""), "PhoneNumber");
+            content.Add(new StringContent(Model.Semester ?? ""), "Semester");
+
+            long maxFileSize = 10 * 1024 * 1024; // 10MB
+
+            if (!IsEduEmail && FrontIdFile != null && BackIdFile != null)
+            {
+                var frontStream = FrontIdFile.OpenReadStream(maxFileSize);
+                var frontContent = new StreamContent(frontStream);
+                frontContent.Headers.ContentType = new MediaTypeHeaderValue(FrontIdFile.ContentType);
+                content.Add(frontContent, "frontIdImage", FrontIdFile.Name);
+
+                var backStream = BackIdFile.OpenReadStream(maxFileSize);
+                var backContent = new StreamContent(backStream);
+                backContent.Headers.ContentType = new MediaTypeHeaderValue(BackIdFile.ContentType);
+                content.Add(backContent, "backIdImage", BackIdFile.Name);
+            }
+
+            var response = await Http.PostAsync("api/Auth/complete-registration", content);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                IsSuccess = true;
+            }
+            else
+            {
+                var errorText = await response.Content.ReadAsStringAsync();
+                ErrorMessage = "Error: " + (errorText.Contains("message") ? errorText : "Please try again later.");
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = "Server connection error: " + ex.Message;
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    public class CompleteFormModel
+    {
+        [Required(ErrorMessage = "Full Name is required.")]
+        public string FullName { get; set; } = "";
+
+        [Required(ErrorMessage = "Phone Number is required.")]
+        [RegularExpression(@"^\d+$", ErrorMessage = "Phone number must contain only digits.")]
+        public string PhoneNumber { get; set; } = "";
+
+        [Required(ErrorMessage = "Password is required.")]
+        [MinLength(8, ErrorMessage = "Password must be at least 8 characters.")]
+        public string Password { get; set; } = "";
+
+        public string Semester { get; set; } = "";
+    }
+}

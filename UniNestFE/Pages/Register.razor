@@ -1,0 +1,164 @@
+@page "/register"
+@inject HttpClient Http
+@inject NavigationManager NavManager
+@using UniNestFE.DTOs
+@using System.Net.Http.Json
+
+<PageTitle>Register | UniNest</PageTitle>
+
+<div class="w-full min-h-screen flex items-center justify-center bg-[#f0f4f8] dark:bg-slate-900 p-4 relative overflow-hidden font-body">
+    <!-- Registration Card -->
+    <div class="w-full max-w-lg bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8 z-10 border border-slate-100 dark:border-slate-700 animate-fade-in-up">
+        
+        <div class="text-center mb-8">
+            <h1 class="text-2xl font-bold text-[#171c1f] dark:text-white mb-2">Register Account</h1>
+            <p class="text-sm text-[#515f74] dark:text-slate-400">Choose the registration method that suits you</p>
+        </div>
+
+        @if (!IsSuccess)
+        {
+            <div class="space-y-4 mb-6">
+                <!-- Option 1: Edu Email -->
+                <div @onclick="() => SelectType(true)" class="border-2 rounded-xl p-4 cursor-pointer transition-all @(IsEduEmail ? "border-[#004ac6] bg-blue-50 dark:bg-blue-900/20" : "border-slate-200 dark:border-slate-700 hover:border-[#004ac6]/50")">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-[#004ac6]/10 flex items-center justify-center text-[#004ac6]">
+                            <span class="material-symbols-outlined">school</span>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="font-bold text-[#171c1f] dark:text-white text-sm">Student (University Email)</h3>
+                            <p class="text-[11px] text-[#515f74] dark:text-slate-400">Use .edu.vn email (Auto-verified)</p>
+                        </div>
+                        @if (IsEduEmail)
+                        {
+                            <span class="material-symbols-outlined text-[#004ac6]">check_circle</span>
+                        }
+                    </div>
+                </div>
+
+                <!-- Option 2: Regular Email -->
+                <div @onclick="() => SelectType(false)" class="border-2 rounded-xl p-4 cursor-pointer transition-all @(!IsEduEmail ? "border-[#059669] bg-green-50 dark:bg-green-900/20" : "border-slate-200 dark:border-slate-700 hover:border-[#059669]/50")">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-[#059669]/10 flex items-center justify-center text-[#059669]">
+                            <span class="material-symbols-outlined">badge</span>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="font-bold text-[#171c1f] dark:text-white text-sm">Student (Other Email)</h3>
+                            <p class="text-[11px] text-[#515f74] dark:text-slate-400">Regular email (Student ID upload required)</p>
+                        </div>
+                        @if (!IsEduEmail)
+                        {
+                            <span class="material-symbols-outlined text-[#059669]">check_circle</span>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-2 mb-6">
+                <label class="text-xs font-bold uppercase text-[#515f74] dark:text-slate-400">Email Address</label>
+                <div class="relative">
+                    <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">mail</span>
+                    <input type="email" @bind="Email" placeholder="@(IsEduEmail ? "e.g. sv@duytan.edu.vn" : "e.g. john.doe@gmail.com")" class="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-[#004ac6] outline-none transition-all text-sm text-[#171c1f] dark:text-white" />
+                </div>
+                @if (!string.IsNullOrEmpty(ErrorMessage))
+                {
+                    <p class="text-red-500 text-xs mt-1">@ErrorMessage</p>
+                }
+            </div>
+
+            <button @onclick="SendLink" disabled="@IsLoading" class="w-full py-3 rounded-xl font-bold text-sm text-white transition-all transform active:scale-95 disabled:opacity-70 flex justify-center items-center gap-2 @(IsEduEmail ? "bg-[#004ac6] hover:bg-blue-700" : "bg-[#059669] hover:bg-emerald-700")">
+                @if (IsLoading)
+                {
+                    <span class="material-symbols-outlined animate-spin text-sm">progress_activity</span>
+                    <span>Sending...</span>
+                }
+                else
+                {
+                    <span>Send Registration Link</span>
+                    <span class="material-symbols-outlined text-sm">send</span>
+                }
+            </button>
+        }
+        else
+        {
+            <div class="text-center py-6 space-y-4">
+                <div class="w-16 h-16 bg-[#d1fae5] rounded-full flex items-center justify-center mx-auto text-[#059669]">
+                    <span class="material-symbols-outlined text-3xl">mark_email_read</span>
+                </div>
+                <h3 class="font-bold text-lg text-[#171c1f] dark:text-white">Check Your Inbox</h3>
+                <p class="text-sm text-[#515f74] dark:text-slate-400">
+                    We've sent a registration link to <b>@Email</b>. Please check your email and click the link to continue account creation.
+                </p>
+            </div>
+        }
+
+        <div class="mt-6 text-center">
+            <a href="/login" class="text-xs font-medium text-[#004ac6] hover:underline">Already have an account? Login now</a>
+        </div>
+    </div>
+</div>
+
+<style>
+    .animate-fade-in-up { animation: fadeInUp 0.4s ease-out forwards; }
+    @@keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+
+@code {
+    private bool IsEduEmail = true;
+    private string Email = "";
+    private string ErrorMessage = "";
+    private bool IsLoading = false;
+    private bool IsSuccess = false;
+
+    private void SelectType(bool isEdu)
+    {
+        IsEduEmail = isEdu;
+        ErrorMessage = "";
+        Email = "";
+    }
+
+    private async Task SendLink()
+    {
+        ErrorMessage = "";
+
+        if (string.IsNullOrWhiteSpace(Email) || !Email.Contains("@"))
+        {
+            ErrorMessage = "Please enter a valid email address.";
+            return;
+        }
+
+        if (IsEduEmail && !Email.EndsWith(".edu.vn"))
+        {
+            ErrorMessage = "Please register with a university email (.edu.vn). Otherwise, select Other Email.";
+            return;
+        }
+
+        IsLoading = true;
+
+        try
+        {
+            var req = new { Email = Email };
+            var response = await Http.PostAsJsonAsync("api/Auth/request-registration", req);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                IsSuccess = true;
+            }
+            else
+            {
+                var content = await response.Content.ReadAsStringAsync();
+                ErrorMessage = content.Contains("message") ? "Error: " + content : "Failed to send link.";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = "Server connection error: " + ex.Message;
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+}

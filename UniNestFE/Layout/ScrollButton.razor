@@ -1,0 +1,50 @@
+@inject IJSRuntime JS
+
+<div class="fixed bottom-6 right-6 flex flex-col gap-3 z-[49] transition-all duration-300 @(isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10 pointer-events-none")">
+    <button @onclick="ScrollToTop"
+            class="p-3 bg-white dark:bg-[#1c2126] text-primary rounded-full shadow-2xl border border-slate-200 dark:border-[#27353a] hover:bg-slate-50 dark:hover:bg-slate-800 transition-all active:scale-90 group"
+            title="Scroll to Top">
+        <span class="material-icons-round text-2xl group-hover:-translate-y-0.5 transition-transform">arrow_upward</span>
+    </button>
+    <button @onclick="ScrollToBottom"
+            class="p-3 bg-white dark:bg-[#1c2126] text-slate-400 dark:text-gray-400 rounded-full shadow-2xl border border-slate-200 dark:border-[#27353a] hover:bg-slate-50 dark:hover:bg-slate-800 transition-all active:scale-90 group"
+            title="Scroll to Bottom">
+        <span class="material-icons-round text-2xl group-hover:translate-y-0.5 transition-transform">arrow_downward</span>
+    </button>
+</div>
+
+@code {
+    private bool isVisible = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // We want to show buttons only after scrolling a bit
+            // But for simplicity in Blazor WASM without complex event listeners:
+            isVisible = true;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ScrollToTop()
+    {
+        await JS.InvokeVoidAsync("eval", @"
+            (function() {
+                const scroller = document.querySelector('main') || document.querySelector('.listings-container') || window;
+                scroller.scrollTo({ top: 0, behavior: 'smooth' });
+            })();
+        ");
+    }
+
+    private async Task ScrollToBottom()
+    {
+        await JS.InvokeVoidAsync("eval", @"
+            (function() {
+                const scroller = document.querySelector('main') || document.querySelector('.listings-container') || window;
+                const height = scroller === window ? document.documentElement.scrollHeight : scroller.scrollHeight;
+                scroller.scrollTo({ top: height, behavior: 'smooth' });
+            })();
+        ");
+    }
+}

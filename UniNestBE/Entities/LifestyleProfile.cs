@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 public class LifestyleProfile
@@ -22,6 +22,12 @@ public class LifestyleProfile
     [MaxLength(50)]
     public string CookingHabit { get; set; } // Often, Sometimes, Never
 
+    [MaxLength(50)]
+    public string? GuestFrequency { get; set; } // Often, Occasional, Rarely
+
+    [MaxLength(255)]
+    public string? PreferredDistricts { get; set; } // Comma separated districts
+
     [MaxLength(255)]
     public string? PersonalityTraits { get; set; } // Tags: Introvert, Extrovert, Quiet...
 
@@ -30,4 +36,7 @@ public class LifestyleProfile
 
     [Column(TypeName = "decimal(18, 2)")]
     public decimal BudgetMax { get; set; }
+
+    // Relationship: A profile can possess many lifestyle habits
+    public List<LifestyleHabit> LifestyleHabits { get; set; } = new List<LifestyleHabit>();
 }

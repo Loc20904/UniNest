@@ -82,6 +82,82 @@ namespace UniNestBE.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Amenity", b =>
+                {
+                    b.Property<int>("AmenityId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("AmenityId"));
+
+                    b.Property<string>("Icon")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("AmenityId");
+
+                    b.ToTable("Amenities");
+
+                    b.HasData(
+                        new
+                        {
+                            AmenityId = 1,
+                            Icon = "wifi",
+                            Name = "Wi-Fi"
+                        },
+                        new
+                        {
+                            AmenityId = 2,
+                            Icon = "ac_unit",
+                            Name = "Air Conditioning"
+                        },
+                        new
+                        {
+                            AmenityId = 3,
+                            Icon = "bathtub",
+                            Name = "Private Bath"
+                        },
+                        new
+                        {
+                            AmenityId = 4,
+                            Icon = "directions_car",
+                            Name = "Parking"
+                        },
+                        new
+                        {
+                            AmenityId = 5,
+                            Icon = "kitchen",
+                            Name = "Kitchen"
+                        },
+                        new
+                        {
+                            AmenityId = 6,
+                            Icon = "local_laundry_service",
+                            Name = "Laundry"
+                        });
+                });
+
+            modelBuilder.Entity("AmenityListing", b =>
+                {
+                    b.Property<int>("AmenitiesAmenityId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ListingsListingId")
+                        .HasColumnType("int");
+
+                    b.HasKey("AmenitiesAmenityId", "ListingsListingId");
+
+                    b.HasIndex("ListingsListingId");
+
+                    b.ToTable("AmenityListing");
+                });
+
             modelBuilder.Entity("Conversation", b =>
                 {
                     b.Property<int>("ConversationID")
@@ -140,6 +216,75 @@ namespace UniNestBE.Migrations
                     b.ToTable("Favorites");
                 });
 
+            modelBuilder.Entity("LifestyleHabit", b =>
+                {
+                    b.Property<int>("LifestyleHabitId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("LifestyleHabitId"));
+
+                    b.Property<string>("Icon")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("LifestyleHabitId");
+
+                    b.ToTable("LifestyleHabits");
+
+                    b.HasData(
+                        new
+                        {
+                            LifestyleHabitId = 1,
+                            Name = "Non-smoker only"
+                        },
+                        new
+                        {
+                            LifestyleHabitId = 2,
+                            Name = "Pet friendly"
+                        },
+                        new
+                        {
+                            LifestyleHabitId = 3,
+                            Name = "Late-night studying"
+                        });
+                });
+
+            modelBuilder.Entity("LifestyleHabitLifestyleProfile", b =>
+                {
+                    b.Property<int>("LifestyleHabitsLifestyleHabitId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("LifestyleProfilesProfileId")
+                        .HasColumnType("int");
+
+                    b.HasKey("LifestyleHabitsLifestyleHabitId", "LifestyleProfilesProfileId");
+
+                    b.HasIndex("LifestyleProfilesProfileId");
+
+                    b.ToTable("LifestyleHabitLifestyleProfile");
+                });
+
+            modelBuilder.Entity("LifestyleHabitListing", b =>
+                {
+                    b.Property<int>("LifestyleHabitsLifestyleHabitId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ListingsListingId")
+                        .HasColumnType("int");
+
+                    b.HasKey("LifestyleHabitsLifestyleHabitId", "ListingsListingId");
+
+                    b.HasIndex("ListingsListingId");
+
+                    b.ToTable("LifestyleHabitListing");
+                });
+
             modelBuilder.Entity("LifestyleProfile", b =>
                 {
                     b.Property<int>("ProfileId")
@@ -162,10 +307,18 @@ namespace UniNestBE.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<string>("GuestFrequency")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
                     b.Property<bool>("HasPet")
                         .HasColumnType("bit");
 
                     b.Property<string>("PersonalityTraits")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("PreferredDistricts")
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
 
@@ -199,6 +352,11 @@ namespace UniNestBE.Migrations
                     b.Property<int>("AddressId")
                         .HasColumnType("int");
 
+                    b.Property<string>("ApprovalStatus")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
                     b.Property<double>("AreaSquareMeters")
                         .HasColumnType("float");
 
@@ -207,6 +365,9 @@ namespace UniNestBE.Migrations
 
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("ExpireAt")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("GenderPreference")
                         .IsRequired()
@@ -222,14 +383,22 @@ namespace UniNestBE.Migrations
                     b.Property<decimal>("Price")
                         .HasColumnType("decimal(18, 2)");
 
+                    b.Property<int?>("PropertyTypeId")
+                        .HasColumnType("int");
+
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
+                    b.Property<int>("WarningCount")
+                        .HasColumnType("int");
+
                     b.HasKey("ListingId");
 
                     b.HasIndex("OwnerId");
+
+                    b.HasIndex("PropertyTypeId");
 
                     b.ToTable("Listings");
 
@@ -238,25 +407,31 @@ namespace UniNestBE.Migrations
                         {
                             ListingId = 1,
                             AddressId = 0,
+                            ApprovalStatus = "Pending",
                             AreaSquareMeters = 20.0,
-                            CreatedAt = new DateTime(2026, 1, 24, 20, 57, 48, 511, DateTimeKind.Local).AddTicks(1096),
+                            CreatedAt = new DateTime(2026, 3, 31, 16, 55, 48, 876, DateTimeKind.Local).AddTicks(9779),
+                            ExpireAt = new DateTime(2026, 4, 30, 16, 55, 48, 876, DateTimeKind.Local).AddTicks(9779),
                             GenderPreference = "Any",
                             IsAvailable = true,
                             OwnerId = 1,
                             Price = 1500000m,
-                            Title = "Trọ giá rẻ gần Bách Khoa"
+                            Title = "Trọ giá rẻ gần Bách Khoa",
+                            WarningCount = 0
                         },
                         new
                         {
                             ListingId = 2,
                             AddressId = 0,
+                            ApprovalStatus = "Pending",
                             AreaSquareMeters = 40.0,
-                            CreatedAt = new DateTime(2026, 1, 24, 20, 57, 48, 511, DateTimeKind.Local).AddTicks(1111),
+                            CreatedAt = new DateTime(2026, 3, 31, 16, 55, 48, 876, DateTimeKind.Local).AddTicks(9788),
+                            ExpireAt = new DateTime(2026, 4, 30, 16, 55, 48, 876, DateTimeKind.Local).AddTicks(9788),
                             GenderPreference = "Any",
                             IsAvailable = true,
                             OwnerId = 1,
                             Price = 3500000m,
-                            Title = "Căn hộ mini Sơn Trà"
+                            Title = "Căn hộ mini Sơn Trà",
+                            WarningCount = 0
                         });
                 });
 
@@ -361,6 +536,24 @@ namespace UniNestBE.Migrations
                     b.ToTable("Messages");
                 });
 
+            modelBuilder.Entity("PropertyType", b =>
+                {
+                    b.Property<int>("PropertyTypeId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PropertyTypeId"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("PropertyTypeId");
+
+                    b.ToTable("PropertyTypes");
+                });
+
             modelBuilder.Entity("Request", b =>
                 {
                     b.Property<int>("RequestId")
@@ -435,6 +628,140 @@ namespace UniNestBE.Migrations
                     b.ToTable("Reviews");
                 });
 
+            modelBuilder.Entity("StudentVerificationRequest", b =>
+                {
+                    b.Property<int>("RequestId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("RequestId"));
+
+                    b.Property<string>("BackIdImageUrl")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("CurrentSemester")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("FrontIdImageUrl")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<DateTime?>("ReviewedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("ReviewedByAdminId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime>("SubmittedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("RequestId");
+
+                    b.HasIndex("ReviewedByAdminId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("StudentVerificationRequests");
+                });
+
+            modelBuilder.Entity("UniNestBE.Entities.AllowedEmailDomain", b =>
+                {
+                    b.Property<int>("DomainId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("DomainId"));
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("DomainName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.HasKey("DomainId");
+
+                    b.ToTable("AllowedEmailDomains");
+
+                    b.HasData(
+                        new
+                        {
+                            DomainId = 1,
+                            Description = "Email Sinh viên Toàn quốc",
+                            DomainName = "edu.vn"
+                        });
+                });
+
+            modelBuilder.Entity("UniNestBE.Entities.Report", b =>
+                {
+                    b.Property<int>("ReportId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ReportId"));
+
+                    b.Property<string>("ActionTaken")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("Priority")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("ReporterId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int?>("TargetListingId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("TargetUserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("ReportId");
+
+                    b.HasIndex("ReporterId");
+
+                    b.HasIndex("TargetListingId");
+
+                    b.HasIndex("TargetUserId");
+
+                    b.ToTable("Reports");
+                });
+
             modelBuilder.Entity("University", b =>
                 {
                     b.Property<int>("UniId")
@@ -461,9 +788,20 @@ namespace UniNestBE.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("UserId"));
 
+                    b.Property<string>("CurrentAddress")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<DateTime?>("DateOfBirth")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("EnrollmentStatus")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<string>("FullName")
                         .IsRequired()
@@ -473,7 +811,17 @@ namespace UniNestBE.Migrations
                     b.Property<bool>("Gender")
                         .HasColumnType("bit");
 
+                    b.Property<string>("IdentificationId")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<bool>("IsBanned")
+                        .HasColumnType("bit");
+
                     b.Property<bool>("IsOnline")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsPremium")
                         .HasColumnType("bit");
 
                     b.Property<bool>("IsVerified")
@@ -482,11 +830,28 @@ namespace UniNestBE.Migrations
                     b.Property<DateTime>("LastActiveAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("Major")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Nationality")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
                     b.Property<string>("PasswordHash")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("PhoneNumber")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("PremiumExpiryDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ResetPasswordToken")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("ResetPasswordTokenExpiry")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("Role")
                         .IsRequired()
@@ -495,8 +860,19 @@ namespace UniNestBE.Migrations
                     b.Property<string>("StudentAvatar")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("StudentId")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
                     b.Property<int?>("UniversityId")
                         .HasColumnType("int");
+
+                    b.Property<int>("WarningCount")
+                        .HasColumnType("int");
+
+                    b.Property<string>("YearOfStudy")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.HasKey("UserId");
 
@@ -511,11 +887,31 @@ namespace UniNestBE.Migrations
                             Email = "admin@udn.vn",
                             FullName = "Admin Demo",
                             Gender = false,
+                            IsBanned = false,
                             IsOnline = false,
+                            IsPremium = true,
                             IsVerified = false,
                             LastActiveAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             PasswordHash = "123",
-                            Role = "admin"
+                            PremiumExpiryDate = new DateTime(2027, 3, 31, 16, 55, 48, 876, DateTimeKind.Local).AddTicks(9721),
+                            Role = "admin",
+                            WarningCount = 0
+                        },
+                        new
+                        {
+                            UserId = 1001,
+                            Email = "premium@domain.com",
+                            FullName = "Premium User",
+                            Gender = false,
+                            IsBanned = false,
+                            IsOnline = false,
+                            IsPremium = true,
+                            IsVerified = false,
+                            LastActiveAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            PasswordHash = "hashed_password",
+                            PremiumExpiryDate = new DateTime(2026, 4, 30, 9, 55, 48, 876, DateTimeKind.Utc).AddTicks(9949),
+                            Role = "user",
+                            WarningCount = 0
                         });
                 });
 
@@ -561,6 +957,21 @@ namespace UniNestBE.Migrations
                     b.Navigation("University");
                 });
 
+            modelBuilder.Entity("AmenityListing", b =>
+                {
+                    b.HasOne("Amenity", null)
+                        .WithMany()
+                        .HasForeignKey("AmenitiesAmenityId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Listing", null)
+                        .WithMany()
+                        .HasForeignKey("ListingsListingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Conversation", b =>
                 {
                     b.HasOne("User", "ParticipantOne")
@@ -599,6 +1010,36 @@ namespace UniNestBE.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("LifestyleHabitLifestyleProfile", b =>
+                {
+                    b.HasOne("LifestyleHabit", null)
+                        .WithMany()
+                        .HasForeignKey("LifestyleHabitsLifestyleHabitId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("LifestyleProfile", null)
+                        .WithMany()
+                        .HasForeignKey("LifestyleProfilesProfileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("LifestyleHabitListing", b =>
+                {
+                    b.HasOne("LifestyleHabit", null)
+                        .WithMany()
+                        .HasForeignKey("LifestyleHabitsLifestyleHabitId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Listing", null)
+                        .WithMany()
+                        .HasForeignKey("ListingsListingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("LifestyleProfile", b =>
                 {
                     b.HasOne("User", "User")
@@ -618,7 +1059,13 @@ namespace UniNestBE.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("PropertyType", "PropertyType")
+                        .WithMany()
+                        .HasForeignKey("PropertyTypeId");
+
                     b.Navigation("Owner");
+
+                    b.Navigation("PropertyType");
                 });
 
             modelBuilder.Entity("ListingImage", b =>
@@ -714,6 +1161,49 @@ namespace UniNestBE.Migrations
                     b.Navigation("TargetUser");
                 });
 
+            modelBuilder.Entity("StudentVerificationRequest", b =>
+                {
+                    b.HasOne("User", "Admin")
+                        .WithMany("VerificationRequestsReviewed")
+                        .HasForeignKey("ReviewedByAdminId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("User", "User")
+                        .WithMany("VerificationRequestsAsUser")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Admin");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("UniNestBE.Entities.Report", b =>
+                {
+                    b.HasOne("User", "Reporter")
+                        .WithMany()
+                        .HasForeignKey("ReporterId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Listing", "TargetListing")
+                        .WithMany()
+                        .HasForeignKey("TargetListingId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("User", "TargetUser")
+                        .WithMany()
+                        .HasForeignKey("TargetUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Reporter");
+
+                    b.Navigation("TargetListing");
+
+                    b.Navigation("TargetUser");
+                });
+
             modelBuilder.Entity("User", b =>
                 {
                     b.HasOne("University", "University")
@@ -786,6 +1276,10 @@ namespace UniNestBE.Migrations
                     b.Navigation("SentMessages");
 
                     b.Navigation("SentRequests");
+
+                    b.Navigation("VerificationRequestsAsUser");
+
+                    b.Navigation("VerificationRequestsReviewed");
 
                     b.Navigation("WrittenReviews");
                 });

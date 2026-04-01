@@ -1,6 +1,7 @@
 ﻿using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using UniNestBE.Services;
 
 namespace UniNestBE.Controllers
 {
@@ -11,10 +12,12 @@ namespace UniNestBE.Controllers
     public class MatchingController : ControllerBase
     {
         private readonly IAiMatchingService _matchingService;
+        private readonly IPremiumCheckService _premiumCheckService;
 
-        public MatchingController(IAiMatchingService matchingService)
+        public MatchingController(IAiMatchingService matchingService, IPremiumCheckService premiumCheckService)
         {
             _matchingService = matchingService;
+            _premiumCheckService = premiumCheckService;
         }
 
         /// <summary>
@@ -24,6 +27,11 @@ namespace UniNestBE.Controllers
         [HttpGet("recommendations")]
         public async Task<IActionResult> GetRecommendations()
         {
+            // Kiểm tra nếu người dùng không phải Premium, tự động trả về 403 Forbidden
+            var premiumCheck = _premiumCheckService.CheckPremiumAndRedirect(User, this);
+            if (premiumCheck != null)
+                return premiumCheck;
+
             // 1. Lấy UserId từ Token một cách an toàn (Tránh lỗi 500)
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
 

@@ -1,11 +1,14 @@
-﻿using System.Text;
+using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-
+using UniNestBE.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddScoped<IAiMatchingService, AiMatchingService>();
+builder.Services.AddTransient<IEmailService, EmailService>();
+builder.Services.AddSingleton<IAiModerationService, GroqModerationService>();
+builder.Services.AddScoped<IPremiumCheckService, PremiumCheckService>();
 // Add services to the container.
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
@@ -80,6 +83,9 @@ builder.Services.AddAuthentication(options =>
     // ---------------------------------------
 });
 
+
+
+builder.Services.AddHttpClient();
 builder.Services.AddDbContext<UniNestDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddCors(options =>
@@ -110,5 +116,18 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        UniNestBE.Data.DbInitializer.Initialize(services);
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Error occurred seeding the DB: {ex.Message}");
+    }
+}
 
 app.Run();
