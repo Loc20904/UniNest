@@ -1,8 +1,7 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
-using System.Linq;
 using UniNestBE.DTOs;
 using UniNestBE.Services;
 
@@ -79,9 +78,9 @@ namespace UniNestBE.Controllers
         public async Task<IActionResult> CreateListing(CreateListingDto dto)
         {
             // Kiểm tra nếu người dùng không phải Premium, tự động trả về 403 Forbidden
-            var premiumCheck = _premiumCheckService.CheckPremiumAndRedirect(User, this);
-            if (premiumCheck != null)
-                return premiumCheck;
+            //var premiumCheck = _premiumCheckService.CheckPremiumAndRedirect(User, this);
+            //if (premiumCheck != null)
+            //    return premiumCheck;
 
             var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 

@@ -28,8 +28,8 @@ namespace UniNestBE.Controllers
         public async Task<IActionResult> GetConversations()
         {
             // Kiểm tra Premium - Trả về IActionResult trực tiếp nếu không đạt điều kiện
-            var premiumCheck = _premiumCheckService.CheckPremiumAndRedirect(User, this);
-            if (premiumCheck != null) return premiumCheck;
+            //var premiumCheck = _premiumCheckService.CheckPremiumAndRedirect(User, this);
+            //if (premiumCheck != null) return premiumCheck;
 
             // 1. Lấy claim UserID
             var claim = User.FindFirst(ClaimTypes.NameIdentifier);
@@ -82,8 +82,8 @@ namespace UniNestBE.Controllers
         public async Task<IActionResult> GetChatHistory(int partnerId)
         {
             // Kiểm tra Premium
-            var premiumCheck = _premiumCheckService.CheckPremiumAndRedirect(User, this);
-            if (premiumCheck != null) return premiumCheck;
+            //var premiumCheck = _premiumCheckService.CheckPremiumAndRedirect(User, this);
+            //if (premiumCheck != null) return premiumCheck;
 
             var claim = User.FindFirst(ClaimTypes.NameIdentifier);
             if (claim == null)
@@ -120,13 +120,80 @@ namespace UniNestBE.Controllers
             return Ok(messages);
         }
 
+        // ============ CREATE CONVERSATION ============
+
+        [HttpPost("create-conversation/{partnerId}")]
+        public async Task<IActionResult> CreateConversation(int partnerId)
+        {
+            var claim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (claim == null)
+            {
+                return Unauthorized("Token không hợp lệ hoặc thiếu UserID");
+            }
+
+            var userId = int.Parse(claim.Value);
+
+            // Tìm conversation hiện có hoặc tạo mới
+            var conversation = await _context.Conversations
+                .Include(c => c.ParticipantOne)
+                .Include(c => c.ParticipantTwo)
+                .FirstOrDefaultAsync(c =>
+                    (c.ParticipantOneID == userId && c.ParticipantTwoID == partnerId) ||
+                    (c.ParticipantOneID == partnerId && c.ParticipantTwoID == userId));
+
+            if (conversation == null)
+            {
+                // Tạo conversation mới
+                conversation = new Conversation
+                {
+                    ParticipantOneID = userId,
+                    ParticipantTwoID = partnerId,
+                    LastMessage = "",
+                    LastMessageAt = DateTime.Now,
+                    CreatedAt = DateTime.Now
+                };
+                _context.Conversations.Add(conversation);
+                await _context.SaveChangesAsync();
+                
+                // Reload để get related entities
+                await _context.Entry(conversation).Reference(c => c.ParticipantOne).LoadAsync();
+                await _context.Entry(conversation).Reference(c => c.ParticipantTwo).LoadAsync();
+            }
+
+            // Lấy block status
+            var blocks = await _context.UserBlocks.AsNoTracking()
+                .Where(b => (b.BlockerID == userId && b.BlockedID == partnerId) || 
+                           (b.BlockerID == partnerId && b.BlockedID == userId))
+                .ToListAsync();
+
+            var partner = conversation.ParticipantOneID == userId ? conversation.ParticipantTwo : conversation.ParticipantOne;
+
+            bool blockedByMe = blocks.Any(b => b.BlockerID == userId && b.BlockedID == partner.UserId);
+            bool blockedByThem = blocks.Any(b => b.BlockerID == partner.UserId && b.BlockedID == userId);
+
+            var dto = new ConversationDto
+            {
+                ConversationId = conversation.ConversationID,
+                PartnerId = partner.UserId,
+                PartnerName = partner.FullName ?? "",
+                PartnerAvatar = partner.StudentAvatar ?? "",
+                IsOnline = partner.IsOnline,
+                LastMessage = conversation.LastMessage ?? "",
+                LastMessageAt = conversation.LastMessageAt,
+                IsBlockedByMe = blockedByMe,
+                IsBlockedByThem = blockedByThem
+            };
+
+            return Ok(dto);
+        }
+
         // ============ BLOCK / UNBLOCK / REPORT ============
 
         [HttpPost("block/{partnerId}")]
         public async Task<IActionResult> BlockUser(int partnerId)
         {
-            var premiumCheck = _premiumCheckService.CheckPremiumAndRedirect(User, this);
-            if (premiumCheck != null) return premiumCheck;
+            //var premiumCheck = _premiumCheckService.CheckPremiumAndRedirect(User, this);
+            //if (premiumCheck != null) return premiumCheck;
 
             var claim = User.FindFirst(ClaimTypes.NameIdentifier);
             if (claim == null) return Unauthorized();
@@ -156,8 +223,8 @@ namespace UniNestBE.Controllers
         [HttpPost("unblock/{partnerId}")]
         public async Task<IActionResult> UnblockUser(int partnerId)
         {
-            var premiumCheck = _premiumCheckService.CheckPremiumAndRedirect(User, this);
-            if (premiumCheck != null) return premiumCheck;
+            //var premiumCheck = _premiumCheckService.CheckPremiumAndRedirect(User, this);
+            //if (premiumCheck != null) return premiumCheck;
 
             var claim = User.FindFirst(ClaimTypes.NameIdentifier);
             if (claim == null) return Unauthorized();
@@ -181,8 +248,8 @@ namespace UniNestBE.Controllers
         [HttpPost("report/{partnerId}")]
         public async Task<IActionResult> ReportUser(int partnerId)
         {
-            var premiumCheck = _premiumCheckService.CheckPremiumAndRedirect(User, this);
-            if (premiumCheck != null) return premiumCheck;
+            //var premiumCheck = _premiumCheckService.CheckPremiumAndRedirect(User, this);
+            //if (premiumCheck != null) return premiumCheck;
 
             var claim = User.FindFirst(ClaimTypes.NameIdentifier);
             if (claim == null) return Unauthorized();

@@ -1,12 +1,9 @@
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using UniNestBE.Data;
-using UniNestBE.DTOs;
 using System.Security.Claims;
-using System.Globalization;
-using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using UniNestBE.DTOs;
 
 namespace UniNestBE.Controllers
 {
@@ -45,8 +42,8 @@ namespace UniNestBE.Controllers
 
                 // Generate order code
                 string orderCode = $"UNINEST{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}";
-                string description = request.PlanType == "monthly" 
-                    ? "UniNest Premium - Gói Tháng" 
+                string description = request.PlanType == "monthly"
+                    ? "UniNest Premium - Gói Tháng"
                     : "UniNest Premium - Gói Năm";
 
                 // Prepare PayOS request
@@ -77,7 +74,7 @@ namespace UniNestBE.Controllers
                 {
                     string clientId = _configuration["PayOS:ClientId"];
                     string apiKey = _configuration["PayOS:ApiKey"];
-                    
+
                     client.DefaultRequestHeaders.Add("x-client-id", clientId);
                     client.DefaultRequestHeaders.Add("x-api-key", apiKey);
 
@@ -98,7 +95,7 @@ namespace UniNestBE.Controllers
                         using (JsonDocument doc = JsonDocument.Parse(responseBody))
                         {
                             var root = doc.RootElement;
-                            if (root.TryGetProperty("data", out var data) && 
+                            if (root.TryGetProperty("data", out var data) &&
                                 data.TryGetProperty("checkoutUrl", out var checkoutUrl))
                             {
                                 return Ok(new
@@ -136,7 +133,7 @@ namespace UniNestBE.Controllers
                 {
                     string clientId = _configuration["PayOS:ClientId"];
                     string apiKey = _configuration["PayOS:ApiKey"];
-                    
+
                     client.DefaultRequestHeaders.Add("x-client-id", clientId);
                     client.DefaultRequestHeaders.Add("x-api-key", apiKey);
 
@@ -153,7 +150,7 @@ namespace UniNestBE.Controllers
                     using (JsonDocument doc = JsonDocument.Parse(responseBody))
                     {
                         var root = doc.RootElement;
-                        if (root.TryGetProperty("data", out var data) && 
+                        if (root.TryGetProperty("data", out var data) &&
                             data.TryGetProperty("status", out var status))
                         {
                             // Check if payment is successful (status = "PAID")
@@ -173,7 +170,7 @@ namespace UniNestBE.Controllers
 
                             // Update user premium status
                             user.IsPremium = true;
-                            
+
                             if (planType == "monthly")
                             {
                                 user.PremiumExpiryDate = DateTime.UtcNow.AddMonths(1);
@@ -204,5 +201,45 @@ namespace UniNestBE.Controllers
                 return StatusCode(500, $"Internal server error: {ex.Message}");
             }
         }
+
+        [Authorize]
+        [HttpPost("confirm-payment")]
+        public async Task<ActionResult<PaymentSuccessDto>> ConfirmPaymentTest([FromBody] string orderCode)
+        {
+            try
+            {
+                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+                var user = await _dbContext.Users.FindAsync(int.Parse(userId));
+                if (user == null) return NotFound("User not found");
+
+                // Logic test: Cứ gọi là cho lên Premium
+                // Dựa vào chuỗi orderCode mình tự chế ở trên để phân biệt gói
+                string planType = orderCode.Contains("YEARLY") ? "yearly" : "monthly";
+
+                user.IsPremium = true;
+                if (planType == "monthly")
+                    user.PremiumExpiryDate = DateTime.UtcNow.AddMonths(1);
+                else
+                    user.PremiumExpiryDate = DateTime.UtcNow.AddYears(1);
+
+                _dbContext.Users.Update(user);
+                await _dbContext.SaveChangesAsync();
+
+                return Ok(new PaymentSuccessDto
+                {
+                    Success = true,
+                    Message = $"[TEST MODE] Đã kích hoạt gói {planType}",
+                    PlanType = planType,
+                    ExpiresAt = user.PremiumExpiryDate.Value
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
+
     }
 }
